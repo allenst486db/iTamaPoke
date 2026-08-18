@@ -107,6 +107,10 @@ struct PetScreen: View {
                        nameColor: night ? UI.inkNight : TPDexAccent(pet.speciesId),
                        message: pet.statusMessage, ink: ink)
             drawPet(ctx, ink: ink, now: now)
+            // Port of drawPetPMD's trailing heart draw: shown while a like or a
+            // pet registers, positioned relative to the (unported) walk
+            // scheduler's rest position, which is always screen-centre here.
+            if pet.showHeart { ctx.drawIcon(TPIcon.heart, TP.cx + 50, TP.petGround - 190, scale: 2) }
             drawPoops(ctx, count: Int(pet.poops))
             ctx.fillRect(0, 312, TP.screen, 154, panel)
             drawBars(ctx, ink: ink)
@@ -191,9 +195,7 @@ struct PetScreen: View {
 
     private func drawPoops(_ ctx: GraphicsContext, count: Int) {
         for i in 0..<count {
-            let x = 36 + CGFloat(i) * 46
-            ctx.fillRoundRect(x + 6, 268, 40, 24, 10, rgb565(0x6b, 0x4a, 0x2f))
-            ctx.fillRoundRect(x + 12, 252, 28, 20, 9, rgb565(0x7d, 0x58, 0x38))
+            ctx.drawIcon(TPIcon.poop, 36 + CGFloat(i) * 46, 244, scale: 2)
         }
     }
 
@@ -229,13 +231,10 @@ struct PetScreen: View {
     private func drawFeedMenu(_ ctx: GraphicsContext, ink: UInt16) {
         ctx.fillRoundRect(101, 288, 264, 64, 14, UI.white)
         ctx.drawRoundRect(101, 288, 264, 64, 14, ink)
-        let berries: [UInt16] = [rgb565(0xe0, 0x4a, 0x3c),
-                                 rgb565(0x3f, 0x7f, 0xd0),
-                                 rgb565(0x4f, 0xa8, 0x54)]
-        for (i, c) in berries.enumerated() {
-            ctx.fillCircle(134 + CGFloat(i) * 66, 320, 17, c)
-        }
-        ctx.fillRoundRect(315, 306, 38, 28, 8, rgb565(0xef, 0xa8, 0xc8))  // candy
+        ctx.drawIcon(TPIcon.food, 110, 296, scale: 3)
+        ctx.drawIcon(TPIcon.berryBlue, 176, 296, scale: 3)
+        ctx.drawIcon(TPIcon.berryGreen, 242, 296, scale: 3)
+        ctx.drawIcon(TPIcon.candy, 308, 296, scale: 3)
     }
 
     private func renderStarterSelect(_ ctx: GraphicsContext) {

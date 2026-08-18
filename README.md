@@ -46,9 +46,10 @@ unmodified, the idle screen renders, and CI produces an installable artifact.
 **Working:** full game simulation (stat decay, evolution gating, egg rarity
 rolls, streak/bond/medals, genes, offline progression), starter selection,
 egg + hatching taps, idle scene (biome ground + real-time sky), need bars,
-the four action buttons, feed menu, petting, sleep/wake, 6 UI languages, and
-animated creature sprites — including shiny forms — on both iPhone and Apple
-Watch once you [add them](#sprites).
+the four action buttons, feed menu (with the firmware's own hand-drawn berry /
+candy / heart / poop icons), petting, sleep/wake, 6 UI languages, and animated
+creature sprites — including shiny forms — on both iPhone and Apple Watch once
+you [add them](#sprites).
 
 **Not ported yet:** the sprite walk/gesture scheduler (the creature stands
 centred instead of wandering), the Pokédex gallery, stat card, ball minigame,
