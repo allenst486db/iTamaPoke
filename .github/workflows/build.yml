@@ -1,0 +1,91 @@
+name: Build
+
+# Produces an UNSIGNED .ipa. It is not installable as-is: sign it with your own
+# free Apple ID via AltStore/SideStore (see README "Installing"). CI cannot do
+# free personal provisioning -- that flow requires an interactive Apple ID
+# sign-in and has no API-key equivalent.
+
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          # The upstream firmware is a pinned submodule; the C++ game logic is
+          # compiled from it verbatim.
+          submodules: recursive
+
+      - name: Toolchain versions
+        run: |
+          xcodebuild -version
+          xcodebuild -showsdks | grep -E 'iOS|watchOS' || true
+
+      - name: Install XcodeGen
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      # Compiled first: it is the cheaper target and fails fast on anything
+      # wrong in the shared C++ bridge or the SwiftUI renderer.
+      - name: Build watchOS app
+        run: |
+          set -o pipefail
+          xcodebuild build \
+            -project TamaPoke.xcodeproj \
+            -scheme TamaPokeWatch \
+            -configuration Release \
+            -destination 'generic/platform=watchOS' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | xcbeautify --renderer github-actions
+
+      - name: Archive iOS app (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project TamaPoke.xcodeproj \
+            -scheme TamaPoke \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/TamaPoke.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            | xcbeautify --renderer github-actions
+
+      # An .ipa is just a zip with the .app under Payload/. Signing tools
+      # (AltStore, SideStore, Sideloadly) re-sign this on the way to the device.
+      - name: Package unsigned .ipa
+        run: |
+          set -euo pipefail
+          APP="build/TamaPoke.xcarchive/Products/Applications/TamaPoke.app"
+          test -d "$APP" || { echo "::error::archive produced no .app at $APP"; exit 1; }
+          rm -rf build/Payload
+          mkdir -p build/Payload
+          cp -R "$APP" build/Payload/
+          ( cd build && zip -qry TamaPoke-unsigned.ipa Payload )
+          echo "### Built \`TamaPoke-unsigned.ipa\`" >> "$GITHUB_STEP_SUMMARY"
+          du -h build/TamaPoke-unsigned.ipa >> "$GITHUB_STEP_SUMMARY"
+          echo "Watch app embedded:" >> "$GITHUB_STEP_SUMMARY"
+          ls build/Payload/TamaPoke.app/Watch >> "$GITHUB_STEP_SUMMARY" 2>&1 || \
+            echo "  (none -- watch app was not embedded)" >> "$GITHUB_STEP_SUMMARY"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TamaPoke-unsigned-ipa
+          path: build/TamaPoke-unsigned.ipa
+          if-no-files-found: error
+          retention-days: 30

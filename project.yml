@@ -1,0 +1,77 @@
+# XcodeGen manifest. The .xcodeproj is generated, never committed.
+#   xcodegen generate
+name: TamaPoke
+
+options:
+  bundleIdPrefix: dev.local
+  createIntermediateGroups: true
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+
+settings:
+  base:
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    SWIFT_VERSION: "5.9"
+    CLANG_CXX_LANGUAGE_STANDARD: "c++17"
+    CLANG_CXX_LIBRARY: "libc++"
+    # Upstream firmware C++ is vendored verbatim; it is not warning-clean by
+    # Xcode's standards and we do not want to patch it (keeps submodule bumps free).
+    GCC_WARN_INHIBIT_ALL_WARNINGS: YES
+    # Free personal provisioning: set your own prefix here or via `xcodegen`
+    # after editing. Must be globally unique for a free Apple ID to sign it.
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Automatic
+
+targets:
+  # ---------------------------------------------------------------- iOS app
+  TamaPoke:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources/Core
+      - path: Sources/Shared
+      - path: Sources/iOS
+      - path: upstream/pet.cpp
+        group: upstream
+      - path: upstream/i18n.cpp
+        group: upstream
+    dependencies:
+      - target: TamaPokeWatch
+        embed: true
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.local.tamapoke
+        INFOPLIST_FILE: Sources/iOS/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Sources/Core
+          - $(SRCROOT)/upstream
+        TARGETED_DEVICE_FAMILY: "1,2"
+        GENERATE_INFOPLIST_FILE: NO
+
+  # ------------------------------------------------------------ watchOS app
+  # Single-target watchOS app (watchOS 7+ style), embedded in the iOS app so a
+  # single sideloaded .ipa carries both.
+  TamaPokeWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - path: Sources/Core
+      - path: Sources/Shared
+      - path: Sources/watchOS
+      - path: upstream/pet.cpp
+        group: upstream
+      - path: upstream/i18n.cpp
+        group: upstream
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: dev.local.tamapoke.watchkitapp
+        INFOPLIST_FILE: Sources/watchOS/Info.plist
+        SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
+        HEADER_SEARCH_PATHS:
+          - $(SRCROOT)/Sources/Core
+          - $(SRCROOT)/upstream
+        TARGETED_DEVICE_FAMILY: "4"
+        GENERATE_INFOPLIST_FILE: NO

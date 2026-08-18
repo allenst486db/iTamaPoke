@@ -1,0 +1,13 @@
+# Xcode / build
+*.xcodeproj/
+*.xcworkspace/
+DerivedData/
+build/
+*.xcarchive
+*.ipa
+.DS_Store
+
+# Sprites are NOT redistributed: fetched per-user from PMD SpriteCollab.
+# See README "Sprites" and Scripts/fetch_sprites.py
+Resources/mons/
+Resources/*.pak
