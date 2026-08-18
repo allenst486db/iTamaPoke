@@ -47,12 +47,13 @@ unmodified, the idle screen renders, and CI produces an installable artifact.
 rolls, streak/bond/medals, genes, offline progression), starter selection,
 egg + hatching taps, idle scene (biome ground + real-time sky), need bars,
 the four action buttons, feed menu, petting, sleep/wake, 6 UI languages, and
-animated creature sprites on iOS once you [add them](#sprites).
+animated creature sprites — including shiny forms — on both iPhone and Apple
+Watch once you [add them](#sprites).
 
 **Not ported yet:** the sprite walk/gesture scheduler (the creature stands
-centred instead of wandering), sprites on watchOS, the Pokédex gallery, stat
-card, ball minigame, training bag, bath scene, clock/settings screen, on-screen
-keyboard, and the evolution / farewell decision dialogs. Sound is haptics only.
+centred instead of wandering), the Pokédex gallery, stat card, ball minigame,
+training bag, bath scene, clock/settings screen, on-screen keyboard, and the
+evolution / farewell decision dialogs. Sound is haptics only.
 
 ---
 
@@ -163,18 +164,22 @@ xcodegen generate                 # so Xcode picks them up
 
 A species with no file falls back to the "No sprites" notice, so copying a subset
 is a supported state — but the creature disappears again when it evolves into a
-form you did not copy. `--shiny` adds the shiny variants (another 20 MB).
+form you did not copy. `--shiny` adds the shiny variants; without them a shiny
+creature draws in its normal colours rather than vanishing.
 
-Sprites are read from the app bundle at `mons/p<dex>.bin` in upstream's TPK2
-format, decoded by `Sources/Shared/TPSprite.swift`. Only the current species is
-resident at a time.
+Sprites are read from the app bundle at `mons/p<dex>.bin` (`ps<dex>.bin` when
+shiny) in upstream's TPK2 format, decoded by `Sources/Shared/TPSprite.swift`.
+Only the current species is resident at a time.
+
+**Both targets bundle their own copy.** A watchOS app cannot read the phone
+app's resources, and this watch app runs standalone, so it needs its own set.
+The full 302-file set is ~40 MB per bundle, which makes the `.ipa` ~80 MB since
+it carries the watch app inside. If that matters more than completeness, copy
+only the species you play with — the watch installs a lot faster for it.
 
 > **CI builds never contain sprites** — the files are not in the repo, so an
 > `.ipa` from either workflow shows the placeholder. Copy the sprites in and
 > build from Xcode to see the creature.
-
-The watchOS target does not bundle sprites yet; the watch app still shows the
-placeholder.
 
 ---
 

@@ -73,6 +73,13 @@ targets:
         group: upstream
       - path: upstream/i18n.cpp
         group: upstream
+      # Same sprite folder as the iOS app. Both bundles carry their own copy --
+      # a watchOS app cannot read the phone app's resources, and this one runs
+      # standalone (WKRunsIndependentlyOfCompanionApp), so it needs its own.
+      - path: Resources/mons
+        type: folder
+        buildPhase: resources
+        optional: true
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.allenst486db.itamapoke.watchkitapp
