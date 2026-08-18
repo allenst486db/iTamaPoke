@@ -37,6 +37,14 @@ targets:
         group: upstream
       - path: upstream/i18n.cpp
         group: upstream
+      # TPK2 sprites, copied in by Scripts/fetch_sprites.sh. A folder reference
+      # so they land as mons/ inside the bundle, and optional because they are
+      # gitignored -- a fresh checkout (and every CI build) has none, and must
+      # still build. See README "Sprites".
+      - path: Resources/mons
+        type: folder
+        buildPhase: resources
+        optional: true
     dependencies:
       - target: TamaPokeWatch
         embed: true

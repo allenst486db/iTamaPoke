@@ -20,6 +20,12 @@ final class GameModel: ObservableObject {
     /// C++ state directly, so this is the only published value that exists.
     @Published private(set) var frame: UInt64 = 0
 
+    /// The current species' sprite, or nil when its TPK2 file is not bundled —
+    /// the normal state, since sprites are never committed. Only one species is
+    /// ever resident; it is reloaded when the pet changes form.
+    @Published private(set) var sprite: TPSprite?
+    private var spriteKey: Int32 = .min
+
     private var started = false
     private let epoch = Date()
 
@@ -31,15 +37,27 @@ final class GameModel: ObservableObject {
         guard !started else { return }
         started = true
         pet.begin()
+        refreshSprite()
         // The ES8311 tone synth is not ported. Haptics are the closest native
         // equivalent and keep taps feeling answered; real audio is a later step.
         TPSetSfxHandler { _ in Self.playFeedback() }
+    }
+
+    /// Reloads the sprite when the pet's form changes. Keyed on the egg flag too:
+    /// the species is already set while the egg is intact, so hatching would
+    /// otherwise not look like a change and the sprite would stay unloaded.
+    private func refreshSprite() {
+        let key = Int32(pet.speciesId) << 2 | (pet.shiny ? 2 : 0) | (pet.isEgg ? 1 : 0)
+        guard key != spriteKey else { return }
+        spriteKey = key
+        sprite = pet.isEgg ? nil : TPSprite.load(dex: pet.speciesId, shiny: pet.shiny)
     }
 
     /// Called on the display tick. Advances animation timers and, once a minute,
     /// the game tick — same contract as `pet.update(millis())` in `loop()`.
     func tick() {
         pet.update()
+        refreshSprite()
         frame &+= 1
     }
 

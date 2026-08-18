@@ -7,7 +7,10 @@ build/
 *.ipa
 .DS_Store
 
-# Sprites are NOT redistributed: fetched per-user from PMD SpriteCollab.
-# See README "Sprites" and Scripts/fetch_sprites.py
-Resources/mons/
+# Sprites are NOT redistributed: copied per-user from the upstream checkout.
+# See README "Sprites" and Scripts/fetch_sprites.sh
+# The directory itself stays tracked but empty, so the Xcode folder reference
+# resolves in a fresh checkout; only its contents are ignored.
+Resources/mons/*
+!Resources/mons/.gitkeep
 Resources/*.pak

@@ -17,6 +17,7 @@ enum TP {
     static let cx: CGFloat = 233
     static let cy: CGFloat = 233
     static let petCY: CGFloat = 202   // vertical centre of the sprite
+    static let petGround: CGFloat = 304  // ground line the sprite's feet sit on
     static let horizon: CGFloat = 232 // where sky meets ground
     static let btnHalf: CGFloat = 26  // buttons are 52x52
 }

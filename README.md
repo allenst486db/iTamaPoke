@@ -46,10 +46,11 @@ unmodified, the idle screen renders, and CI produces an installable artifact.
 **Working:** full game simulation (stat decay, evolution gating, egg rarity
 rolls, streak/bond/medals, genes, offline progression), starter selection,
 egg + hatching taps, idle scene (biome ground + real-time sky), need bars,
-the four action buttons, feed menu, petting, sleep/wake, 6 UI languages.
+the four action buttons, feed menu, petting, sleep/wake, 6 UI languages, and
+animated creature sprites on iOS once you [add them](#sprites).
 
-**Not ported yet (phase 2):** sprite rendering — the app currently shows the
-firmware's own "no sprites loaded" placeholder — plus the Pokédex gallery, stat
+**Not ported yet:** the sprite walk/gesture scheduler (the creature stands
+centred instead of wandering), sprites on watchOS, the Pokédex gallery, stat
 card, ball minigame, training bag, bath scene, clock/settings screen, on-screen
 keyboard, and the evolution / farewell decision dialogs. Sound is haptics only.
 
@@ -139,6 +140,41 @@ brew install xcodegen && xcodegen generate && open TamaPoke.xcodeproj
 ```
 
 The `.xcodeproj` is generated from `project.yml` and is never committed.
+
+---
+
+## Sprites
+
+The app ships with **no creature art**, so out of the box it draws the firmware's
+own "No sprites" notice where the creature goes. The art is Pokémon fan work
+derived from [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
+(CC BY-NC): fine to build onto your own device, not fine to commit or
+redistribute. `Resources/mons/` is gitignored for exactly that reason.
+
+The upstream submodule already carries the packed sprites, so there is nothing to
+download — just copy the species you want in:
+
+```bash
+Scripts/fetch_sprites.sh 7        # one species, by Pokédex number
+Scripts/fetch_sprites.sh 1 4 7    # the three starters
+Scripts/fetch_sprites.sh all      # all 151, about 20 MB
+xcodegen generate                 # so Xcode picks them up
+```
+
+A species with no file falls back to the "No sprites" notice, so copying a subset
+is a supported state — but the creature disappears again when it evolves into a
+form you did not copy. `--shiny` adds the shiny variants (another 20 MB).
+
+Sprites are read from the app bundle at `mons/p<dex>.bin` in upstream's TPK2
+format, decoded by `Sources/Shared/TPSprite.swift`. Only the current species is
+resident at a time.
+
+> **CI builds never contain sprites** — the files are not in the repo, so an
+> `.ipa` from either workflow shows the placeholder. Copy the sprites in and
+> build from Xcode to see the creature.
+
+The watchOS target does not bundle sprites yet; the watch app still shows the
+placeholder.
 
 ---
 

@@ -106,7 +106,7 @@ struct PetScreen: View {
             drawHeader(ctx, name: pet.headerName,
                        nameColor: night ? UI.inkNight : TPDexAccent(pet.speciesId),
                        message: pet.statusMessage, ink: ink)
-            drawPetFallback(ctx, ink: ink)
+            drawPet(ctx, ink: ink, now: now)
             drawPoops(ctx, count: Int(pet.poops))
             ctx.fillRect(0, 312, TP.screen, 154, panel)
             drawBars(ctx, ink: ink)
@@ -123,9 +123,44 @@ struct PetScreen: View {
         ctx.gfxTextCentered(message, 90, 2, ink)
     }
 
-    /// Placeholder for the PMD sprite. Reproduces the firmware's own behaviour
-    /// when the SD card carries no art, which is exactly the state this build
-    /// ships in: the sprite pipeline is phase 2.
+    /// Port of the firmware's `drawPetPMD`: pick the action from the pet's mood,
+    /// then anchor the frame by its feet on the ground line.
+    ///
+    /// The walking/gesture scheduler (`behNext`) is not ported yet, so the
+    /// creature stands centred rather than wandering.
+    private func drawPet(_ ctx: GraphicsContext, ink: UInt16, now: UInt64) {
+        guard let sprite = model.sprite else {
+            drawPetFallback(ctx, ink: ink)
+            return
+        }
+        let pet = model.pet
+
+        var act = TPAct.idle
+        switch pet.mood {
+        case .sleeping where sprite.has(.sleep): act = .sleep
+        case .eating where sprite.has(.eat):     act = .eat
+        case .sad where sprite.has(.hurt):       act = .hurt
+        default:                                 act = .idle
+        }
+
+        guard let a = sprite[act],
+              let img = sprite.image(act, frame: TPSprite.frameIndex(a, elapsedMs: now, loop: true))
+        else {
+            drawPetFallback(ctx, ink: ink)
+            return
+        }
+
+        let s = sprite.scale(for: a)
+        let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
+        ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
+                 in: CGRect(x: TP.cx - w / 2,
+                            y: TP.petGround - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                            width: w, height: h))
+    }
+
+    /// Shown when the current species has no TPK2 file in the bundle. Reproduces
+    /// the firmware's own behaviour with an empty SD card, and is the expected
+    /// state for any build that did not have sprites copied in — see README.
     private func drawPetFallback(_ ctx: GraphicsContext, ink: UInt16) {
         ctx.gfxText("?", TP.cx - 18, TP.petCY - 80, 6, ink)
         let lines = TPNoSpritesLines()
