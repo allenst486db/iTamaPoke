@@ -121,7 +121,7 @@ allows 3 sideloaded apps at a time. A paid Apple Developer account ($99/yr)
 extends the certificate to 1 year.
 
 Before the first build, change `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` from
-`dev.local.tamapoke` to something unique to you — free provisioning refuses
+`com.allenst486db.itamapoke` if you are not that account — free provisioning refuses
 identifiers already claimed by another developer.
 
 > ⚠️ **The Apple Watch app is unverified.** It compiles and is embedded in the

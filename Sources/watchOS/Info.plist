@@ -5,7 +5,7 @@
 	<key>CFBundleDevelopmentRegion</key>
 	<string>en</string>
 	<key>CFBundleDisplayName</key>
-	<string>TamaPoke</string>
+	<string>iTamaPoke</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -22,8 +22,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>WKApplication</key>
 	<true/>
+	<!-- MUST match the iOS target's PRODUCT_BUNDLE_IDENTIFIER in project.yml.
+	     watchOS refuses to pair the app if these drift apart. -->
 	<key>WKCompanionAppBundleIdentifier</key>
-	<string>dev.local.tamapoke</string>
+	<string>com.allenst486db.itamapoke</string>
 	<key>WKRunsIndependentlyOfCompanionApp</key>
 	<true/>
 </dict>

@@ -3,7 +3,7 @@
 name: TamaPoke
 
 options:
-  bundleIdPrefix: dev.local
+  bundleIdPrefix: com.allenst486db
   createIntermediateGroups: true
   deploymentTarget:
     iOS: "17.0"
@@ -42,7 +42,7 @@ targets:
         embed: true
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.local.tamapoke
+        PRODUCT_BUNDLE_IDENTIFIER: com.allenst486db.itamapoke
         INFOPLIST_FILE: Sources/iOS/Info.plist
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
         HEADER_SEARCH_PATHS:
@@ -67,7 +67,7 @@ targets:
         group: upstream
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: dev.local.tamapoke.watchkitapp
+        PRODUCT_BUNDLE_IDENTIFIER: com.allenst486db.itamapoke.watchkitapp
         INFOPLIST_FILE: Sources/watchOS/Info.plist
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
         HEADER_SEARCH_PATHS:
