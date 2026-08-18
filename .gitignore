@@ -14,3 +14,9 @@ build/
 Resources/mons/*
 !Resources/mons/.gitkeep
 Resources/*.pak
+
+# App icon: a Pokemon character collage, same reasoning as the sprites above.
+# Contents.json (the appiconset's structure, no art) stays tracked; only the
+# image is ignored. See README "App icon" and Scripts/fetch_app_icon.sh.
+Sources/iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+Sources/watchOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png

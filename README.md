@@ -184,6 +184,31 @@ only the species you play with — the watch installs a lot faster for it.
 
 ---
 
+## App icon
+
+Same reasoning as the sprites: a Pokémon character image is fan art, so the
+actual icon file is gitignored and the app ships with no home-screen icon out
+of the box. `Sources/{iOS,watchOS}/Assets.xcassets/AppIcon.appiconset/` is
+tracked (just the catalog structure), the `AppIcon.png` inside each is not.
+
+```bash
+Scripts/fetch_app_icon.sh path/to/icon.png   # square, ideally 1024x1024
+xcodegen generate
+```
+
+Both targets need their own copy for the same reason sprites do — a watchOS
+app can't read the phone app's asset catalog. The script copies the same
+image into both. Each catalog uses Xcode's "single size" App Icon (1024x1024,
+`idiom: universal`), so every smaller size iOS/watchOS actually needs is
+derived from that one file at build time — nothing else to generate, and an
+image with an alpha channel is fine, since both platforms mask their own
+rounded-corner shape over it regardless.
+
+> **CI builds never contain an icon either** — same as sprites, the file
+> isn't in the repo, so the app just gets whatever default the OS shows.
+
+---
+
 ## Installing
 
 Before the first build, change `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` from
