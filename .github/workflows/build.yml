@@ -17,7 +17,10 @@ concurrency:
 
 jobs:
   build:
-    runs-on: macos-latest
+    # Pinned, not `macos-latest`: this project vendors firmware C++ through a
+    # shim layer, so a silent Xcode bump is more likely to break it than to help.
+    # Bump deliberately when you want a newer toolchain.
+    runs-on: macos-26
 
     steps:
       - uses: actions/checkout@v4
@@ -76,12 +79,22 @@ jobs:
           rm -rf build/Payload
           mkdir -p build/Payload
           cp -R "$APP" build/Payload/
+          # A missing watch app is a build regression, not a footnote: the whole
+          # point of embedding it is that one sideloaded .ipa carries both apps.
+          WATCH="build/Payload/TamaPoke.app/Watch/TamaPokeWatch.app"
+          test -d "$WATCH" || { echo "::error::watch app was not embedded at $WATCH"; exit 1; }
           ( cd build && zip -qry TamaPoke-unsigned.ipa Payload )
-          echo "### Built \`TamaPoke-unsigned.ipa\`" >> "$GITHUB_STEP_SUMMARY"
-          du -h build/TamaPoke-unsigned.ipa >> "$GITHUB_STEP_SUMMARY"
-          echo "Watch app embedded:" >> "$GITHUB_STEP_SUMMARY"
-          ls build/Payload/TamaPoke.app/Watch >> "$GITHUB_STEP_SUMMARY" 2>&1 || \
-            echo "  (none -- watch app was not embedded)" >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "### Built \`TamaPoke-unsigned.ipa\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Size | $(du -h build/TamaPoke-unsigned.ipa | cut -f1) |"
+            echo "| iOS binary | $(lipo -info build/Payload/TamaPoke.app/TamaPoke | sed 's/.*: //') |"
+            echo "| Watch app | embedded ($(lipo -info "$WATCH/TamaPokeWatch" | sed 's/.*: //')) |"
+            echo
+            echo "Unsigned. Sign it with your own Apple ID before installing -- see README \"Installing\"."
+          } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:

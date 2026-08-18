@@ -21,7 +21,9 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 
 @interface TPPet : NSObject
 
-+ (instancetype)shared;
+// A class property, not a `+shared` class method: the latter imports into Swift
+// as `TPPet.shared()`, which silently binds a function value at every call site.
+@property (class, nonatomic, readonly) TPPet *shared;
 
 /// Loads NVS-equivalent state and applies elapsed wall-clock time. Call once.
 - (void)begin;

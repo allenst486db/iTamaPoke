@@ -129,11 +129,13 @@ identifiers already claimed by another developer.
 
 > ⚠️ **The Apple Watch app is unverified.** It compiles and is embedded in the
 > `.ipa`, but sideloading tools have a poor track record installing embedded
-> watch apps under free provisioning. The CI summary reports whether the watch
-> app made it into the bundle. If the install drops it, the iPhone app is
-> unaffected — the watch target is standalone
-> (`WKRunsIndependentlyOfCompanionApp`) and can be built and installed on its
-> own from Xcode on a Mac.
+> watch apps under free provisioning — AltStore does not install them at all, and
+> Sideloadly commonly drops them. The build **fails** if the watch app is missing
+> from the bundle, so a green run means it shipped. If the *install* drops it
+> anyway, the iPhone app is unaffected: the watch target is standalone
+> (`WKRunsIndependentlyOfCompanionApp`), so it can be built and installed on its
+> own to a paired watch from Xcode on a Mac — the one path that reliably works on
+> a free account.
 
 ---
 
