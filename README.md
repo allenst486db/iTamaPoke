@@ -87,15 +87,52 @@ foregrounding, which is why this port needs no background execution at all.
 
 ## Building
 
-You do **not** need a Mac. Push to GitHub and the
-[build workflow](.github/workflows/build.yml) produces an unsigned `.ipa` as a
-run artifact.
+Two workflows. Which one you can use is decided entirely by what kind of Apple
+account you have — CI can sign for a paid membership and cannot sign for a free
+Apple ID, and there is no way around that.
 
-```bash
-git add -A && git commit -m "TamaPoke iOS/watchOS port" && git push
-```
+| | [Build (unsigned)](.github/workflows/build.yml) | [Build (signed)](.github/workflows/build-signed.yml) |
+|---|---|---|
+| Apple account | free Apple ID | paid Developer Program ($99/yr) |
+| Runs | every push + manually | manually only |
+| Setup | none | 4 repository secrets |
+| Output | `.ipa` you must re-sign yourself | `.ipa` that installs as-is |
+| Expires | 7 days | 1 year |
+| Apple Watch | usually dropped on install | correctly signed, no re-signing step to drop it |
+| Needs a Mac | no | no |
 
-Locally (macOS only):
+### Build (unsigned) — free Apple ID
+
+Push, and the run artifact `TamaPoke-unsigned-ipa` appears on the Actions tab.
+Sign it on the way to the device (see [Installing](#installing)).
+
+### Build (signed) — paid Developer Program
+
+Add these under **Settings → Secrets and variables → Actions**:
+
+| Secret | Where it comes from |
+|---|---|
+| `APPLE_TEAM_ID` | Developer portal → Membership, 10 characters |
+| `ASC_KEY_ID` | App Store Connect → Users and Access → Integrations |
+| `ASC_ISSUER_ID` | same page, a UUID |
+| `ASC_PRIVATE_KEY` | the `AuthKey_*.p8` file's full contents, `BEGIN`/`END` lines included |
+
+The API key needs the **App Manager** role — it creates App IDs and provisioning
+profiles on demand. It does *not* register devices, so plug your iPhone and your
+Apple Watch into Xcode once beforehand; a build signed for unregistered devices
+installs on nothing.
+
+Then **Actions → Build (signed) → Run workflow**. `debugging` is the default
+export method; `release-testing` (formerly "ad-hoc") is there if you want a build
+to hand to someone else on your team's device list.
+
+The team ID is read from a secret rather than committed, so `project.yml` stays
+clean in a public repo.
+
+> This workflow deliberately does **not** upload to TestFlight. TestFlight means
+> App Store Connect review, and this app cannot pass it — see [Legal](#legal).
+
+### Locally on a Mac
 
 ```bash
 brew install xcodegen && xcodegen generate && open TamaPoke.xcodeproj
@@ -107,35 +144,70 @@ The `.xcodeproj` is generated from `project.yml` and is never committed.
 
 ## Installing
 
-**CI cannot sign the app for you.** Free personal provisioning requires an
-interactive Apple ID sign-in and has no API-key equivalent, so the workflow
-emits an *unsigned* `.ipa` that you sign yourself on the way to the device.
+Before the first build, change `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` from
+`com.allenst486db.itamapoke` if you are not that account — provisioning refuses
+identifiers already claimed by another developer.
 
-From Windows:
+> ⚠️ **Getting the app onto an Apple Watch is the hard part.** Sideloading tools
+> handle embedded watch apps badly — AltStore does not install them at all, and
+> Sideloadly commonly drops them. Both CI workflows **fail** if the watch app is
+> missing from the bundle, so a green run means it shipped; whether the *install*
+> keeps it is up to the tool. If you want the watch app, install from Xcode.
 
-1. Download the `TamaPoke-unsigned-ipa` artifact from the workflow run.
+### From Xcode — works with any Apple ID, and the only reliable path to the watch
+
+Needs a Mac. Free Apple IDs work here: the interactive sign-in that CI cannot do
+is exactly what Xcode does for you.
+
+1. **Enable Developer Mode on both devices** (iOS 16+ / watchOS 9+):
+   Settings → Privacy & Security → Developer Mode → on, then restart. The watch
+   has its own toggle — turning it on for the iPhone does not cover it.
+2. Generate and open the project:
+   ```bash
+   brew install xcodegen && xcodegen generate && open TamaPoke.xcodeproj
+   ```
+3. Select the **TamaPoke** target → Signing & Capabilities → tick *Automatically
+   manage signing* → pick your Team. Repeat for the **TamaPokeWatch** target.
+   Both must be the same team.
+   > The `.xcodeproj` is generated, so this is reset by every `xcodegen generate`.
+   > Re-pick the team after regenerating, or pass `DEVELOPMENT_TEAM=YOURTEAMID`
+   > to `xcodebuild` if you build from the command line.
+4. Connect the iPhone over USB and tap **Trust** on the device.
+5. Pick the **TamaPoke** scheme and your iPhone as the destination → `⌘R`.
+6. First launch only: iPhone → Settings → General → VPN & Device Management →
+   trust your developer certificate. The app will not open until you do.
+7. For the watch: pick the **TamaPokeWatch** scheme and your Apple Watch as the
+   destination → `⌘R`. Keep the watch unlocked and on its charger; the first
+   install can take several minutes and often looks stalled before it lands.
+
+To drop the cable, tick *Connect via network* in Window → Devices and Simulators.
+
+With a free Apple ID the app stops launching after **7 days** — re-run `⌘R` to
+renew it. A paid membership makes it a year.
+
+### From a signed `.ipa` — paid Developer Program
+
+Download the `TamaPoke-signed-ipa` artifact from a *Build (signed)* run. It is
+already signed for your team's registered devices, so no re-signing tool is
+involved: open Xcode → Window → **Devices and Simulators**, select your iPhone,
+and drag the `.ipa` onto the *Installed Apps* list ([Apple Configurator](
+https://apps.apple.com/app/apple-configurator/id1037126344) also works).
+
+### From an unsigned `.ipa` — free Apple ID, no Mac
+
+1. Download the `TamaPoke-unsigned-ipa` artifact from a *Build (unsigned)* run.
 2. Install [AltStore](https://altstore.io) (AltServer runs on Windows) or
    [Sideloadly](https://sideloadly.io).
-3. Sign it with your **free** Apple ID and install over USB or Wi-Fi.
+3. Sign it with your free Apple ID and install over USB or Wi-Fi.
 
 Free-account limits: the app expires after **7 days** and must be re-signed
 (AltServer refreshes it automatically while it is running), and a free Apple ID
-allows 3 sideloaded apps at a time. A paid Apple Developer account ($99/yr)
-extends the certificate to 1 year.
+allows 3 sideloaded apps at a time.
 
-Before the first build, change `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` from
-`com.allenst486db.itamapoke` if you are not that account — free provisioning refuses
-identifiers already claimed by another developer.
-
-> ⚠️ **The Apple Watch app is unverified.** It compiles and is embedded in the
-> `.ipa`, but sideloading tools have a poor track record installing embedded
-> watch apps under free provisioning — AltStore does not install them at all, and
-> Sideloadly commonly drops them. The build **fails** if the watch app is missing
-> from the bundle, so a green run means it shipped. If the *install* drops it
-> anyway, the iPhone app is unaffected: the watch target is standalone
-> (`WKRunsIndependentlyOfCompanionApp`), so it can be built and installed on its
-> own to a paired watch from Xcode on a Mac — the one path that reliably works on
-> a free account.
+Expect the watch app not to survive this route — see the warning above. The
+iPhone app is unaffected either way: the watch target is standalone
+(`WKRunsIndependentlyOfCompanionApp`), so it can be installed on its own from
+Xcode later without reinstalling the phone app.
 
 ---
 

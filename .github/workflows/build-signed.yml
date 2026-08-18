@@ -1,0 +1,167 @@
+name: Build (signed)
+
+# Produces a SIGNED .ipa, installable without a re-signing tool.
+#
+# Requires a PAID Apple Developer Program membership. A free Apple ID cannot use
+# this workflow: free personal provisioning needs an interactive Xcode sign-in and
+# has no API-key equivalent. On a free account use "Build (unsigned)" instead.
+#
+# Repository secrets (Settings -> Secrets and variables -> Actions):
+#   APPLE_TEAM_ID     10-character Team ID, e.g. ABCDE12345
+#   ASC_KEY_ID        App Store Connect API key ID
+#   ASC_ISSUER_ID     App Store Connect issuer ID (a UUID)
+#   ASC_PRIVATE_KEY   full contents of the AuthKey_<KEY_ID>.p8 file, BEGIN/END lines included
+#
+# Create the API key at App Store Connect -> Users and Access -> Integrations ->
+# App Store Connect API. It needs the "App Manager" role to create signing assets.
+#
+# Your iPhone and Apple Watch must ALREADY be registered in the developer portal:
+# xcodebuild creates App IDs and provisioning profiles on demand, but it does not
+# register devices. Plugging each device into Xcode once is enough to register it.
+#
+# Manual-dispatch only, by design -- it must not fail every push for people who
+# have no developer account.
+
+on:
+  workflow_dispatch:
+    inputs:
+      method:
+        description: "Export method"
+        type: choice
+        default: debugging
+        options:
+          # Xcode 15.4 renamed these: debugging was "development",
+          # release-testing was "ad-hoc". Both install only to registered devices.
+          - debugging
+          - release-testing
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: macos-26
+
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_PRIVATE_KEY: ${{ secrets.ASC_PRIVATE_KEY }}
+
+    steps:
+      # Checked before anything expensive, so a missing secret fails in seconds
+      # with a name rather than deep inside a signing error.
+      - name: Check required secrets
+        run: |
+          fail=0
+          for v in APPLE_TEAM_ID ASC_KEY_ID ASC_ISSUER_ID ASC_PRIVATE_KEY; do
+            eval "val=\${$v}"
+            if [ -z "$val" ]; then
+              echo "::error::missing repository secret: $v"
+              fail=1
+            fi
+          done
+          exit $fail
+
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Toolchain versions
+        run: xcodebuild -version
+
+      - name: Install XcodeGen
+        run: brew install xcodegen xcbeautify
+
+      - name: Generate Xcode project
+        run: xcodegen generate
+
+      - name: Write App Store Connect API key
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/private_keys"
+          printf '%s\n' "$ASC_PRIVATE_KEY" > "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          chmod 600 "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      # DEVELOPMENT_TEAM comes from a secret rather than project.yml so the team
+      # id never has to be committed to a public repo. It applies to both the iOS
+      # and the watchOS target, which is what we want -- they sign as one team.
+      - name: Archive iOS app (signed)
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project TamaPoke.xcodeproj \
+            -scheme TamaPoke \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/TamaPoke.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            | xcbeautify --renderer github-actions
+
+      - name: Export .ipa
+        run: |
+          set -euo pipefail
+          cat > build/ExportOptions.plist <<PLIST
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>${{ inputs.method }}</string>
+            <key>teamID</key><string>${APPLE_TEAM_ID}</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>stripSwiftSymbols</key><true/>
+          </dict>
+          </plist>
+          PLIST
+          set -o pipefail
+          xcodebuild -exportArchive \
+            -archivePath build/TamaPoke.xcarchive \
+            -exportPath build/export \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            | xcbeautify --renderer github-actions
+
+      - name: Verify signature and watch app
+        run: |
+          set -euo pipefail
+          IPA=$(find build/export -maxdepth 1 -name '*.ipa' | head -1)
+          test -n "$IPA" || { echo "::error::export produced no .ipa"; exit 1; }
+          # Same assertion the unsigned workflow makes: a dropped watch app is a
+          # regression, and it is the whole reason the apps ship in one bundle.
+          unzip -l "$IPA" | grep -q 'Payload/TamaPoke.app/Watch/TamaPokeWatch.app/' || {
+            echo "::error::watch app is missing from $IPA"; exit 1; }
+          rm -rf build/verify && mkdir -p build/verify
+          unzip -q "$IPA" -d build/verify
+          codesign -dv --verbose=2 build/verify/Payload/TamaPoke.app 2>&1 | grep -E 'Authority|TeamIdentifier' || true
+          codesign -dv --verbose=2 build/verify/Payload/TamaPoke.app/Watch/TamaPokeWatch.app 2>&1 | grep -E 'Authority|TeamIdentifier' || true
+          {
+            echo "### Built signed \`$(basename "$IPA")\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Export method | \`${{ inputs.method }}\` |"
+            echo "| Size | $(du -h "$IPA" | cut -f1) |"
+            echo "| Watch app | embedded |"
+            echo
+            echo "Installs only on devices registered to team \`${APPLE_TEAM_ID}\`."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      # The key is a credential; do not leave it on a runner that may be reused.
+      - name: Remove API key
+        if: always()
+        run: rm -f "$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TamaPoke-signed-ipa
+          path: build/export/*.ipa
+          if-no-files-found: error
+          retention-days: 30

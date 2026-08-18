@@ -1,9 +1,14 @@
-name: Build
+name: Build (unsigned)
 
-# Produces an UNSIGNED .ipa. It is not installable as-is: sign it with your own
-# free Apple ID via AltStore/SideStore (see README "Installing"). CI cannot do
-# free personal provisioning -- that flow requires an interactive Apple ID
-# sign-in and has no API-key equivalent.
+# Produces an UNSIGNED .ipa, for people WITHOUT a paid Apple Developer account.
+# It is not installable as-is: sign it with your own free Apple ID via
+# AltStore/SideStore (see README "Installing"). CI cannot do free personal
+# provisioning -- that flow requires an interactive Apple ID sign-in and has no
+# API-key equivalent.
+#
+# If you DO have a paid Apple Developer Program membership, use
+# "Build (signed)" (build-signed.yml) instead: it emits a ready-to-install .ipa
+# and is the only path that installs the watch app reliably.
 
 on:
   push:
