@@ -1,3 +1,10 @@
+//
+// Translated from TamaPoke by Quique Tortosa, MIT licensed:
+// https://github.com/socquique/TamaPoke (TamaPoke.ino -- render, onTap,
+// drawHeader, drawBars, drawButtons, and the screen layout constants).
+// See LICENSE.
+//
+
 import SwiftUI
 
 /// Port of the firmware's `render()` + `onTap()` for the idle screen.

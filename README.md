@@ -15,8 +15,9 @@ This repo contains **no Pokémon assets and no sprites**. It is source code only
 
 | Thing | Where it lives | License |
 |---|---|---|
-| Upstream firmware game logic (`pet.cpp`, `dex.h`, `i18n.cpp`) | `upstream/` submodule, compiled verbatim | MIT © Quique Tortosa |
-| This port (shims, ObjC bridge, SwiftUI renderer, CI) | `Sources/`, `.github/` | MIT |
+| Upstream firmware game logic (`pet.cpp`, `dex.h`, `i18n.cpp`) | `upstream/` submodule — a commit reference, no copied files | MIT © Quique Tortosa |
+| Renderer, layout, UI palette, status strings — **translated** from upstream C++ | `Sources/Shared/`, `Sources/Core/TPPet.mm` | MIT © Quique Tortosa (derivative work) |
+| Shims, ObjC bridge structure, CI — original to this port | `Sources/Core/`, `.github/` | MIT |
 | Pokémon names, designs, species data | **not in this repo** | © Nintendo / Game Freak / The Pokémon Company |
 | Sprites | **not in this repo**, fetched per-user (phase 2) | [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), CC BY-NC 4.0 |
 

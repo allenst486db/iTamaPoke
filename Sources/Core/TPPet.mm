@@ -1,3 +1,10 @@
+//
+// The presentation-string section below (statusMessage, eggMessage, headerName,
+// pokedexLine, eggRarityLabel) and the starter table are translated from
+// TamaPoke by Quique Tortosa, MIT licensed:
+// https://github.com/socquique/TamaPoke (TamaPoke.ino). See LICENSE.
+//
+
 #import "TPPet.h"
 #include "pet.h"
 #include "dex.h"

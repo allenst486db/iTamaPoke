@@ -1,5 +1,6 @@
 MIT License
 
+Copyright (c) 2026 Quique Tortosa (original TamaPoke firmware)
 Copyright (c) 2026 TamaPoke iOS/watchOS port contributors
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -22,17 +23,31 @@ SOFTWARE.
 
 ---
 
-SCOPE. This MIT license covers ONLY the port in Sources/ and .github/.
+SCOPE AND ATTRIBUTION.
 
-  * upstream/ is a git submodule of https://github.com/socquique/TamaPoke,
-    MIT (c) Quique Tortosa. Its own LICENSE applies.
+This repository is a derivative work of TamaPoke by Quique Tortosa
+(https://github.com/socquique/TamaPoke), used under the MIT License.
 
-  * Pokemon names, designs and species data are (c) Nintendo / Game Freak /
-    The Pokemon Company. They are NOT distributed in this repository and no
-    license to them is granted or implied here.
+Substantial parts of Sources/ are direct translations of that project's C++
+into Swift and Objective-C++ -- notably the scene renderer, the idle-screen
+layout and input handling, the UI palette and layout constants, and the
+status-string logic. Those portions remain (c) Quique Tortosa, and the MIT
+terms above apply to them as they do to the rest.
 
-  * Sprites from PMD SpriteCollab are CC BY-NC 4.0 and are NOT distributed in
-    this repository.
+upstream/ is a git submodule: this repository stores only a commit reference,
+no copied files. Its own LICENSE governs its contents.
+
+NOT COVERED by any license granted here:
+
+  * Pokemon names, designs and species data -- (c) Nintendo / Game Freak /
+    The Pokemon Company. NOT distributed in this repository; no license to
+    them is granted or implied.
+
+  * Sprites from PMD SpriteCollab -- CC BY-NC 4.0. NOT distributed here.
+
+  * The upstream project's 3D-printed case -- CC BY-NC-SA. NOT distributed
+    here.
 
 This is an unofficial fan project for personal use, not affiliated with or
-endorsed by Nintendo. Do not publish, distribute or monetise builds of it.
+endorsed by Nintendo. Do not publish builds, distribute binaries, or monetise
+it in any form.

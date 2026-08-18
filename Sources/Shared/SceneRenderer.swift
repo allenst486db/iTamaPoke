@@ -1,3 +1,9 @@
+//
+// Translated from TamaPoke by Quique Tortosa, MIT licensed:
+// https://github.com/socquique/TamaPoke (TamaPoke.ino, drawScene/drawClouds).
+// The biome palette, star field and animation phases are his. See LICENSE.
+//
+
 import SwiftUI
 
 /// Line-for-line port of the firmware's `drawScene`: sky painted from the real

@@ -1,3 +1,9 @@
+//
+// The coordinate constants, UI palette and `lerp565` / `C565` colour maths are
+// translated from TamaPoke by Quique Tortosa, MIT licensed:
+// https://github.com/socquique/TamaPoke (species.h, TamaPoke.ino). See LICENSE.
+//
+
 import SwiftUI
 
 /// The firmware draws into a fixed 466x466 framebuffer.
