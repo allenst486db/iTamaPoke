@@ -33,6 +33,9 @@ already blocks `Resources/mons/`.
 If you want something you *can* ship, replace the creature art, names, and dex
 data with your own. The MIT-licensed engine underneath is yours to keep.
 
+Full attribution and scope: [NOTICE](NOTICE). License: [LICENSE](LICENSE) (MIT,
+the same terms as upstream).
+
 ---
 
 ## Status

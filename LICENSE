@@ -20,34 +20,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-SCOPE AND ATTRIBUTION.
-
-This repository is a derivative work of TamaPoke by Quique Tortosa
-(https://github.com/socquique/TamaPoke), used under the MIT License.
-
-Substantial parts of Sources/ are direct translations of that project's C++
-into Swift and Objective-C++ -- notably the scene renderer, the idle-screen
-layout and input handling, the UI palette and layout constants, and the
-status-string logic. Those portions remain (c) Quique Tortosa, and the MIT
-terms above apply to them as they do to the rest.
-
-upstream/ is a git submodule: this repository stores only a commit reference,
-no copied files. Its own LICENSE governs its contents.
-
-NOT COVERED by any license granted here:
-
-  * Pokemon names, designs and species data -- (c) Nintendo / Game Freak /
-    The Pokemon Company. NOT distributed in this repository; no license to
-    them is granted or implied.
-
-  * Sprites from PMD SpriteCollab -- CC BY-NC 4.0. NOT distributed here.
-
-  * The upstream project's 3D-printed case -- CC BY-NC-SA. NOT distributed
-    here.
-
-This is an unofficial fan project for personal use, not affiliated with or
-endorsed by Nintendo. Do not publish builds, distribute binaries, or monetise
-it in any form.
