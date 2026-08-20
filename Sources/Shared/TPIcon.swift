@@ -71,6 +71,63 @@ enum TPIcon {
         "................",
     ]
 
+    static let play: [String] = [
+        "................",
+        "................",
+        ".......kkk......",
+        ".....kkrrrkk....",
+        "....krrrrrrrk...",
+        "...krrrrrrrrrk..",
+        "...krrrrrrrrrk..",
+        "..krrrrkkkrrrRk.",
+        "..kkkkkkwkkkkkk.",
+        "..krrwwkkkwwrRk.",
+        "...kwwwwwwwwwk..",
+        "...kwwwwwwwwYk..",
+        "...kwwwwwwwwYk..",
+        "....kwwwwwwYk...",
+        ".....kkkkkkk....",
+        "................",
+    ]
+
+    static let light: [String] = [
+        "................",
+        "................",
+        "................",
+        "......kk....f...",
+        "....kkk.........",
+        "....kfk......f..",
+        "...kffk.........",
+        "...kffk.........",
+        "...kfffk........",
+        "...kffffk.......",
+        "...kfffffkk.kk..",
+        "....kffffffkk...",
+        "....kkfffffkk...",
+        "......kkkkk.....",
+        "................",
+        "................",
+    ]
+
+    static let clean: [String] = [
+        "................",
+        "................",
+        "................",
+        "...kk......kkk..",
+        "...kk.....kwbbk.",
+        "...kk.....kbbbk.",
+        "......kkk..kkk..",
+        "....kkbbbkk.....",
+        "...kbwbbbbbk....",
+        "...kbbwbbbBk....",
+        "...kbbbbbbbk....",
+        "...kbbbbbbBk....",
+        "...kbbbbbbBk....",
+        "....kkBBBkk.....",
+        "......kkk.......",
+        "................",
+    ]
+
     static let berryBlue: [String] = [
         "................",
         "................",

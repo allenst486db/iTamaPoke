@@ -26,6 +26,27 @@ final class GameModel: ObservableObject {
     @Published private(set) var sprite: TPSprite?
     private var spriteKey: Int32 = .min
 
+    /// What to draw the creature as this frame. Computed on the tick rather than
+    /// inside the `Canvas` closure, because deciding it advances state (the walk
+    /// scheduler) and a draw pass must not mutate the model.
+    struct PetPose {
+        var act: TPAct = .idle
+        var x: CGFloat = TP.cx
+        var elapsedMs: UInt64 = 0
+        var loop: Bool = true
+    }
+    private(set) var pose = PetPose()
+
+    // Port of the .ino's file-scope `beh`: what the creature does when no mood
+    // overrides it, and where it is standing.
+    private var behMode = 0            // 0 look ahead, 1 stroll, 2 one-shot gesture
+    private var behAct: TPAct = .idle
+    private var behT0: UInt64 = 0
+    private var behUntil: UInt64 = 0
+    private var behX: CGFloat = TP.cx
+    private var behTargetX: CGFloat = TP.cx
+    private var lastPoseMs: UInt64 = 0
+
     private var started = false
     private let epoch = Date()
 
@@ -58,7 +79,84 @@ final class GameModel: ObservableObject {
     func tick() {
         pet.update()
         refreshSprite()
+        advanceBehaviour(now: millis)
         frame &+= 1
+    }
+
+    /// Port of `drawPetPMD`'s action choice: mood wins, otherwise the scheduler
+    /// below decides between standing, strolling and a one-shot gesture.
+    private func advanceBehaviour(now: UInt64) {
+        guard let sprite else {
+            pose = PetPose()
+            return
+        }
+        let dtMs = now &- lastPoseMs
+        lastPoseMs = now
+
+        var act = TPAct.idle
+        var loop = true
+
+        switch pet.mood {
+        case .sleeping where sprite.has(.sleep):
+            act = .sleep
+            behMode = 0
+        case .eating where sprite.has(.eat):
+            act = .eat
+            behT0 = 0        // upstream free-runs the eat cycle off millis()
+        case .sad where sprite.has(.hurt):
+            act = .hurt
+        default:
+            if now > behUntil { behNext(now: now, sprite: sprite) }
+            if behMode == 1 {
+                let d = behTargetX - behX
+                if abs(d) < 4 {
+                    behNext(now: now, sprite: sprite)
+                    act = .idle
+                } else {
+                    // Upstream moves 3px per render and renders every 100ms.
+                    // Expressed as a rate so this port's 15fps tick walks at the
+                    // same speed rather than 1.5x it; the clamp keeps a long
+                    // stall (backgrounded, then foregrounded) from teleporting it.
+                    let step = min(CGFloat(dtMs), 100) * 0.03
+                    behX += d > 0 ? step : -step
+                    act = d > 0 ? .walkR : .walkL
+                }
+            } else {
+                act = behMode == 2 ? behAct : .idle
+                loop = false
+            }
+            if !sprite.has(act) { act = .idle }
+        }
+
+        pose = PetPose(act: act, x: behX,
+                       elapsedMs: now &- behT0,
+                       loop: loop || act == .idle)
+    }
+
+    /// Port of upstream `behNext`: 35% stroll, 25% a gesture, else stand still.
+    /// Hop and Sit are deliberately excluded from the gesture pool upstream —
+    /// one jumps out of frame, the other turns its back.
+    private func behNext(now: UInt64, sprite: TPSprite) {
+        behT0 = now
+        let r = Int.random(in: 0..<100)
+
+        if r < 35, sprite.has(.walkL) || sprite.has(.walkR) {
+            behMode = 1
+            behTargetX = CGFloat(Int.random(in: 150..<326))
+            behUntil = now + 15000
+            return
+        }
+        if r < 60 {
+            let flair = [TPAct.pose, .nod, .breath].filter { sprite.has($0) }
+            if let pick = flair.randomElement() {
+                behMode = 2
+                behAct = pick
+                behUntil = now + UInt64(sprite[pick]?.totalMs ?? 100)
+                return
+            }
+        }
+        behMode = 0
+        behUntil = now + UInt64(Int.random(in: 2000..<5000))
     }
 
     func handleScenePhase(_ phase: ScenePhase) {

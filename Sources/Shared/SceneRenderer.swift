@@ -27,8 +27,17 @@ enum SceneRenderer {
 
     /// Hour of day 0-23. 13 (mid-afternoon) when the clock has never been set,
     /// same fallback the firmware uses before its RTC is read.
+    ///
+    /// Upstream writes this as `(e / 3600) % 24` with no timezone term, because
+    /// its RTC holds a *local* wall-clock epoch — `applyClock` sets it straight
+    /// from the hour and minute the player dialled in. Here the epoch comes from
+    /// `NSDate`, which is true UTC, so the offset has to be added back or the sky
+    /// runs 9 hours early in KST. Only the scene reads the hour; `pet.cpp` never
+    /// does, so this stays out of the stored epoch and the elapsed-time maths.
     static func hour(epoch: UInt32) -> Int {
-        epoch != 0 ? Int((epoch / 3600) % 24) : 13
+        guard epoch != 0 else { return 13 }
+        let local = Int(epoch) + TimeZone.current.secondsFromGMT(for: Date(timeIntervalSince1970: TimeInterval(epoch)))
+        return ((local / 3600) % 24 + 24) % 24   // west-of-UTC offsets can go negative
     }
 
     static func isNight(hour h: Int, sleeping: Bool) -> Bool {

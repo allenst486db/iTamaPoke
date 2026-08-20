@@ -26,13 +26,13 @@ struct PetScreen: View {
 
     private let ticker = Timer.publish(every: 1.0 / 15.0, on: .main, in: .common).autoconnect()
 
-    /// Bottom-arc buttons: feed / play / light / bath, with the SF Symbol that
-    /// replaces each 16x16 pixel icon.
-    private static let buttons: [(x: CGFloat, y: CGFloat, symbol: String)] = [
-        (140, 390, "fork.knife"),
-        (202, 404, "tennisball.fill"),
-        (264, 404, "moon.fill"),
-        (326, 390, "drop.fill"),
+    /// Bottom-arc buttons: feed / play / light / bath, each with the firmware's
+    /// own 16x16 colour icon (upstream's `buttons[]` table).
+    private static let buttons: [(x: CGFloat, y: CGFloat, icon: [String])] = [
+        (140, 390, TPIcon.food),
+        (202, 404, TPIcon.play),
+        (264, 404, TPIcon.light),
+        (326, 390, TPIcon.clean),
     ]
 
     var body: some View {
@@ -107,10 +107,10 @@ struct PetScreen: View {
                        nameColor: night ? UI.inkNight : TPDexAccent(pet.speciesId),
                        message: pet.statusMessage, ink: ink)
             drawPet(ctx, ink: ink, now: now)
-            // Port of drawPetPMD's trailing heart draw: shown while a like or a
-            // pet registers, positioned relative to the (unported) walk
-            // scheduler's rest position, which is always screen-centre here.
-            if pet.showHeart { ctx.drawIcon(TPIcon.heart, TP.cx + 50, TP.petGround - 190, scale: 2) }
+            // Port of drawPetPMD's trailing heart draw, following the creature.
+            if pet.showHeart {
+                ctx.drawIcon(TPIcon.heart, model.pose.x + 50, TP.petGround - 190, scale: 2)
+            }
             drawPoops(ctx, count: Int(pet.poops))
             ctx.fillRect(0, 312, TP.screen, 154, panel)
             drawBars(ctx, ink: ink)
@@ -127,28 +127,19 @@ struct PetScreen: View {
         ctx.gfxTextCentered(message, 90, 2, ink)
     }
 
-    /// Port of the firmware's `drawPetPMD`: pick the action from the pet's mood,
-    /// then anchor the frame by its feet on the ground line.
-    ///
-    /// The walking/gesture scheduler (`behNext`) is not ported yet, so the
-    /// creature stands centred rather than wandering.
+    /// Draws whichever pose the model settled on this tick, anchored by the
+    /// creature's feet on the ground line.
     private func drawPet(_ ctx: GraphicsContext, ink: UInt16, now: UInt64) {
         guard let sprite = model.sprite else {
             drawPetFallback(ctx, ink: ink)
             return
         }
-        let pet = model.pet
+        let pose = model.pose
 
-        var act = TPAct.idle
-        switch pet.mood {
-        case .sleeping where sprite.has(.sleep): act = .sleep
-        case .eating where sprite.has(.eat):     act = .eat
-        case .sad where sprite.has(.hurt):       act = .hurt
-        default:                                 act = .idle
-        }
-
-        guard let a = sprite[act],
-              let img = sprite.image(act, frame: TPSprite.frameIndex(a, elapsedMs: now, loop: true))
+        guard let a = sprite[pose.act],
+              let img = sprite.image(pose.act,
+                                     frame: TPSprite.frameIndex(a, elapsedMs: pose.elapsedMs,
+                                                                loop: pose.loop))
         else {
             drawPetFallback(ctx, ink: ink)
             return
@@ -157,7 +148,7 @@ struct PetScreen: View {
         let s = sprite.scale(for: a)
         let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
         ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
-                 in: CGRect(x: TP.cx - w / 2,
+                 in: CGRect(x: pose.x - w / 2,
                             y: TP.petGround - CGFloat((a.base > 0 ? a.base : a.h) * s),
                             width: w, height: h))
     }
@@ -224,7 +215,9 @@ struct PetScreen: View {
             }
             ctx.drawRoundRect(b.x - TP.btnHalf, b.y - TP.btnHalf,
                               TP.btnHalf * 2, TP.btnHalf * 2, 14, ink)
-            if !off { ctx.symbol(b.symbol, b.x, b.y, 26, UI.ink) }
+            // 16x16 at scale 2, drawn from its top-left corner: the firmware's
+            // `cx - 16, cy - 16` centres a 32px icon on the button.
+            if !off { ctx.drawIcon(b.icon, b.x - 16, b.y - 16, scale: 2) }
         }
     }
 
