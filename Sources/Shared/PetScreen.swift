@@ -13,9 +13,9 @@ import SwiftUI
 /// does, rather than a tree of SwiftUI views. That keeps the port readable
 /// against the original and avoids duplicating game state into view state.
 ///
-/// Not yet ported (phase 2): sprite rendering (TPK2 loader), Pokedex gallery,
-/// stat card, ball minigame, training bag, bath scene, clock/settings, the
-/// on-screen keyboard, and the evolution / farewell decision dialogs.
+/// Not yet ported: the Pokedex gallery, stat card, ball minigame, training bag,
+/// bath scene, clock/settings, the on-screen keyboard, the evolution and
+/// ceremony animations, and the swipe gestures that open most of those.
 struct PetScreen: View {
 
     @StateObject private var model = GameModel()
@@ -145,7 +145,7 @@ struct PetScreen: View {
 
         if pet.sleeping { ctx.gfxText("Zz", 320, 130, 3, UI.inkNight) }
         if now < feedMenuUntil { drawFeedMenu(ctx, ink: ink) }
-        if choice != .none { drawChoiceDialog(ctx) }
+        if choice != .none { drawChoiceDialog(ctx, choice: choice) }
     }
 
     private func drawHeader(_ ctx: GraphicsContext, name: String,
@@ -284,7 +284,7 @@ struct PetScreen: View {
     }
 
     /// Two stacked options over a white card: act, or keep things as they are.
-    private func drawChoiceDialog(_ ctx: GraphicsContext) {
+    private func drawChoiceDialog(_ ctx: GraphicsContext, choice: Choice) {
         let pet = model.pet
         let question: String, act: String, keep: String
         let actFill: UInt16, actInk: UInt16, keepFill: UInt16, keepInk: UInt16
