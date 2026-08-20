@@ -65,6 +65,13 @@ else
   done
 fi
 
+# The Pokedex grid reads this one atlas rather than 151 sprite files, so it is
+# worth having even when only a few species were copied.
+if [ -f "$SRC/thumbs.bin" ]; then
+  cp "$SRC/thumbs.bin" "$DST/thumbs.bin"
+  echo "  thumbs.bin (Pokedex grid)"
+fi
+
 echo
 echo "$DST now holds $(find "$DST" -name '*.bin' | wc -l | tr -d ' ') sprite(s), $(du -sh "$DST" | cut -f1)"
 echo "Regenerate the project so Xcode sees them:  xcodegen generate"

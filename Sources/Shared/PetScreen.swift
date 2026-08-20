@@ -30,6 +30,17 @@ struct PetScreen: View {
     @State private var choice: Choice = .none
     @State private var choiceUntil: UInt64 = 0
 
+    /// Which screen is up. Upstream keeps these as separate `*Open` booleans;
+    /// one enum makes the "only one at a time" rule structural.
+    private enum Screen { case idle, gallery }
+    @State private var screen: Screen = .idle
+    @State private var galleryPage = 0
+    /// Dex number of the species in the detail view, 0 for the grid.
+    @State private var galleryDetail: Int16 = 0
+
+    /// Where the current drag started, for classifying it on release.
+    @State private var dragStart: CGPoint?
+
     private let ticker = Timer.publish(every: 1.0 / 15.0, on: .main, in: .common).autoconnect()
 
     /// Bottom-arc buttons: feed / play / light / bath, each with the firmware's
@@ -54,7 +65,15 @@ struct PetScreen: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
-                    .onEnded { v in onTap(toScreenSpace(v.location, in: geo.size)) }
+                    .onChanged { v in
+                        if dragStart == nil { dragStart = v.startLocation }
+                    }
+                    .onEnded { v in
+                        let from = dragStart ?? v.startLocation
+                        dragStart = nil
+                        onGesture(from: toScreenSpace(from, in: geo.size),
+                                  to: toScreenSpace(v.location, in: geo.size))
+                    }
             )
         }
         .background(Color(model.pet.sleeping ? UI.bgNight : UI.bgDay))
@@ -85,6 +104,11 @@ struct PetScreen: View {
 
         if pet.awaitingStarter {
             renderStarterSelect(ctx)
+            return
+        }
+
+        if screen == .gallery {
+            renderGallery(ctx, now: now)
             return
         }
 
@@ -307,6 +331,102 @@ struct PetScreen: View {
         ctx.gfxTextCentered(keep, 286, 2, keepInk)
     }
 
+    // MARK: - Pokedex
+
+    /// Port of `renderGallery`. Upstream only redraws the grid when a page turns
+    /// (`galleryDirty`) because repainting the panel is slow; here every frame is
+    /// redrawn anyway, so that flag has no equivalent.
+    private func renderGallery(_ ctx: GraphicsContext, now: UInt64) {
+        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
+        if galleryDetail != 0 {
+            renderGalleryDetail(ctx, dex: galleryDetail, now: now)
+        } else {
+            renderGalleryGrid(ctx)
+        }
+    }
+
+    private func renderGalleryGrid(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        ctx.gfxTextCentered(pet.pokedexLine, 36, 3, UI.ink)
+
+        for r in 0..<4 {
+            for c in 0..<4 {
+                let dex = Int16(galleryPage * 16 + r * 4 + c + 1)
+                if dex > 151 { break }
+                let x = TP.galX + CGFloat(c) * TP.galCell
+                let y = TP.galY + CGFloat(r) * TP.galCell
+                let registered = pet.isRegistered(dex)
+
+                if let img = TPThumbs.shared.image(dex: dex, silhouette: !registered),
+                   let sz = TPThumbs.shared.size(dex: dex) {
+                    drawThumb(ctx, img, size: sz, cellX: x, cellY: y, scale: 2)
+                    if pet.isShinyRegistered(dex) {
+                        ctx.gfxText("*", x + 62, y + 4, 2, UI.barWarn)
+                    }
+                } else {
+                    // No atlas bundled: upstream falls back to the bare number.
+                    ctx.gfxText("\(dex)", x + 24, y + 32, 2, UI.track)
+                }
+            }
+        }
+
+        for i in 0..<10 {
+            let cx = 170 + CGFloat(i) * 14
+            if i == galleryPage {
+                ctx.fillCircle(cx, 436, 4, UI.ink)
+            } else {
+                ctx.strokeCircle(cx, 436, 3, UI.ink)
+            }
+        }
+    }
+
+    private func renderGalleryDetail(_ ctx: GraphicsContext, dex: Int16, now: UInt64) {
+        let pet = model.pet
+        let registered = pet.isRegistered(dex)
+        let shiny = pet.isShinyRegistered(dex)
+        let head = String(format: "N.%03d %@%@", dex, shiny ? "*" : "",
+                          registered ? TPDexName(dex) : "???")
+        // Upstream shrinks the title rather than letting a long name overflow.
+        let size = head.count <= 13 ? 3 : 2
+        ctx.gfxTextCentered(head, size == 3 ? 56 : 60, size,
+                            registered ? TPDexAccent(dex) : UI.ink)
+
+        // The full sprite when its TPK2 file is bundled: animated and in colour
+        // once registered, a frozen silhouette when not.
+        if let sprite = TPSprite.load(dex: dex, shiny: shiny),
+           let a = sprite[.idle],
+           let img = sprite.image(.idle, frame: TPSprite.frameIndex(
+               a, elapsedMs: registered ? now : 0, loop: true)) {
+            let s = sprite.scale(for: a, max: 6)
+            let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
+            let rect = CGRect(x: TP.cx - w / 2,
+                              y: 300 - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                              width: w, height: h)
+            if registered {
+                ctx.draw(Image(decorative: img, scale: 1).interpolation(.none), in: rect)
+            } else {
+                // Silhouette: stencil the sprite's shape in ink.
+                ctx.drawSilhouette(img, in: rect, UI.ink)
+            }
+        } else if let img = TPThumbs.shared.image(dex: dex, silhouette: !registered),
+                  let sz = TPThumbs.shared.size(dex: dex) {
+            drawThumb(ctx, img, size: sz, cellX: TP.cx - TP.galCell, cellY: 135, scale: 4)
+        }
+
+        ctx.gfxTextCentered(pet.galleryBackText, 408, 2, UI.ink)
+    }
+
+    /// Upstream's `drawThumb`: centre the thumbnail inside a grid cell.
+    private func drawThumb(_ ctx: GraphicsContext, _ img: CGImage, size: (w: Int, h: Int),
+                           cellX: CGFloat, cellY: CGFloat, scale: Int) {
+        let w = CGFloat(size.w * scale), h = CGFloat(size.h * scale)
+        ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
+                 in: CGRect(x: cellX + (TP.galCell - w) / 2,
+                            y: cellY + (TP.galCell - h) / 2,
+                            width: w, height: h))
+    }
+
     private func renderStarterSelect(_ ctx: GraphicsContext) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
@@ -323,7 +443,86 @@ struct PetScreen: View {
 
     // MARK: - Input
 
+    /// Port of the firmware's `handleTouch` gesture split. Upstream measures in
+    /// its own 466px space and so does this, which keeps the thresholds — 80px
+    /// to swipe, 40px to still count as a tap — meaning the same thing on a
+    /// phone as on the round panel.
+    ///
+    /// The duration limits upstream also applies (800ms to swipe, 1500ms to tap)
+    /// are dropped: they exist to stop a resting finger on a capacitive panel
+    /// from registering, which is not a failure mode here.
+    private func onGesture(from: CGPoint, to: CGPoint) {
+        let dx = to.x - from.x, dy = to.y - from.y
+        if abs(dx) > 80, abs(dy) < 70 {
+            onSwipe(dx > 0 ? 1 : -1)
+        } else if abs(dy) > 80, abs(dx) < 70 {
+            onSwipeV(dy > 0 ? 1 : -1)
+        } else if abs(dx) < 40, abs(dy) < 40 {
+            onTap(from)
+        }
+    }
+
+    /// Horizontal swipe: opens the Pokedex, then pages through it.
+    private func onSwipe(_ dir: Int) {
+        let pet = model.pet
+        if pet.awaitingStarter { return }
+
+        if screen == .idle {
+            guard pet.ceremony == TPCeremony.none, choice == .none else { return }
+            screen = .gallery
+            galleryPage = 0
+            galleryDetail = 0
+            return
+        }
+        if galleryDetail != 0 {          // in detail: back to the grid
+            galleryDetail = 0
+            return
+        }
+        // Swiping left advances a page; backing off page 0 leaves the gallery.
+        let next = galleryPage - dir
+        if next < 0 {
+            screen = .idle
+            return
+        }
+        galleryPage = min(next, 9)
+    }
+
+    /// Vertical swipe. Upstream opens the stat card upward and the clock screen
+    /// downward; neither is ported yet, so for now this only closes the gallery.
+    private func onSwipeV(_ dir: Int) {
+        if model.pet.awaitingStarter { return }
+        if screen == .gallery {
+            galleryDetail = 0
+            screen = .idle
+        }
+    }
+
     private func onTap(_ p: CGPoint) {
+        if screen == .gallery {
+            galleryTap(p)
+            return
+        }
+        onIdleTap(p)
+    }
+
+    private func galleryTap(_ p: CGPoint) {
+        if galleryDetail != 0 {          // any tap in detail returns to the grid
+            galleryDetail = 0
+            return
+        }
+        if p.y < 72 {                    // the header is the way out
+            screen = .idle
+            return
+        }
+        let c = Int((p.x - TP.galX) / TP.galCell)
+        let r = Int((p.y - TP.galY) / TP.galCell)
+        guard c >= 0, c <= 3, r >= 0, r <= 3 else { return }
+        let dex = Int16(galleryPage * 16 + r * 4 + c + 1)
+        guard dex <= 151 else { return }
+        galleryDetail = dex
+    }
+
+    private func onIdleTap(_ p: CGPoint) {
         let pet = model.pet
 
         if pet.awaitingStarter {

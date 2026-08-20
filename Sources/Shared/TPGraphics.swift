@@ -27,6 +27,11 @@ enum TP {
     // The two stacked options inside the choice dialog.
     static let choiceAction = CGRect(x: 93, y: 206, width: 280, height: 52)
     static let choiceKeep = CGRect(x: 93, y: 268, width: 280, height: 52)
+
+    // Pokedex grid: 4x4 cells per page, from the .ino's GAL_* defines.
+    static let galX: CGFloat = 73
+    static let galY: CGFloat = 84
+    static let galCell: CGFloat = 80
 }
 
 // MARK: - RGB565
@@ -95,6 +100,23 @@ extension GraphicsContext {
     func fillCircle(_ cx: CGFloat, _ cy: CGFloat, _ r: CGFloat, _ c: UInt16) {
         let rect = CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)
         fill(Path(ellipseIn: rect), with: .color(Color(c)))
+    }
+
+    func strokeCircle(_ cx: CGFloat, _ cy: CGFloat, _ r: CGFloat, _ c: UInt16) {
+        let rect = CGRect(x: cx - r, y: cy - r, width: r * 2, height: r * 2)
+        stroke(Path(ellipseIn: rect), with: .color(Color(c)), lineWidth: 1)
+    }
+
+    /// Draws an image's opaque shape in a single colour — upstream's `silhouette`
+    /// flag on `drawMap`/`drawPmdActM`, used for unregistered Pokedex entries.
+    /// The image is used as a mask so only its alpha matters.
+    func drawSilhouette(_ image: CGImage, in rect: CGRect, _ c: UInt16) {
+        drawLayer { layer in
+            layer.clipToLayer { mask in
+                mask.draw(Image(decorative: image, scale: 1).interpolation(.none), in: rect)
+            }
+            layer.fill(Path(rect), with: .color(Color(c)))
+        }
     }
 
     func fillTriangle(_ x0: CGFloat, _ y0: CGFloat, _ x1: CGFloat, _ y1: CGFloat,

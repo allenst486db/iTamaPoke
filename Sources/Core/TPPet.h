@@ -98,6 +98,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *farewellQuestion;    ///< "Say goodbye?"
 @property (nonatomic, readonly, copy) NSString *farewellGoText;      ///< "Goodbye"
 @property (nonatomic, readonly, copy) NSString *farewellStayText;    ///< "Stay together"
+@property (nonatomic, readonly, copy) NSString *galleryBackText;    ///< Pokedex detail "Back"
 
 // --- decision gates (a button appears; the player taps it) -------------
 @property (nonatomic, readonly) BOOL wantsEvolveButton;

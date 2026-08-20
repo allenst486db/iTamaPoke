@@ -201,6 +201,7 @@ static NSString *TPNamedPrompt(StrId id) {
 - (NSString *)farewellQuestion   { return [NSString stringWithUTF8String:T(S_FAR_Q)]; }
 - (NSString *)farewellGoText     { return [NSString stringWithUTF8String:T(S_FAR_GO)]; }
 - (NSString *)farewellStayText   { return [NSString stringWithUTF8String:T(S_FAR_STAY)]; }
+- (NSString *)galleryBackText    { return [NSString stringWithUTF8String:T(S_DETAIL_BACK)]; }
 
 
 @end
