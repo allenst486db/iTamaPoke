@@ -184,6 +184,29 @@ only the species you play with — the watch installs a lot faster for it.
 
 ---
 
+## Saves and the Files app
+
+The iPhone app publishes its Documents folder, so the creature shows up in
+**Files → On My iPhone → iTamaPoke** as `iTamaPoke-save.json`, rewritten every
+time the game saves. Copy it out for a backup, or onto another device.
+
+To restore one, put it back in that folder renamed to `iTamaPoke-import.json`
+and open the app. It loads on launch, then renames itself `.imported-<time>` so
+a restart cannot silently roll the creature back — which is also why the export
+is never re-imported on its own. **Importing replaces the creature on that
+device.** A `README.txt` in the folder says the same thing, so the flow is
+discoverable from Files without this page.
+
+The document is the whole `tamapoke/` `UserDefaults` namespace — the same keys
+`Pet::save` writes — rather than a hand-listed set of fields, so a submodule
+bump that adds a key cannot silently drop it from your backup. Malformed files
+are rejected before anything is written. Sprites are not part of it; they come
+from the app bundle.
+
+The watch app keeps its own separate save and has no Files folder.
+
+---
+
 ## App icon
 
 Same reasoning as the sprites: a Pokémon character image is fan art, so the

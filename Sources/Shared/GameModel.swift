@@ -54,10 +54,21 @@ final class GameModel: ObservableObject {
     /// (clouds, waves, snow) that upstream phases off `millis()`.
     var millis: UInt64 { UInt64(Date().timeIntervalSince(epoch) * 1000) }
 
+    /// Set when a save file was picked up from the Files folder on this launch,
+    /// so the UI can say so rather than silently swapping the creature.
+    private(set) var importedSave = false
+
     func start() {
         guard !started else { return }
         started = true
         pet.begin()
+        #if os(iOS)
+        // Before the first render: an import replaces the creature wholesale, so
+        // it has to land ahead of anything reading the live Pet.
+        applyPendingImport()
+        TPSaveFile.writeReadme()
+        TPSaveFile.writeExport()
+        #endif
         refreshSprite()
         // The ES8311 tone synth is not ported. Haptics are the closest native
         // equivalent and keep taps feeling answered; real audio is a later step.
@@ -162,15 +173,41 @@ final class GameModel: ObservableObject {
     func handleScenePhase(_ phase: ScenePhase) {
         switch phase {
         case .active:
+            #if os(iOS)
+            // Covers dropping a save in while the app sat in the background.
+            applyPendingImport()
+            #endif
             // Re-applies wall-clock drift. This is the offline-progression path
             // the firmware runs off its RTC, and why backgrounding is harmless.
             pet.syncClock()
         case .inactive, .background:
             pet.flushSave()
+            #if os(iOS)
+            TPSaveFile.writeExport()
+            #endif
         @unknown default:
             break
         }
     }
+
+    #if os(iOS)
+    /// Loads a save the user dropped into the Files folder, if there is one.
+    private func applyPendingImport() {
+        do {
+            guard try TPSaveFile.consumeImport() else { return }
+            // The live C++ Pet caches its own copy of everything, so rewriting
+            // the store underneath it is not enough on its own.
+            pet.reload()
+            spriteKey = .min      // force the sprite to follow the new species
+            refreshSprite()
+            importedSave = true
+        } catch {
+            // A malformed file must not take the app down or wipe the creature:
+            // TPSaveFile validates before it touches anything.
+            NSLog("iTamaPoke: save import failed — \(error)")
+        }
+    }
+    #endif
 
     private static func playFeedback() {
         #if os(watchOS)

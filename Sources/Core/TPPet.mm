@@ -42,6 +42,13 @@ static uint32_t TPNowEpoch(void) {
   gPet.syncClock(TPNowEpoch());
 }
 
+// `Pet::begin` re-reads the store when its "init" key is already set, which is
+// exactly the reload path — no separate entry point needed on the C++ side.
+- (void)reload {
+  gPet.begin();
+  gPet.syncClock(TPNowEpoch());
+}
+
 - (void)update      { gPet.update(millis()); }
 - (void)syncClock   { gPet.syncClock(TPNowEpoch()); }
 - (void)flushSave   { gPet.flushSave(); }

@@ -33,6 +33,9 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 - (void)syncClock;
 /// Writes deferred state to disk. Call on backgrounding.
 - (void)flushSave;
+/// Re-reads persisted state into the live C++ Pet. Call after something outside
+/// the game has rewritten the store — importing a save file, for instance.
+- (void)reload;
 
 // --- needs -------------------------------------------------------------
 @property (nonatomic, readonly) uint8_t fullness;
