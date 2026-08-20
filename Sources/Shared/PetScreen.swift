@@ -1171,21 +1171,29 @@ struct PetScreen: View {
         }
     }
 
+    /// Port of upstream's card tap handler: the name area renames on page 0,
+    /// the train button opens the sack on page 1, and — this is the part that
+    /// was missing — anywhere else just closes the card. Upstream's is a plain
+    /// `else { cardOpen = false; }`, not a swipe requirement; without it the
+    /// only way out was `onSwipeV`, which needs an 80px vertical drag and reads
+    /// as "you have to swipe, tapping the hint text does nothing."
     private func cardTap(_ p: CGPoint) {
-        // Battle page: the train button opens the strength sack.
-        if cardPage == 1, TP.trainBtn.contains(p) {
-            let pet = model.pet
-            guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none else { return }
-            screen = .sack
-            model.startSack()
-            return
-        }
-        // Profile page: tapping the name area renames.
-        if cardPage == 0, p.y >= 320, p.y <= 348 {
+        if cardPage == 0, p.y < 84 {
             screen = .keyboard
             nameDraft = model.pet.nick
             return
         }
+        if cardPage == 1, TP.trainBtn.contains(p) {
+            let pet = model.pet
+            guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none else {
+                screen = .idle
+                return
+            }
+            screen = .sack
+            model.startSack()
+            return
+        }
+        screen = .idle
     }
 
     private func galleryTap(_ p: CGPoint) {
@@ -1280,7 +1288,7 @@ struct PetScreen: View {
             if pet.sleeping && i != 2 { return }
             model.playSfx(.tap)
             switch i {
-            case 0: feedMenuUntil = model.millis + 4000
+            case 0: feedMenuUntil = model.millis + 6000
             case 1:
                 // Upstream's play button opens the ball minigame, which pays out
                 // through playResult; playWithPet is the console-command path.
