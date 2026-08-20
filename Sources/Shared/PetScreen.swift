@@ -24,6 +24,12 @@ struct PetScreen: View {
     /// Mirrors the .ino's file-scope `feedMenuUntil`: a deadline in ms.
     @State private var feedMenuUntil: UInt64 = 0
 
+    /// Mirrors `choiceKind` / `choiceUntil`: which decision dialog is open, and
+    /// when it gives up waiting. Upstream lets both lapse after 12s.
+    private enum Choice { case none, evolve, farewell }
+    @State private var choice: Choice = .none
+    @State private var choiceUntil: UInt64 = 0
+
     private let ticker = Timer.publish(every: 1.0 / 15.0, on: .main, in: .common).autoconnect()
 
     /// Bottom-arc buttons: feed / play / light / bath, each with the firmware's
@@ -54,7 +60,12 @@ struct PetScreen: View {
         .background(Color(model.pet.sleeping ? UI.bgNight : UI.bgDay))
         .ignoresSafeArea()
         .onAppear { model.start() }
-        .onReceive(ticker) { _ in model.tick() }
+        .onReceive(ticker) { _ in
+            model.tick()
+            // Upstream drops the dialog once choiceUntil passes, so an unanswered
+            // question does not wedge the screen.
+            if choice != .none, model.millis > choiceUntil { choice = .none }
+        }
         .onChange(of: scenePhase) { _, phase in model.handleScenePhase(phase) }
     }
 
@@ -115,10 +126,26 @@ struct PetScreen: View {
             ctx.fillRect(0, 312, TP.screen, 154, panel)
             drawBars(ctx, ink: ink)
             drawButtons(ctx, ink: ink, sleeping: pet.sleeping)
+            // Exactly upstream's precedence: evolution first, then the neglect
+            // ending, then the voluntary farewell — they share screen space.
+            if pet.wantsEvolveButton {
+                drawEvolveButton(ctx, now: now)
+            } else if pet.canRunawayNow {
+                drawEndingButton(ctx, now: now, text: pet.runawayButtonText,
+                                 fill: rgb565(0x3a, 0x44, 0x5a),
+                                 border: rgb565(0x70, 0x80, 0x98),
+                                 textColor: rgb565(0xc8, 0xd2, 0xe0),
+                                 amplitude: 3, rate: 0.003)
+            } else if pet.wantsFarewellButton {
+                drawEndingButton(ctx, now: now, text: pet.farewellButtonText,
+                                 fill: UI.barWarn, border: UI.ink, textColor: UI.ink,
+                                 amplitude: 4, rate: 0.005)
+            }
         }
 
         if pet.sleeping { ctx.gfxText("Zz", 320, 130, 3, UI.inkNight) }
         if now < feedMenuUntil { drawFeedMenu(ctx, ink: ink) }
+        if choice != .none { drawChoiceDialog(ctx) }
     }
 
     private func drawHeader(_ ctx: GraphicsContext, name: String,
@@ -230,6 +257,56 @@ struct PetScreen: View {
         ctx.drawIcon(TPIcon.candy, 308, 296, scale: 3)
     }
 
+    // MARK: - Decisions
+
+    /// The red "EVOLVE!" call to action. Upstream pulses the rectangle itself by
+    /// ±5px off a sine of millis, so the button breathes rather than blinking.
+    private func drawEvolveButton(_ ctx: GraphicsContext, now: UInt64) {
+        let p = CGFloat(Int(5 * sin(Double(now) * 0.006)))
+        let r = TP.evoBtn.insetBy(dx: -p, dy: -p)
+        ctx.fillRoundRect(r.minX, r.minY, r.width, r.height, 18, UI.barBad)
+        ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 18, UI.white)
+        ctx.drawRoundRect(r.minX + 2, r.minY + 2, r.width - 4, r.height - 4, 16, UI.white)
+        let t = model.pet.evolveButtonText
+        ctx.gfxText(t, TP.cx - CGFloat(t.count) * 9, r.midY - 11, 3, UI.white)
+    }
+
+    /// The farewell and runaway calls to action share a rectangle and differ only
+    /// in palette and pulse, so they share a draw.
+    private func drawEndingButton(_ ctx: GraphicsContext, now: UInt64, text: String,
+                                  fill: UInt16, border: UInt16, textColor: UInt16,
+                                  amplitude: Double, rate: Double) {
+        let p = CGFloat(Int(amplitude * sin(Double(now) * rate)))
+        let r = TP.farBtn.insetBy(dx: -p, dy: -p)
+        ctx.fillRoundRect(r.minX, r.minY, r.width, r.height, 16, fill)
+        ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 16, border)
+        ctx.gfxText(text, TP.cx - CGFloat(text.count) * 6, r.midY - 8, 2, textColor)
+    }
+
+    /// Two stacked options over a white card: act, or keep things as they are.
+    private func drawChoiceDialog(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        let question: String, act: String, keep: String
+        let actFill: UInt16, actInk: UInt16, keepFill: UInt16, keepInk: UInt16
+        if choice == .evolve {
+            question = pet.evolveQuestion; act = pet.evolveButtonText; keep = pet.evolveKeepText
+            actFill = UI.barBad; actInk = UI.white; keepFill = UI.track; keepInk = UI.ink
+        } else {
+            question = pet.farewellQuestion; act = pet.farewellGoText; keep = pet.farewellStayText
+            actFill = UI.barWarn; actInk = UI.ink; keepFill = UI.barOK; keepInk = UI.white
+        }
+
+        ctx.fillRoundRect(73, 156, 320, 188, 16, UI.white)
+        ctx.drawRoundRect(73, 156, 320, 188, 16, UI.ink)
+        ctx.gfxTextCentered(question, 176, 2, UI.ink)
+
+        let a = TP.choiceAction, k = TP.choiceKeep
+        ctx.fillRoundRect(a.minX, a.minY, a.width, a.height, 12, actFill)
+        ctx.gfxTextCentered(act, 224, 2, actInk)
+        ctx.fillRoundRect(k.minX, k.minY, k.width, k.height, 12, keepFill)
+        ctx.gfxTextCentered(keep, 286, 2, keepInk)
+    }
+
     private func renderStarterSelect(_ ctx: GraphicsContext) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
@@ -260,6 +337,18 @@ struct PetScreen: View {
             return
         }
 
+        // A decision dialog swallows the tap whether or not it hit an option,
+        // and closes either way — same as upstream.
+        if choice != .none {
+            if TP.choiceAction.contains(p) {
+                if choice == .evolve { pet.evolve() } else { pet.startFarewell() }
+            } else if TP.choiceKeep.contains(p) {
+                if choice == .evolve { pet.declineEvolve() } else { pet.declineFarewell() }
+            }
+            choice = .none
+            return
+        }
+
         if pet.ceremony != TPCeremony.none { return }  // no buttons during a ceremony
 
         if model.millis < feedMenuUntil {
@@ -274,6 +363,23 @@ struct PetScreen: View {
         if pet.isEgg {
             pet.eggTap()
             return
+        }
+
+        // The evolve CTA opens a dialog; the runaway CTA has no dialog upstream,
+        // it just leaves. Both are checked before the action buttons because they
+        // are drawn over the scene, above the bottom panel.
+        if pet.wantsEvolveButton, TP.evoBtn.contains(p) {
+            choice = .evolve
+            choiceUntil = model.millis + 12000
+            return
+        }
+        if TP.farBtn.contains(p) {
+            if pet.canRunawayNow { pet.startRunaway(); return }
+            if pet.wantsFarewellButton {
+                choice = .farewell
+                choiceUntil = model.millis + 12000
+                return
+            }
         }
 
         for (i, b) in Self.buttons.enumerated() {

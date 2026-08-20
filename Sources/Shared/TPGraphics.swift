@@ -20,6 +20,13 @@ enum TP {
     static let petGround: CGFloat = 304  // ground line the sprite's feet sit on
     static let horizon: CGFloat = 232 // where sky meets ground
     static let btnHalf: CGFloat = 26  // buttons are 52x52
+
+    // Decision call-to-action buttons, from the .ino's EVO_BTN_*/FAR_BTN_* defines.
+    static let evoBtn = CGRect(x: cx - 128, y: 172, width: 256, height: 64)
+    static let farBtn = CGRect(x: cx - 204, y: 176, width: 408, height: 58)
+    // The two stacked options inside the choice dialog.
+    static let choiceAction = CGRect(x: 93, y: 206, width: 280, height: 52)
+    static let choiceKeep = CGRect(x: 93, y: 268, width: 280, height: 52)
 }
 
 // MARK: - RGB565

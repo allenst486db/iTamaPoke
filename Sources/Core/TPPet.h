@@ -88,6 +88,17 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy, nullable) NSString *eggRarityLabel;  ///< nil when common
 @property (nonatomic, readonly, copy) NSString *ceremonyMessage;
 
+// Decision prompts. `%s`-formatted ones are composed here for the same reason
+// as the rest: the format strings live behind i18n.h's StrId enum.
+@property (nonatomic, readonly, copy) NSString *evolveButtonText;    ///< "EVOLVE!"
+@property (nonatomic, readonly, copy) NSString *farewellButtonText;  ///< "<name> wants to tell you..."
+@property (nonatomic, readonly, copy) NSString *runawayButtonText;   ///< "<name> feels abandoned..."
+@property (nonatomic, readonly, copy) NSString *evolveQuestion;      ///< "Evolve?"
+@property (nonatomic, readonly, copy) NSString *evolveKeepText;      ///< "Keep form"
+@property (nonatomic, readonly, copy) NSString *farewellQuestion;    ///< "Say goodbye?"
+@property (nonatomic, readonly, copy) NSString *farewellGoText;      ///< "Goodbye"
+@property (nonatomic, readonly, copy) NSString *farewellStayText;    ///< "Stay together"
+
 // --- decision gates (a button appears; the player taps it) -------------
 @property (nonatomic, readonly) BOOL wantsEvolveButton;
 @property (nonatomic, readonly) BOOL wantsFarewellButton;
@@ -110,6 +121,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 - (void)declineEvolve;
 - (void)startFarewell;
 - (void)declineFarewell;
+- (void)startRunaway;          ///< the neglect ending; no dialog, it just leaves
 - (void)releasePet;            ///< long-press "let it go" (ARC reserves `release`)
 - (void)renamePet:(NSString *)name;
 - (void)factoryReset;

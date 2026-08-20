@@ -118,6 +118,7 @@ static uint32_t TPNowEpoch(void) {
 - (void)declineEvolve   { gPet.declineEvolve(); }
 - (void)startFarewell   { gPet.startFarewell(); }
 - (void)declineFarewell { gPet.declineFarewell(); }
+- (void)startRunaway    { gPet.startRunaway(); }
 - (void)releasePet      { gPet.release(); }
 - (void)factoryReset    { gPet.factoryReset(); }
 
@@ -181,6 +182,25 @@ static uint32_t TPNowEpoch(void) {
                                            : S_GOODBYE;
   return [NSString stringWithUTF8String:T(id)];
 }
+
+// --- decision prompts --------------------------------------------------
+// The two CTA strings take the creature's name, so they are composed with the
+// same nick-or-dex-name rule drawEvolveButton/drawFarewellButton use upstream.
+static NSString *TPNamedPrompt(StrId id) {
+  const char *nm = gPet.nick[0] ? gPet.nick : DEX_TBL[gPet.speciesId].name;
+  char out[64];
+  snprintf(out, sizeof(out), T(id), nm);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)evolveButtonText   { return [NSString stringWithUTF8String:T(S_EVO_TAP)]; }
+- (NSString *)farewellButtonText { return TPNamedPrompt(S_FAREWELL_BTN); }
+- (NSString *)runawayButtonText  { return TPNamedPrompt(S_RUNAWAY_BTN); }
+- (NSString *)evolveQuestion     { return [NSString stringWithUTF8String:T(S_EVO_Q)]; }
+- (NSString *)evolveKeepText     { return [NSString stringWithUTF8String:T(S_EVO_KEEP)]; }
+- (NSString *)farewellQuestion   { return [NSString stringWithUTF8String:T(S_FAR_Q)]; }
+- (NSString *)farewellGoText     { return [NSString stringWithUTF8String:T(S_FAR_GO)]; }
+- (NSString *)farewellStayText   { return [NSString stringWithUTF8String:T(S_FAR_STAY)]; }
 
 
 @end
