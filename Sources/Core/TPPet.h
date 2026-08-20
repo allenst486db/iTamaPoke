@@ -74,8 +74,26 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 
 // --- retention ---------------------------------------------------------
 @property (nonatomic, readonly) uint16_t streak;
+@property (nonatomic, readonly) uint16_t bestStreak;
 @property (nonatomic, readonly) uint8_t bond;
 @property (nonatomic, readonly) uint16_t medals;
+/// A medal or streak milestone was just earned: the idle screen banners it.
+@property (nonatomic, readonly) BOOL showMedal;
+@property (nonatomic, readonly) BOOL showMilestone;
+/// Name of the medal being celebrated, nil when none is.
+@property (nonatomic, readonly, copy, nullable) NSString *newMedalName;
+
+// --- stat card ---------------------------------------------------------
+@property (nonatomic, readonly) uint16_t atkStat;
+@property (nonatomic, readonly) uint16_t defStat;
+@property (nonatomic, readonly) uint16_t speStat;
+@property (nonatomic, readonly) uint8_t careMistakes;
+/// Minutes elapsed into the current level, out of `minutesPerLevel`.
+@property (nonatomic, readonly) uint8_t minutesIntoLevel;
+@property (nonatomic, readonly) uint16_t minutesPerLevel;
+@property (nonatomic, readonly) NSInteger medalCount;
+- (BOOL)hasMedalAtIndex:(NSInteger)i;
+- (NSString *)medalDescriptionAtIndex:(NSInteger)i;
 
 // --- presentation strings ----------------------------------------------
 // Composed here rather than in Swift: i18n.h's StrId enum is only visible on
@@ -99,6 +117,50 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *farewellGoText;      ///< "Goodbye"
 @property (nonatomic, readonly, copy) NSString *farewellStayText;    ///< "Stay together"
 @property (nonatomic, readonly, copy) NSString *galleryBackText;    ///< Pokedex detail "Back"
+
+// --- stat card text ----------------------------------------------------
+@property (nonatomic, readonly, copy) NSString *speciesName;      ///< dex name, ignoring any nickname
+@property (nonatomic, readonly, copy) NSString *streakLine;       ///< "Streak 3 (best 7)"
+@property (nonatomic, readonly, copy) NSString *infoLine;         ///< favourite berry + age in days
+@property (nonatomic, readonly, copy) NSString *renameHint;
+@property (nonatomic, readonly, copy) NSString *backHint;
+@property (nonatomic, readonly, copy) NSString *bondLabel;
+@property (nonatomic, readonly, copy) NSString *battleTitle;
+@property (nonatomic, readonly, copy) NSString *progressTitle;
+@property (nonatomic, readonly, copy) NSString *trainButtonText;
+@property (nonatomic, readonly, copy) NSString *medalsLine;       ///< "Medals 3/8"
+@property (nonatomic, readonly, copy) NSString *levelLine;        ///< "Lv.7"
+@property (nonatomic, readonly, copy) NSString *nextLevelLine;
+@property (nonatomic, readonly, copy) NSString *evolutionLabel;
+@property (nonatomic, readonly, copy) NSString *evolutionStatus;
+/// 0 neutral, 1 ready (green), 2 blocked (red) — upstream colours the line.
+@property (nonatomic, readonly) uint8_t evolutionStatusKind;
+@property (nonatomic, readonly, copy) NSString *mistakesLine;
+@property (nonatomic, readonly, copy) NSString *medalBannerTitle; ///< "NEW MEDAL!"
+@property (nonatomic, readonly, copy) NSString *milestoneTitle;   ///< "GREAT!"
+@property (nonatomic, readonly, copy) NSString *milestoneLine;    ///< "3 days in a row"
+- (NSString *)statLabel:(NSInteger)index;   ///< 0 ATK, 1 DEF, 2 SPE, 3 WGT
+
+// --- minigame / training ------------------------------------------------
+@property (nonatomic, readonly) uint16_t gameHigh;   ///< ball minigame record
+@property (nonatomic, readonly) uint16_t strengthHigh; ///< sack hit record
+@property (nonatomic, readonly, copy) NSString *newRecordText;
+@property (nonatomic, readonly, copy) NSString *hitFastText;
+- (NSString *)scoreLine:(uint16_t)score;      ///< "Score: 12"
+- (NSString *)recordLine:(uint16_t)record;    ///< "Record: 20"
+- (NSString *)shortRecordLine:(uint16_t)record; ///< "Rec 20", for the HUD
+- (NSString *)hitsLine:(uint16_t)hits;
+- (NSString *)strengthGainLine:(uint8_t)gain;
+- (NSString *)playResultMessage:(uint16_t)score;  ///< "+joy" or "great!"
+
+// --- release dialog -----------------------------------------------------
+@property (nonatomic, readonly, copy) NSString *releaseQuestion;  ///< "Release <name>?"
+@property (nonatomic, readonly, copy) NSString *yesText;
+@property (nonatomic, readonly, copy) NSString *noText;
+@property (nonatomic, readonly, copy) NSString *nameLabel;   ///< rename screen title
+@property (nonatomic, readonly, copy) NSString *settingsTitle;
+@property (nonatomic, readonly, copy) NSString *soundOnText;
+@property (nonatomic, readonly, copy) NSString *soundOffText;
 
 // --- decision gates (a button appears; the player taps it) -------------
 @property (nonatomic, readonly) BOOL wantsEvolveButton;

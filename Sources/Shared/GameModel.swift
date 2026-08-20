@@ -47,6 +47,16 @@ final class GameModel: ObservableObject {
     private var behTargetX: CGFloat = TP.cx
     private var lastPoseMs: UInt64 = 0
 
+    /// Ball minigame and training sack. Both live here rather than in the view
+    /// because they advance on the tick, and a Canvas draw must not step physics.
+    private(set) var ball = TPBallGame()
+    private(set) var sack = TPSackGame()
+    /// Which one is running. Gating on the games' own fields instead would leave
+    /// a finished sack's deadline pinned, and that stale value froze the ball.
+    private enum ActiveGame { case none, ball, sack }
+    private var activeGame: ActiveGame = .none
+    private var lastGameMs: UInt64 = 0
+
     private var started = false
     private let epoch = Date()
 
@@ -72,7 +82,10 @@ final class GameModel: ObservableObject {
         refreshSprite()
         // The ES8311 tone synth is not ported. Haptics are the closest native
         // equivalent and keep taps feeling answered; real audio is a later step.
-        TPSetSfxHandler { _ in Self.playFeedback() }
+        TPSetSfxHandler { [weak self] _ in
+            guard self?.hapticsEnabled ?? true else { return }
+            Self.playFeedback()
+        }
     }
 
     /// Reloads the sprite when the pet's form changes. Keyed on the egg flag too:
@@ -91,7 +104,61 @@ final class GameModel: ObservableObject {
         pet.update()
         refreshSprite()
         advanceBehaviour(now: millis)
+        stepGames(now: millis)
         frame &+= 1
+    }
+
+    // MARK: - Minigames
+
+    func startBallGame() {
+        ball.start()
+        activeGame = .ball
+        lastGameMs = millis
+    }
+
+    func startSack() {
+        sack.start(now: millis)
+        activeGame = .sack
+        lastGameMs = millis
+    }
+
+    /// Clears the deadlines as well as stopping the clock, so a later run cannot
+    /// inherit a finished one's state.
+    func endGames() {
+        activeGame = .none
+        ball.overUntil = 0
+        sack.until = 0
+        sack.overUntil = 0
+    }
+
+    /// True when the tap connected, so the caller can fire haptics.
+    func tapBall(_ p: CGPoint) -> Bool { ball.tap(p, now: millis) }
+
+    func tapSack() { sack.tap(now: millis) }
+
+    private func stepGames(now: UInt64) {
+        let dt = now &- lastGameMs
+        lastGameMs = now
+
+        switch activeGame {
+        case .ball:
+            guard ball.overUntil == 0 else { return }
+            ball.step(dtMs: dt, now: now) { score in
+                let beatIt = score > self.pet.gameHigh
+                self.pet.playResult(UInt8(min(score, 255)))
+                return beatIt
+            }
+        case .sack:
+            // When the 10s runs out, bank the hits as strength exactly once.
+            if sack.overUntil == 0, now >= sack.until {
+                sack.newHigh = sack.hits > pet.strengthHigh
+                sack.gain = pet.trainStrength(sack.hits)
+                sack.overUntil = now + 3500
+            }
+            sack.shake *= 0.84
+        case .none:
+            break
+        }
     }
 
     /// Port of `drawPetPMD`'s action choice: mood wins, otherwise the scheduler
@@ -208,6 +275,16 @@ final class GameModel: ObservableObject {
         }
     }
     #endif
+
+    /// Upstream's sound switch. Sound here is haptics, but it is the same
+    /// setting from the player's side, and it persists alongside the save.
+    private(set) var hapticsEnabled = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
+
+    func setHaptics(_ on: Bool) {
+        hapticsEnabled = on
+        UserDefaults.standard.set(on, forKey: "tamapoke/haptics")
+        if on { Self.playFeedback() }   // confirm by feel when switching on
+    }
 
     private static func playFeedback() {
         #if os(watchOS)

@@ -13,9 +13,12 @@ import SwiftUI
 /// does, rather than a tree of SwiftUI views. That keeps the port readable
 /// against the original and avoids duplicating game state into view state.
 ///
-/// Not yet ported: the Pokedex gallery, stat card, ball minigame, training bag,
-/// bath scene, clock/settings, the on-screen keyboard, the evolution and
-/// ceremony animations, and the swipe gestures that open most of those.
+/// Screens are reached the way upstream reaches them: swipe left for the
+/// Pokedex, up for the stat card, down for settings, and hold the creature to
+/// be asked about letting it go.
+///
+/// Not yet ported: the evolution flash and the farewell/runaway ceremony
+/// animations, which still resolve instantly rather than playing out.
 struct PetScreen: View {
 
     @StateObject private var model = GameModel()
@@ -32,14 +35,28 @@ struct PetScreen: View {
 
     /// Which screen is up. Upstream keeps these as separate `*Open` booleans;
     /// one enum makes the "only one at a time" rule structural.
-    private enum Screen { case idle, gallery }
+    private enum Screen { case idle, gallery, card, sack, keyboard, settings, game }
     @State private var screen: Screen = .idle
     @State private var galleryPage = 0
     /// Dex number of the species in the detail view, 0 for the grid.
     @State private var galleryDetail: Int16 = 0
+    /// Stat card page: 0 profile, 1 battle, 2 medals, 3 progress.
+    @State private var cardPage = 0
 
-    /// Where the current drag started, for classifying it on release.
+    /// Rename keyboard buffer.
+    @State private var nameDraft = ""
+
+    /// Bath animation deadline, upstream's `bathUntil`.
+    @State private var bathUntil: UInt64 = 0
+    /// "Let it go?" confirmation deadline, upstream's `confirmUntil`.
+    @State private var confirmUntil: UInt64 = 0
+
+    /// Where and when the current drag started, for classifying it on release
+    /// and for spotting a hold without a competing gesture recogniser.
     @State private var dragStart: CGPoint?
+    @State private var dragNow: CGPoint?
+    @State private var dragStartAt: UInt64 = 0
+    @State private var holdFired = false
 
     private let ticker = Timer.publish(every: 1.0 / 15.0, on: .main, in: .common).autoconnect()
 
@@ -65,14 +82,27 @@ struct PetScreen: View {
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
+                    // Stored already converted to the 466px space, so the hold
+                    // check can compare against upstream's own thresholds.
                     .onChanged { v in
-                        if dragStart == nil { dragStart = v.startLocation }
+                        if dragStart == nil {
+                            dragStart = toScreenSpace(v.startLocation, in: geo.size)
+                            dragStartAt = model.millis
+                            holdFired = false
+                        }
+                        dragNow = toScreenSpace(v.location, in: geo.size)
                     }
                     .onEnded { v in
-                        let from = dragStart ?? v.startLocation
+                        let from = dragStart ?? toScreenSpace(v.startLocation, in: geo.size)
                         dragStart = nil
-                        onGesture(from: toScreenSpace(from, in: geo.size),
-                                  to: toScreenSpace(v.location, in: geo.size))
+                        dragNow = nil
+                        // A fired hold has already acted; upstream swallows the
+                        // gesture rather than also treating the release as a tap.
+                        if holdFired {
+                            holdFired = false
+                            return
+                        }
+                        onGesture(from: from, to: toScreenSpace(v.location, in: geo.size))
                     }
             )
         }
@@ -84,8 +114,41 @@ struct PetScreen: View {
             // Upstream drops the dialog once choiceUntil passes, so an unanswered
             // question does not wedge the screen.
             if choice != .none, model.millis > choiceUntil { choice = .none }
+            // Both result cards dismiss themselves, as upstream's do — otherwise
+            // the screen sits on the score with no way back.
+            if screen == .game, model.ball.overUntil != 0, model.millis > model.ball.overUntil {
+                screen = .idle
+                model.endGames()
+            }
+            if screen == .sack, model.sack.overUntil != 0, model.millis > model.sack.overUntil {
+                screen = .card
+                model.endGames()
+            }
+            checkHold()
         }
         .onChange(of: scenePhase) { _, phase in model.handleScenePhase(phase) }
+    }
+
+    /// Upstream fires the release confirmation mid-hold, from inside its touch
+    /// handler, rather than through a separate recogniser — and that matters
+    /// here: a SwiftUI long-press gesture alongside the drag swallowed every
+    /// tap, so the action buttons stopped working entirely.
+    private func checkHold() {
+        guard !holdFired, screen == .idle,
+              let start = dragStart, let now = dragNow,
+              model.millis &- dragStartAt > 3000,
+              abs(now.x - start.x) < 30, abs(now.y - start.y) < 30
+        else { return }
+
+        let pet = model.pet
+        let p = start
+        guard p.x > 110, p.x < 356, p.y > 95, p.y < 310,   // inPetZone
+              !pet.isEgg, pet.ceremony == TPCeremony.none, choice == .none,
+              model.millis >= confirmUntil, model.millis >= feedMenuUntil
+        else { return }
+
+        confirmUntil = model.millis + 10000
+        holdFired = true
     }
 
     /// View point -> the firmware's 466x466 coordinate space.
@@ -109,6 +172,26 @@ struct PetScreen: View {
 
         if screen == .gallery {
             renderGallery(ctx, now: now)
+            return
+        }
+        if screen == .card {
+            renderCard(ctx, now: now)
+            return
+        }
+        if screen == .keyboard {
+            renderKeyboard(ctx)
+            return
+        }
+        if screen == .game {
+            renderGame(ctx, now: now)
+            return
+        }
+        if screen == .sack {
+            renderSack(ctx, now: now)
+            return
+        }
+        if screen == .settings {
+            renderSettings(ctx)
             return
         }
 
@@ -141,7 +224,9 @@ struct PetScreen: View {
             drawHeader(ctx, name: pet.headerName,
                        nameColor: night ? UI.inkNight : TPDexAccent(pet.speciesId),
                        message: pet.statusMessage, ink: ink)
+            drawStreakBadge(ctx, ink: ink)
             drawPet(ctx, ink: ink, now: now)
+            if now < bathUntil { drawBath(ctx, now: now) }
             // Port of drawPetPMD's trailing heart draw, following the creature.
             if pet.showHeart {
                 ctx.drawIcon(TPIcon.heart, model.pose.x + 50, TP.petGround - 190, scale: 2)
@@ -150,6 +235,7 @@ struct PetScreen: View {
             ctx.fillRect(0, 312, TP.screen, 154, panel)
             drawBars(ctx, ink: ink)
             drawButtons(ctx, ink: ink, sleeping: pet.sleeping)
+            drawCelebration(ctx)
             // Exactly upstream's precedence: evolution first, then the neglect
             // ending, then the voluntary farewell — they share screen space.
             if pet.wantsEvolveButton {
@@ -169,6 +255,7 @@ struct PetScreen: View {
 
         if pet.sleeping { ctx.gfxText("Zz", 320, 130, 3, UI.inkNight) }
         if now < feedMenuUntil { drawFeedMenu(ctx, ink: ink) }
+        if now < confirmUntil { drawReleaseDialog(ctx) }
         if choice != .none { drawChoiceDialog(ctx, choice: choice) }
     }
 
@@ -331,6 +418,418 @@ struct PetScreen: View {
         ctx.gfxTextCentered(keep, 286, 2, keepInk)
     }
 
+    /// Flame and streak count, top-left of the idle screen.
+    private func drawStreakBadge(_ ctx: GraphicsContext, ink: UInt16) {
+        guard model.pet.streak >= 1 else { return }
+        drawFlame(ctx, x: 26, y: 16, height: 17)
+        ctx.gfxText("\(model.pet.streak)", 48, 18, 2, ink)
+    }
+
+    /// Temporary banner for a new medal or a streak milestone.
+    private func drawCelebration(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        let title: String, detail: String
+        if pet.showMedal, let name = pet.newMedalName {
+            title = pet.medalBannerTitle
+            detail = name
+        } else if pet.showMilestone {
+            title = pet.milestoneTitle
+            detail = pet.milestoneLine
+        } else {
+            return
+        }
+        ctx.fillRoundRect(73, 150, 320, 96, 16, UI.barWarn)
+        ctx.drawRoundRect(73, 150, 320, 96, 16, UI.ink)
+        ctx.gfxTextCentered(title, 176, 3, UI.ink)
+        ctx.gfxTextCentered(detail, 212, 2, UI.ink)
+    }
+
+    /// Bath: a tub of water and rising bubbles over the creature.
+    private func drawBath(_ ctx: GraphicsContext, now: UInt64) {
+        ctx.fillRoundRect(120, 250, 226, 70, 18, rgb565(0x4f, 0x96, 0xc4))
+        ctx.drawRoundRect(120, 250, 226, 70, 18, UI.ink)
+        for i in 0..<7 {
+            let phase = (now / 12 + UInt64(i) * 40) % 90
+            let bx = 140 + CGFloat(i) * 32
+            let by = 300 - CGFloat(phase)
+            ctx.fillCircle(bx, by, CGFloat(4 + i % 3), UI.white)
+        }
+    }
+
+    /// "Let it go?" — upstream's long-press confirmation, two buttons.
+    private func drawReleaseDialog(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        ctx.fillRoundRect(94, 168, 278, 152, 16, UI.white)
+        ctx.drawRoundRect(94, 168, 278, 152, 16, UI.ink)
+        ctx.gfxTextCentered(pet.releaseQuestion, 196, 2, UI.ink)
+        let yes = TP.releaseYes, no = TP.releaseNo
+        ctx.fillRoundRect(yes.minX, yes.minY, yes.width, yes.height, 12, UI.barOK)
+        ctx.gfxText(pet.yesText, yes.midX - CGFloat(pet.yesText.count) * 6, 270, 2, UI.white)
+        ctx.fillRoundRect(no.minX, no.minY, no.width, no.height, 12, UI.barBad)
+        ctx.gfxText(pet.noText, no.midX - CGFloat(pet.noText.count) * 6, 270, 2, UI.white)
+    }
+
+    // MARK: - Settings
+
+    /// Upstream's clock screen, minus the clock.
+    ///
+    /// Its hour/minute dial exists because the ESP32 has no idea what time it is
+    /// and the sky depends on it. iOS already knows, and pointing the game at a
+    /// hand-set time instead of the system clock is precisely the bug that made
+    /// the sky run nine hours early. What remains is the rest of that screen:
+    /// the language picker and the sound toggle, which are real settings.
+    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT"]
+    private static let langPill = CGRect(x: 336, y: 296, width: 96, height: 30)
+    private static let sndPill = CGRect(x: 34, y: 296, width: 96, height: 30)
+
+    private func renderSettings(_ ctx: GraphicsContext) {
+        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
+        ctx.gfxTextCentered(model.pet.settingsTitle, 44, 3, UI.ink)
+
+        // Local time, shown rather than set: it comes from the device.
+        let f = DateFormatter()
+        f.dateFormat = "HH:mm"
+        let clock = f.string(from: Date())
+        ctx.gfxText(clock, TP.cx - 105, 120, 7, UI.ink)
+        ctx.gfxTextCentered(TimeZone.current.identifier, 210, 2, UI.track)
+
+        let snd = model.hapticsEnabled
+        let s = Self.sndPill
+        ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
+        ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
+        let sl = snd ? model.pet.soundOnText : model.pet.soundOffText
+        ctx.gfxText(sl, s.minX + (s.width - CGFloat(sl.count) * 12) / 2, s.minY + 8, 2,
+                    snd ? UI.bgDay : UI.ink)
+
+        let l = Self.langPill
+        ctx.fillRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.white)
+        ctx.drawRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.ink)
+        let lp = "\(Self.langCodes[Int(TPLanguage())]) >"
+        ctx.gfxText(lp, l.minX + (l.width - CGFloat(lp.count) * 12) / 2, l.minY + 8, 2, UI.ink)
+
+        ctx.gfxTextCentered(model.pet.backHint, 410, 2, UI.track)
+    }
+
+    private func settingsTap(_ p: CGPoint) {
+        if Self.sndPill.contains(p) {
+            model.setHaptics(!model.hapticsEnabled)
+            return
+        }
+        if Self.langPill.contains(p) {
+            TPSetLanguage((TPLanguage() + 1) % UInt8(Self.langCodes.count))
+            return
+        }
+        if p.y > 380 { screen = .idle }
+    }
+
+    // MARK: - Rename keyboard
+
+    /// 26 letters plus "." and "-", then backspace and OK.
+    private static let kbKeys = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ.-")
+    private static let kbCols = 6
+    private static let kbX: CGFloat = 40
+    private static let kbY: CGFloat = 150
+    private static let kbW: CGFloat = 64
+    private static let kbH: CGFloat = 52
+
+    private func renderKeyboard(_ ctx: GraphicsContext) {
+        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
+        ctx.gfxTextCentered(model.pet.nameLabel, 56, 2, UI.ink)
+
+        ctx.fillRoundRect(83, 84, 300, 40, 8, UI.white)
+        ctx.drawRoundRect(83, 84, 300, 40, 8, UI.ink)
+        ctx.gfxText(nameDraft.isEmpty ? "_" : nameDraft, 95, 94, 3, UI.ink)
+
+        for i in 0..<30 {
+            let x = Self.kbX + CGFloat(i % Self.kbCols) * Self.kbW
+            let y = Self.kbY + CGFloat(i / Self.kbCols) * Self.kbH
+            let special = i >= 28
+            ctx.fillRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6,
+                              special ? UI.barWarn : UI.white)
+            ctx.drawRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6, UI.ink)
+            if i < 28 {
+                ctx.gfxText(String(Self.kbKeys[i]), x + Self.kbW / 2 - 9,
+                            y + Self.kbH / 2 - 10, 2, UI.ink)
+            } else {
+                ctx.gfxText(i == 28 ? "<-" : "OK", x + Self.kbW / 2 - 15,
+                            y + Self.kbH / 2 - 10, 2, UI.ink)
+            }
+        }
+    }
+
+    private func keyboardTap(_ p: CGPoint) {
+        let col = Int((p.x - Self.kbX) / Self.kbW)
+        let row = Int((p.y - Self.kbY) / Self.kbH)
+        guard col >= 0, col < Self.kbCols, row >= 0, row < 5 else { return }
+        let i = row * Self.kbCols + col
+        guard i < 30 else { return }
+
+        if i == 28 {
+            if !nameDraft.isEmpty { nameDraft.removeLast() }
+        } else if i == 29 {
+            model.pet.renamePet(nameDraft)
+            screen = .card
+        } else if nameDraft.count < 11 {     // upstream's nameBuf is 12 bytes
+            nameDraft.append(Self.kbKeys[i])
+        }
+    }
+
+    // MARK: - Minigames
+
+    /// Shared backdrop for both minigames: the creature's own habitat, so they
+    /// do not look like a different app. Upstream's `drawGameScene`.
+    private func drawGameScene(_ ctx: GraphicsContext, now: UInt64) -> UInt16 {
+        let pet = model.pet
+        let hour = SceneRenderer.hour(epoch: pet.lastSeenEpoch)
+        let night = SceneRenderer.isNight(hour: hour, sleeping: false)
+        let biome = pet.isEgg ? 0 : Int(TPDexBiome(pet.speciesId))
+        SceneRenderer.draw(ctx, biome: biome, now: now, night: night, hour: hour)
+        return UI.inkColor(night: night)
+    }
+
+    private func renderGame(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let ink = drawGameScene(ctx, now: now)
+        let g = model.ball
+
+        if g.overUntil != 0 {
+            let score = pet.scoreLine(g.score)
+            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 160, 4, ink)
+            if g.newHigh, g.score > 0 {
+                ctx.gfxTextCentered(pet.newRecordText, 214, 2, UI.barWarn)
+            } else {
+                ctx.gfxTextCentered(pet.recordLine(pet.gameHigh), 214, 2, ink)
+            }
+            ctx.gfxTextCentered(pet.playResultMessage(g.score), 250, 2, ink)
+            return
+        }
+
+        let s = "\(g.score)"
+        ctx.gfxText(s, TP.cx - CGFloat(s.count) * 12, 30, 4, ink)
+        ctx.gfxTextCentered(pet.shortRecordLine(pet.gameHigh), 76, 2, ink)
+        for i in 0..<3 {
+            let cx = 180 + CGFloat(i) * 28
+            if i < 3 - g.misses { ctx.fillCircle(cx, 104, 6, UI.barBad) }
+            else { ctx.strokeCircle(cx, 104, 6, UI.track) }
+        }
+
+        // The creature chases the ball along the ground.
+        if let sprite = model.sprite {
+            var act = TPAct.idle
+            if g.ballX > g.petX + 4 { act = .walkR }
+            else if g.ballX < g.petX - 4 { act = .walkL }
+            if !sprite.has(act) { act = .idle }
+            if let a = sprite[act],
+               let img = sprite.image(act, frame: TPSprite.frameIndex(a, elapsedMs: now, loop: true)) {
+                let sc = sprite.scale(for: a, max: 3)
+                let w = CGFloat(a.w * sc), h = CGFloat(a.h * sc)
+                ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
+                         in: CGRect(x: g.petX - w / 2,
+                                    y: 394 - CGFloat((a.base > 0 ? a.base : a.h) * sc),
+                                    width: w, height: h))
+            }
+        }
+
+        // Expanding impact ring, upstream's soft hit feedback.
+        let since = now &- g.hitAt
+        if g.hitAt != 0, since < 260 {
+            let rad = 22 + CGFloat(since) / 6
+            ctx.strokeCircle(g.hitX, g.hitY, rad, rgb565(0xff, 0xe7, 0x9f))
+            ctx.strokeCircle(g.hitX, g.hitY, rad - 2, rgb565(0xff, 0xd9, 0x8a))
+        }
+
+        ctx.drawIcon(TPIcon.play, g.ballX - 24, g.ballY - 24, scale: 3)
+    }
+
+    private func renderSack(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let ink = drawGameScene(ctx, now: now)
+        let s = model.sack
+
+        if s.overUntil != 0 {
+            let hits = pet.hitsLine(s.hits)
+            ctx.gfxText(hits, TP.cx - CGFloat(hits.count) * 12, 150, 4, ink)
+            let gain = pet.strengthGainLine(s.gain)
+            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 210, 3, UI.barBad)
+            if s.newHigh, s.hits > 0 {
+                ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
+            } else {
+                ctx.gfxTextCentered(pet.recordLine(pet.strengthHigh), 256, 2, ink)
+            }
+            return
+        }
+
+        // The sack swings for a moment after each hit.
+        let off = s.shake * CGFloat(sin(Double(now) * 0.05))
+        let sx = TP.cx + off, top: CGFloat = 86
+        ctx.fillRect(TP.cx - 3, 56, 6, top - 56, ink)          // rope
+        ctx.fillRect(sx - 4, top - 30, 8, 34, ink)             // chain
+        ctx.fillRoundRect(sx - 42, top, 84, 150, 26, rgb565(0xb5, 0x3a, 0x3a))
+        ctx.fillRoundRect(sx - 42, top, 84, 22, 18, rgb565(0x7e, 0x28, 0x28))
+        ctx.drawRoundRect(sx - 42, top, 84, 150, 26, ink)
+        ctx.fillRect(sx - 42, top + 70, 84, 4, rgb565(0x7e, 0x28, 0x28))
+
+        let count = "\(s.hits)"
+        ctx.gfxText(count, TP.cx - CGFloat(count.count) * 18, 268, 6, ink)
+        ctx.gfxTextCentered(pet.hitFastText, 322, 2, ink)
+
+        let left = s.until > now ? s.until - now : 0
+        let bw: CGFloat = 280
+        let fw = bw * CGFloat(left) / 10000
+        ctx.fillRoundRect(TP.cx - bw / 2, 350, bw, 16, 5, UI.track)
+        if fw > 2 { ctx.fillRoundRect(TP.cx - bw / 2, 350, fw, 16, 5, UI.barOK) }
+    }
+
+    private func gameTap(_ p: CGPoint) {
+        if model.ball.overUntil != 0 { return }
+        if p.y < 72 {                       // header leaves without a reward
+            screen = .idle
+            model.endGames()
+            return
+        }
+        _ = model.tapBall(p)
+    }
+
+    private func sackTap(_ p: CGPoint) {
+        if model.sack.overUntil != 0 { return }
+        if p.y < 72 {
+            screen = .card
+            model.endGames()
+            return
+        }
+        model.tapSack()
+    }
+
+    // MARK: - Stat card
+
+    /// Port of `renderCard`: four pages over the round panel, swiped between.
+    private func renderCard(_ ctx: GraphicsContext, now: UInt64) {
+        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
+
+        switch cardPage {
+        case 0:  renderCardProfile(ctx, now: now)
+        case 1:  renderCardStats(ctx)
+        case 2:  renderCardMedals(ctx)
+        default: renderCardProgress(ctx)
+        }
+
+        for i in 0..<4 {
+            let cx = 194 + CGFloat(i) * 26
+            if i == cardPage { ctx.fillCircle(cx, 374, 5, UI.ink) }
+            else { ctx.strokeCircle(cx, 374, 4, UI.ink) }
+        }
+        ctx.gfxTextCentered(model.pet.backHint, 398, 2, UI.track)
+    }
+
+    private func renderCardProfile(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let head = pet.headerName
+        // Upstream shrinks the title rather than let a long name run off the
+        // narrow top of the round panel.
+        let size = head.count <= 11 ? 3 : 2
+        ctx.gfxTextCentered(head, size == 3 ? 34 : 40, size, TPDexAccent(pet.speciesId))
+        if !pet.nick.isEmpty {
+            ctx.gfxTextCentered("(\(pet.speciesName))", 64, 2, UI.track)
+        }
+
+        if let sprite = model.sprite, let a = sprite[.idle],
+           let img = sprite.image(.idle, frame: TPSprite.frameIndex(a, elapsedMs: now, loop: true)) {
+            let s = sprite.scale(for: a, max: 4)
+            let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
+            ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
+                     in: CGRect(x: TP.cx - w / 2,
+                                y: 206 - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                                width: w, height: h))
+        }
+
+        drawFlame(ctx, x: 138, y: 224)
+        ctx.gfxText(pet.streakLine, 162, 226, 2, UI.ink)
+        drawCardStat(ctx, y: 258, label: pet.bondLabel, value: UInt16(pet.bond),
+                     maxBar: 100, color: rgb565(0xd4, 0x52, 0x7e))
+        ctx.gfxTextCentered(pet.infoLine, 296, 2, UI.ink)
+        ctx.gfxTextCentered(pet.renameHint, 332, 2, UI.track)
+    }
+
+    private func renderCardStats(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        ctx.gfxTextCentered(pet.battleTitle, 48, 3, UI.ink)
+        drawCardStat(ctx, y: 118, label: pet.statLabel(0), value: pet.atkStat,
+                     maxBar: 260, color: UI.barBad)
+        drawCardStat(ctx, y: 160, label: pet.statLabel(1), value: pet.defStat,
+                     maxBar: 260, color: 0x4C98)
+        drawCardStat(ctx, y: 202, label: pet.statLabel(2), value: pet.speStat,
+                     maxBar: 260, color: UI.barWarn)
+        drawCardStat(ctx, y: 244, label: pet.statLabel(3), value: UInt16(pet.weight),
+                     maxBar: 100, color: 0xB3C8)
+
+        let b = TP.trainBtn
+        ctx.fillRoundRect(b.minX, b.minY, b.width, b.height, 12, UI.barBad)
+        ctx.gfxTextCentered(pet.trainButtonText, 311, 2, UI.bgDay)
+    }
+
+    private func renderCardMedals(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        ctx.gfxTextCentered(pet.medalsLine, 48, 3, UI.ink)
+        for i in 0..<pet.medalCount {
+            let x = 28 + CGFloat(i % 2) * 206
+            let y = 104 + CGFloat(i / 2) * 54
+            let got = pet.hasMedal(at: i)
+            ctx.fillRoundRect(x, y, 196, 44, 10, got ? UI.barOK : UI.track)
+            if got {
+                ctx.fillCircle(x + 22, y + 22, 11, UI.bgDay)
+                ctx.gfxText("v", x + 16, y + 13, 2, UI.barOK)
+            }
+            ctx.gfxText(pet.medalDescription(at: i), x + 44, y + 14, 2,
+                        got ? UI.bgDay : 0x8410)
+        }
+    }
+
+    private func renderCardProgress(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        ctx.gfxTextCentered(pet.progressTitle, 44, 3, UI.ink)
+
+        let lv = pet.levelLine
+        ctx.gfxText(lv, TP.cx - CGFloat(lv.count) * 15, 86, 5, UI.ink)
+
+        let bx: CGFloat = 93, bw: CGFloat = 280, by: CGFloat = 158, bh: CGFloat = 22
+        ctx.fillRoundRect(bx, by, bw, bh, 6, UI.track)
+        let fw = (bw - 4) * CGFloat(pet.minutesIntoLevel) / CGFloat(pet.minutesPerLevel)
+        if fw > 0 { ctx.fillRoundRect(bx + 2, by + 2, fw, bh - 4, 5, UI.barOK) }
+        ctx.gfxTextCentered(pet.nextLevelLine, by + 32, 2, UI.ink)
+
+        ctx.gfxTextCentered(pet.evolutionLabel, 230, 2, UI.track)
+        let evoColor: UInt16
+        switch pet.evolutionStatusKind {
+        case 1:  evoColor = UI.barOK
+        case 2:  evoColor = UI.barBad
+        default: evoColor = UI.ink
+        }
+        ctx.gfxTextCentered(pet.evolutionStatus, 256, 2, evoColor)
+        ctx.gfxTextCentered(pet.mistakesLine, 312, 2,
+                            pet.careMistakes > 0 ? UI.barBad : UI.ink)
+    }
+
+    /// Upstream's `drawCardStat`: label, value and a proportional bar.
+    private func drawCardStat(_ ctx: GraphicsContext, y: CGFloat, label: String,
+                              value: UInt16, maxBar: UInt16, color: UInt16) {
+        ctx.gfxText(label, 96, y, 2, UI.ink)
+        ctx.gfxText("\(value)", 330, y, 2, UI.ink)
+        let bw: CGFloat = 160
+        let fw = min(CGFloat(value) * bw / CGFloat(maxBar), bw)
+        ctx.fillRoundRect(150, y + 2, bw, 11, 3, UI.track)
+        if fw > 2 { ctx.fillRoundRect(150, y + 2, fw, 11, 3, color) }
+    }
+
+    /// The little streak flame, drawn as two stacked triangles.
+    private func drawFlame(_ ctx: GraphicsContext, x: CGFloat, y: CGFloat,
+                           height h: CGFloat = 18) {
+        ctx.fillTriangle(x + 8, y, x + 1, y + h, x + 15, y + h, UI.barBad)
+        ctx.fillTriangle(x + 8, y + 7, x + 4, y + h, x + 12, y + h, UI.barWarn)
+    }
+
     // MARK: - Pokedex
 
     /// Port of `renderGallery`. Upstream only redraws the grid when a page turns
@@ -462,10 +961,15 @@ struct PetScreen: View {
         }
     }
 
-    /// Horizontal swipe: opens the Pokedex, then pages through it.
+    /// Horizontal swipe: pages the stat card, or opens and pages the Pokedex.
     private func onSwipe(_ dir: Int) {
         let pet = model.pet
         if pet.awaitingStarter { return }
+
+        if screen == .card {           // left advances, matching upstream
+            cardPage = min(max(cardPage + (dir > 0 ? -1 : 1), 0), 3)
+            return
+        }
 
         if screen == .idle {
             guard pet.ceremony == TPCeremony.none, choice == .none else { return }
@@ -487,22 +991,62 @@ struct PetScreen: View {
         galleryPage = min(next, 9)
     }
 
-    /// Vertical swipe. Upstream opens the stat card upward and the clock screen
-    /// downward; neither is ported yet, so for now this only closes the gallery.
+    /// Vertical swipe: up opens the stat card and closes it again, down is the
+    /// clock screen upstream — not ported, so it currently does nothing.
     private func onSwipeV(_ dir: Int) {
-        if model.pet.awaitingStarter { return }
+        let pet = model.pet
+        if pet.awaitingStarter { return }
         if screen == .gallery {
             galleryDetail = 0
             screen = .idle
+            return
         }
+        if screen == .card {
+            if dir < 0 { screen = .idle }   // up closes
+            return
+        }
+        if screen == .settings {
+            screen = .idle
+            return
+        }
+        guard pet.ceremony == TPCeremony.none, choice == .none,
+              model.millis >= confirmUntil, model.millis >= feedMenuUntil else { return }
+        if dir > 0 {                        // down: settings
+            screen = .settings
+            return
+        }
+        guard !pet.isEgg else { return }    // up: the stat card
+        screen = .card
+        cardPage = 0
     }
 
     private func onTap(_ p: CGPoint) {
-        if screen == .gallery {
-            galleryTap(p)
+        switch screen {
+        case .gallery:  galleryTap(p)
+        case .card:     cardTap(p)
+        case .sack:     sackTap(p)
+        case .keyboard: keyboardTap(p)
+        case .settings: settingsTap(p)
+        case .game:     gameTap(p)
+        case .idle:     onIdleTap(p)
+        }
+    }
+
+    private func cardTap(_ p: CGPoint) {
+        // Battle page: the train button opens the strength sack.
+        if cardPage == 1, TP.trainBtn.contains(p) {
+            let pet = model.pet
+            guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none else { return }
+            screen = .sack
+            model.startSack()
             return
         }
-        onIdleTap(p)
+        // Profile page: tapping the name area renames.
+        if cardPage == 0, p.y >= 320, p.y <= 348 {
+            screen = .keyboard
+            nameDraft = model.pet.nick
+            return
+        }
     }
 
     private func galleryTap(_ p: CGPoint) {
@@ -548,6 +1092,13 @@ struct PetScreen: View {
             return
         }
 
+        // The release confirmation swallows the tap and closes either way.
+        if model.millis < confirmUntil {
+            if TP.releaseYes.contains(p) { pet.release() }
+            confirmUntil = 0
+            return
+        }
+
         if pet.ceremony != TPCeremony.none { return }  // no buttons during a ceremony
 
         if model.millis < feedMenuUntil {
@@ -587,9 +1138,16 @@ struct PetScreen: View {
             if pet.sleeping && i != 2 { return }
             switch i {
             case 0: feedMenuUntil = model.millis + 4000
-            case 1: pet.playWithPet()
+            case 1:
+                // Upstream's play button opens the ball minigame, which pays out
+                // through playResult; playWithPet is the console-command path.
+                guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none else { return }
+                screen = .game
+                model.startBallGame()
             case 2: pet.toggleLight()
-            default: pet.clean()
+            default:
+                pet.clean()
+                bathUntil = model.millis + 2500
             }
             return
         }

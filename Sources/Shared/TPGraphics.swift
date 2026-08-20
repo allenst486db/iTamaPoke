@@ -32,6 +32,12 @@ enum TP {
     static let galX: CGFloat = 73
     static let galY: CGFloat = 84
     static let galCell: CGFloat = 80
+
+    /// "Train strength" button on the stat card's battle page.
+    static let trainBtn = CGRect(x: 96, y: 300, width: 274, height: 40)
+    // "Let it go?" confirmation buttons.
+    static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
+    static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
 }
 
 // MARK: - RGB565

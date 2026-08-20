@@ -25,6 +25,10 @@ static uint32_t TPNowEpoch(void) {
   return (uint32_t)[[NSDate date] timeIntervalSince1970];
 }
 
+// Defined with the static tables below, but the card's presentation strings
+// need it from inside the class body.
+static const DexEntry *TPDexEntry(int16_t dex);
+
 @implementation TPPet
 
 + (instancetype)shared {
@@ -202,6 +206,164 @@ static NSString *TPNamedPrompt(StrId id) {
 - (NSString *)farewellGoText     { return [NSString stringWithUTF8String:T(S_FAR_GO)]; }
 - (NSString *)farewellStayText   { return [NSString stringWithUTF8String:T(S_FAR_STAY)]; }
 - (NSString *)galleryBackText    { return [NSString stringWithUTF8String:T(S_DETAIL_BACK)]; }
+
+// --- stat card ---------------------------------------------------------
+- (uint16_t)bestStreak       { return gPet.bestStreak; }
+- (uint16_t)atkStat          { return gPet.atkStat(); }
+- (uint16_t)defStat          { return gPet.defStat(); }
+- (uint16_t)speStat          { return gPet.speStat(); }
+- (uint8_t)careMistakes      { return gPet.careMistakes; }
+- (uint8_t)minutesIntoLevel  { return gPet.ageMinutes % MINUTES_PER_LEVEL; }
+- (uint16_t)minutesPerLevel  { return MINUTES_PER_LEVEL; }
+- (BOOL)showMedal            { return gPet.showMedal(); }
+- (BOOL)showMilestone        { return gPet.showMilestone(); }
+- (NSInteger)medalCount      { return MED_COUNT; }
+
+- (BOOL)hasMedalAtIndex:(NSInteger)i {
+  if (i < 0 || i >= MED_COUNT) return NO;
+  return gPet.hasMedal(1 << i);
+}
+
+- (NSString *)medalDescriptionAtIndex:(NSInteger)i {
+  if (i < 0 || i >= MED_COUNT) return @"";
+  return [NSString stringWithUTF8String:medalDesc((int)i)];
+}
+
+- (NSString *)newMedalName {
+  if (!gPet.showMedal()) return nil;
+  for (int i = 0; i < MED_COUNT; i++)
+    if (gPet.newMedal & (1 << i)) return [NSString stringWithUTF8String:medalName(i)];
+  return nil;
+}
+
+- (NSString *)speciesName {
+  return [NSString stringWithUTF8String:TPDexEntry(gPet.speciesId)->name];
+}
+
+- (NSString *)streakLine {
+  char out[40];
+  snprintf(out, sizeof(out), T(S_STREAK_FMT), gPet.streak, gPet.bestStreak);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)infoLine {
+  const char *berry = !gPet.berryKnown      ? T(S_BERRY_UNK)
+                    : gPet.lovesBerry(0)    ? T(S_BERRY_RED)
+                    : gPet.lovesBerry(1)    ? T(S_BERRY_BLUE)
+                                            : T(S_BERRY_GREEN);
+  char out[64];
+  snprintf(out, sizeof(out), T(S_INFO_FMT), berry, (unsigned long)(gPet.ageMinutes / 1440));
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)renameHint     { return [NSString stringWithUTF8String:T(S_RENAME_HINT)]; }
+- (NSString *)backHint       { return [NSString stringWithUTF8String:T(S_BACK)]; }
+- (NSString *)bondLabel      { return [NSString stringWithUTF8String:T(S_VIN)]; }
+- (NSString *)battleTitle    { return [NSString stringWithUTF8String:T(S_BATTLE)]; }
+- (NSString *)progressTitle  { return [NSString stringWithUTF8String:T(S_PROGRESS)]; }
+- (NSString *)trainButtonText{ return [NSString stringWithUTF8String:T(S_TRAIN_STR)]; }
+- (NSString *)medalBannerTitle { return [NSString stringWithUTF8String:T(S_MEDAL_BANNER)]; }
+- (NSString *)milestoneTitle { return [NSString stringWithUTF8String:T(S_GREAT)]; }
+
+- (NSString *)milestoneLine {
+  char out[32];
+  snprintf(out, sizeof(out), T(S_STREAK_DAYS_FMT), gPet.streak);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)statLabel:(NSInteger)index {
+  StrId ids[4] = { S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT };
+  if (index < 0 || index > 3) return @"";
+  return [NSString stringWithUTF8String:T(ids[index])];
+}
+
+- (NSString *)medalsLine {
+  int got = 0;
+  for (int i = 0; i < MED_COUNT; i++)
+    if (gPet.hasMedal(1 << i)) got++;
+  char out[32];
+  snprintf(out, sizeof(out), T(S_MEDALS_FMT), got, MED_COUNT);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)levelLine {
+  char out[16];
+  snprintf(out, sizeof(out), T(S_LVL_FMT), gPet.level());
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)nextLevelLine {
+  uint8_t into = gPet.ageMinutes % MINUTES_PER_LEVEL;
+  char out[40];
+  snprintf(out, sizeof(out), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, gPet.level() + 1);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)evolutionLabel { return [NSString stringWithUTF8String:T(S_EVO_LABEL)]; }
+
+// Mirrors renderCardProgress's branch, which also decides the colour; the kind
+// is returned separately so the Swift side does not re-derive the same rules.
+- (NSString *)evolutionStatus {
+  const DexEntry *d = TPDexEntry(gPet.speciesId);
+  if (d->evolvesTo == 0) return [NSString stringWithUTF8String:T(S_FINAL_FORM)];
+  int needed = d->evolveLevel + gPet.careMistakes;
+  if (gPet.level() >= needed) {
+    return [NSString stringWithUTF8String:T(gPet.lowestStat() >= 40 ? S_EVO_READY : S_EVO_BLOCKED)];
+  }
+  char out[40];
+  snprintf(out, sizeof(out), T(S_EVO_IN_FMT), needed - gPet.level());
+  return [NSString stringWithUTF8String:out];
+}
+
+- (uint8_t)evolutionStatusKind {
+  const DexEntry *d = TPDexEntry(gPet.speciesId);
+  if (d->evolvesTo == 0) return 0;
+  int needed = d->evolveLevel + gPet.careMistakes;
+  if (gPet.level() < needed) return 0;
+  return gPet.lowestStat() >= 40 ? 1 : 2;
+}
+
+- (NSString *)mistakesLine {
+  char out[32];
+  snprintf(out, sizeof(out), T(S_MISTAKES_FMT), gPet.careMistakes);
+  return [NSString stringWithUTF8String:out];
+}
+
+// --- minigame / training ------------------------------------------------
+- (uint16_t)gameHigh      { return gPet.gameHi; }
+- (uint16_t)strengthHigh  { return gPet.strHi; }
+- (NSString *)newRecordText { return [NSString stringWithUTF8String:T(S_NEW_RECORD)]; }
+- (NSString *)hitFastText   { return [NSString stringWithUTF8String:T(S_HIT_FAST)]; }
+
+static NSString *TPFormatted(StrId id, unsigned v) {
+  char out[40];
+  snprintf(out, sizeof(out), T(id), v);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)scoreLine:(uint16_t)score        { return TPFormatted(S_SCORE_FMT, score); }
+- (NSString *)recordLine:(uint16_t)record      { return TPFormatted(S_RECORD_FMT, record); }
+- (NSString *)shortRecordLine:(uint16_t)record { return TPFormatted(S_REC_FMT, record); }
+- (NSString *)hitsLine:(uint16_t)hits          { return TPFormatted(S_HITS_FMT, hits); }
+- (NSString *)strengthGainLine:(uint8_t)gain   { return TPFormatted(S_STR_GAIN_FMT, gain); }
+
+- (NSString *)playResultMessage:(uint16_t)score {
+  return [NSString stringWithUTF8String:T(score >= 10 ? S_GREAT_JOY : S_PLUS_JOY)];
+}
+
+// --- release dialog -----------------------------------------------------
+- (NSString *)releaseQuestion {
+  char out[48];
+  snprintf(out, sizeof(out), T(S_RELEASE_FMT), TPDexEntry(gPet.speciesId)->name);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)yesText   { return [NSString stringWithUTF8String:T(S_YES)]; }
+- (NSString *)noText    { return [NSString stringWithUTF8String:T(S_NO)]; }
+- (NSString *)nameLabel     { return [NSString stringWithUTF8String:T(S_NAME)]; }
+- (NSString *)settingsTitle { return [NSString stringWithUTF8String:T(S_SET_TIME)]; }
+- (NSString *)soundOnText   { return [NSString stringWithUTF8String:T(S_SND_ON)]; }
+- (NSString *)soundOffText  { return [NSString stringWithUTF8String:T(S_SND_OFF)]; }
 
 
 @end
