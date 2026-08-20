@@ -16,9 +16,7 @@ import SwiftUI
 /// Screens are reached the way upstream reaches them: swipe left for the
 /// Pokedex, up for the stat card, down for settings, and hold the creature to
 /// be asked about letting it go.
-///
-/// Not yet ported: the evolution flash and the farewell/runaway ceremony
-/// animations, which still resolve instantly rather than playing out.
+
 struct PetScreen: View {
 
     @StateObject private var model = GameModel()
@@ -207,6 +205,7 @@ struct PetScreen: View {
             drawHeader(ctx, name: TPDexName(pet.speciesId),
                        nameColor: TPDexAccent(pet.speciesId),
                        message: pet.ceremonyMessage, ink: ink)
+            drawCeremony(ctx, now: now, ink: ink)
             return
         }
 
@@ -268,6 +267,12 @@ struct PetScreen: View {
     /// Draws whichever pose the model settled on this tick, anchored by the
     /// creature's feet on the ground line.
     private func drawPet(_ ctx: GraphicsContext, ink: UInt16, now: UInt64) {
+        // Evolving replaces the creature entirely, as upstream's drawPetPMD does
+        // before it reaches the pose logic.
+        if model.pet.evolvingNow {
+            drawEvolveFX(ctx, now: now)
+            return
+        }
         guard let sprite = model.sprite else {
             drawPetFallback(ctx, ink: ink)
             return
@@ -416,6 +421,139 @@ struct PetScreen: View {
         ctx.gfxTextCentered(act, 224, 2, actInk)
         ctx.fillRoundRect(k.minX, k.minY, k.width, k.height, 12, keepFill)
         ctx.gfxTextCentered(keep, 286, 2, keepInk)
+    }
+
+    // MARK: - Evolution and ceremony animations
+
+    /// Draws one sprite's idle frame standing on `groundY`, optionally as a flat
+    /// silhouette. Shared by the evolution flash and the ceremony walk-off.
+    private func drawSpriteIdle(_ ctx: GraphicsContext, _ sprite: TPSprite,
+                                x: CGFloat, groundY: CGFloat, elapsedMs: UInt64,
+                                act: TPAct = .idle, maxScale: Int = 5,
+                                silhouette: Bool = false) {
+        let use = sprite.has(act) ? act : .idle
+        guard let a = sprite[use],
+              let img = sprite.image(use, frame: TPSprite.frameIndex(a, elapsedMs: elapsedMs,
+                                                                    loop: true))
+        else { return }
+        let s = sprite.scale(for: a, max: maxScale)
+        let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
+        let rect = CGRect(x: x - w / 2,
+                          y: groundY - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                          width: w, height: h)
+        if silhouette {
+            ctx.drawSilhouette(img, in: rect, UI.ink)
+        } else {
+            ctx.draw(Image(decorative: img, scale: 1).interpolation(.none), in: rect)
+        }
+    }
+
+    /// Port of `drawEvolveFX`: a pulsing halo, turning rays, the old and new
+    /// forms flickering against each other, sparks, and a white-out reveal.
+    private func drawEvolveFX(_ ctx: GraphicsContext, now: UInt64) {
+        let t = CGFloat(model.pet.evolveProgress)      // 0..1
+        let cx = TP.cx, cy = TP.petGround - 96
+        let n = Double(now)
+
+        let halo = 36 + t * 150 + CGFloat(8 * sin(n * 0.02))
+        for k in 0..<4 {
+            let r = halo - CGFloat(k) * 7
+            if r > 0 { ctx.strokeCircle(cx, cy, r, UI.white) }
+        }
+
+        let base = n * 0.004
+        for i in 0..<12 {
+            let a = base + Double(i) * (.pi / 6)
+            let len = 90 + 70 * (0.5 + 0.5 * sin(n * 0.012 + Double(i)))
+            ctx.drawLine(cx, cy, cx + CGFloat(cos(a) * len), cy + CGFloat(sin(a) * len), UI.white)
+        }
+
+        // Flicker between the two forms, quickening as it goes, then settle on
+        // the new one for the flash.
+        let period = UInt64(60 + 220 * (1 - t))
+        let showOld = t < 0.9 && model.evoSprite != nil && (now / max(period, 1)) % 2 == 0
+        if showOld, let old = model.evoSprite {
+            drawSpriteIdle(ctx, old, x: cx, groundY: TP.petGround, elapsedMs: 0, silhouette: true)
+        } else if let new = model.sprite {
+            drawSpriteIdle(ctx, new, x: cx, groundY: TP.petGround, elapsedMs: 0, silhouette: true)
+        }
+
+        for i in 0..<10 {
+            let a = Double(i) * (.pi / 5) + Double(t) * 4.0
+            let d = CGFloat((now / 14 + UInt64(i) * 33) % 200)
+            let sx = cx + CGFloat(cos(a)) * d, sy = cy + CGFloat(sin(a)) * d
+            ctx.fillRect(sx - 2, sy - 2, 5, 5,
+                         i & 1 == 1 ? rgb565(0xff, 0xe0, 0x70) : UI.white)
+        }
+
+        if t > 0.9 { ctx.fillCircle(cx, cy, 300 * (t - 0.9) / 0.1, UI.white) }
+    }
+
+    /// Port of `drawCeremony`: the two endings. A farewell gets a golden halo,
+    /// rising hearts and a bow before it walks off right; a runaway gets rain,
+    /// a flinch and a fading walk off left.
+    private func drawCeremony(_ ctx: GraphicsContext, now: UInt64, ink: UInt16) {
+        let pet = model.pet
+        let t = CGFloat(pet.ceremonyProgress)          // 0..1 over ten seconds
+        let panic = pet.ceremony == .runaway
+        let n = Double(now)
+        var x = TP.cx
+        var act = TPAct.idle
+        var fade = false
+
+        if panic {
+            for i in 0..<46 {
+                let rx = CGFloat((UInt64(i) * 47 + now / 3) % 466)
+                let ry = CGFloat((UInt64(i) * 91 + now / 2) % 470)
+                ctx.drawLine(rx, ry, rx - 3, ry + 12, rgb565(0x6a, 0x84, 0xb0))
+            }
+            if t < 0.30 {
+                act = .hurt
+                x = TP.cx + CGFloat(4 * sin(n * 0.04))
+            } else {
+                act = .walkL
+                x = TP.cx - ((t - 0.30) / 0.70) * (TP.cx + 120)
+                fade = t > 0.6 && (now / 160) % 2 == 0
+            }
+        } else {
+            // Pulsing golden halo.
+            let gcy = TP.petGround - 96
+            for k in 0..<4 {
+                let r = 60 + CGFloat(k) * 34 + CGFloat(10 * sin(n * 0.02))
+                ctx.strokeCircle(TP.cx, gcy, r, rgb565(0xff, 0xdf, 0x8a))
+            }
+            for i in 0..<16 {
+                let px = CGFloat((i * 71 + 28) % 466)
+                let py = 410 - CGFloat((now / 8 + UInt64(i) * 70) % 360)
+                if py < 30 { continue }
+                if i % 4 == 0 {
+                    ctx.drawIcon(TPIcon.heart, px - 8, py - 8, scale: 1)
+                } else {
+                    ctx.fillRect(px, py, 4, 4,
+                                 i % 2 == 1 ? rgb565(0xff, 0xe7, 0x9f) : rgb565(0xff, 0x9a, 0xc0))
+                }
+            }
+            if t < 0.45 {
+                act = .pose
+            } else {
+                act = .walkR
+                x = TP.cx + ((t - 0.45) / 0.55) * (TP.cx + 140)
+            }
+        }
+
+        if let sprite = model.sprite {
+            drawSpriteIdle(ctx, sprite, x: x, groundY: TP.petGround, elapsedMs: now,
+                           act: act, silhouette: panic ? fade : false)
+            if !panic, pet.showHeart {
+                ctx.drawIcon(TPIcon.heart, x + 50, TP.petGround - 190, scale: 2)
+            }
+        }
+
+        // A tear, while it is still standing there.
+        if panic, t < 0.55 {
+            let ty = TP.petGround - 150 + CGFloat((now / 6) % 40)
+            ctx.fillRect(x + 6, ty, 3, 6, rgb565(0x9a, 0xc4, 0xe8))
+        }
     }
 
     /// Flame and streak count, top-left of the idle screen.

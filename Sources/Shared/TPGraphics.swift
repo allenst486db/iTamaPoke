@@ -125,6 +125,13 @@ extension GraphicsContext {
         }
     }
 
+    func drawLine(_ x0: CGFloat, _ y0: CGFloat, _ x1: CGFloat, _ y1: CGFloat, _ c: UInt16) {
+        var p = Path()
+        p.move(to: CGPoint(x: x0, y: y0))
+        p.addLine(to: CGPoint(x: x1, y: y1))
+        stroke(p, with: .color(Color(c)), lineWidth: 1)
+    }
+
     func fillTriangle(_ x0: CGFloat, _ y0: CGFloat, _ x1: CGFloat, _ y1: CGFloat,
                       _ x2: CGFloat, _ y2: CGFloat, _ c: UInt16) {
         var p = Path()

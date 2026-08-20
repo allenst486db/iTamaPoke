@@ -26,6 +26,11 @@ final class GameModel: ObservableObject {
     @Published private(set) var sprite: TPSprite?
     private var spriteKey: Int32 = .min
 
+    /// The form being evolved away from, held only while the flash plays so it
+    /// can alternate with the new one. Upstream keeps this as a second PmdMon.
+    private(set) var evoSprite: TPSprite?
+    private var evoSpriteKey: Int32 = .min
+
     /// What to draw the creature as this frame. Computed on the tick rather than
     /// inside the `Canvas` closure, because deciding it advances state (the walk
     /// scheduler) and a draw pass must not mutate the model.
@@ -98,11 +103,29 @@ final class GameModel: ObservableObject {
         sprite = pet.isEgg ? nil : TPSprite.load(dex: pet.speciesId, shiny: pet.shiny)
     }
 
+    /// Loads (and later drops) the previous form's sprite for the evolution
+    /// flash. Freed once the animation is over: it is only needed while both
+    /// forms are on screen.
+    private func refreshEvoSprite() {
+        guard pet.evolvingNow, pet.prevSpeciesId > 0 else {
+            if evoSprite != nil {
+                evoSprite = nil
+                evoSpriteKey = .min
+            }
+            return
+        }
+        let key = Int32(pet.prevSpeciesId) << 1 | (pet.shiny ? 1 : 0)
+        guard key != evoSpriteKey else { return }
+        evoSpriteKey = key
+        evoSprite = TPSprite.load(dex: pet.prevSpeciesId, shiny: pet.shiny)
+    }
+
     /// Called on the display tick. Advances animation timers and, once a minute,
     /// the game tick — same contract as `pet.update(millis())` in `loop()`.
     func tick() {
         pet.update()
         refreshSprite()
+        refreshEvoSprite()
         advanceBehaviour(now: millis)
         stepGames(now: millis)
         frame &+= 1
