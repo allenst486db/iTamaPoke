@@ -52,6 +52,28 @@ final class GameModel: ObservableObject {
     private var behTargetX: CGFloat = TP.cx
     private var lastPoseMs: UInt64 = 0
 
+    /// One soap bubble, seeded when the bath starts and then swaying upward.
+    struct Bubble {
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var r: CGFloat = 0
+        /// Phase offset so the bubbles do not sway in lockstep.
+        var phase: CGFloat = 0
+    }
+
+    /// Bath state. Upstream seeds the bubbles once in `startBath` and keeps them
+    /// in a file-scope array; they have to persist across frames to sway, so they
+    /// belong here rather than being regenerated inside a draw.
+    private(set) var bubbles = [Bubble](repeating: Bubble(), count: 14)
+    private(set) var bathUntil: UInt64 = 0
+    /// How long a bath runs, from upstream's `bathUntil = millis() + 3000`.
+    /// Named because the renderer needs it to work out how far along it is.
+    static let bathDuration: UInt64 = 3000
+    /// Upstream defers `clean()` until the bath finishes, so the creature is
+    /// still dirty while it is being washed. `bathPending` is what makes that
+    /// fire exactly once.
+    private var bathPending = false
+
     /// Ball minigame and training sack. Both live here rather than in the view
     /// because they advance on the tick, and a Canvas draw must not step physics.
     private(set) var ball = TPBallGame()
@@ -141,9 +163,46 @@ final class GameModel: ObservableObject {
         pet.update()
         refreshSprite()
         refreshEvoSprite()
+        stepBath(now: millis)
         advanceBehaviour(now: millis)
         stepGames(now: millis)
         frame &+= 1
+    }
+
+    // MARK: - Bath
+
+    /// Port of upstream `startBath`, including its guards — notably the
+    /// `bathUntil` one, which stops a second tap restarting the animation.
+    func startBath() {
+        guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none, bathUntil == 0 else {
+            return
+        }
+        let now = millis
+        bathUntil = now + Self.bathDuration
+        bathPending = true
+        let cx = behX
+        for i in bubbles.indices {
+            bubbles[i] = Bubble(x: cx - 70 + CGFloat(Int.random(in: 0..<140)),
+                                y: TP.petGround - CGFloat(Int.random(in: 0..<150)),
+                                r: CGFloat(8 + Int.random(in: 0..<16)),
+                                phase: CGFloat(Int.random(in: 0..<64)))
+        }
+    }
+
+    /// The tail of upstream's `drawBath`: when the timer runs out it washes the
+    /// creature and sets it posing. Run on the tick because it mutates the Pet.
+    private func stepBath(now: UInt64) {
+        guard bathUntil != 0, now > bathUntil else { return }
+        bathUntil = 0
+        guard bathPending else { return }
+        bathPending = false
+        pet.clean()
+        if let sprite, sprite.has(.pose), let pose = sprite[.pose] {
+            behMode = 2
+            behAct = .pose
+            behT0 = now
+            behUntil = now + UInt64(pose.totalMs * 2)
+        }
     }
 
     // MARK: - Minigames

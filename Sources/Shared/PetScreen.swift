@@ -44,8 +44,6 @@ struct PetScreen: View {
     /// Rename keyboard buffer.
     @State private var nameDraft = ""
 
-    /// Bath animation deadline, upstream's `bathUntil`.
-    @State private var bathUntil: UInt64 = 0
     /// "Let it go?" confirmation deadline, upstream's `confirmUntil`.
     @State private var confirmUntil: UInt64 = 0
 
@@ -104,7 +102,7 @@ struct PetScreen: View {
                     }
             )
         }
-        .background(Color(model.pet.sleeping ? UI.bgNight : UI.bgDay))
+        .background(Color(letterboxColor))
         .ignoresSafeArea()
         .onAppear { model.start() }
         .onReceive(ticker) { _ in
@@ -147,6 +145,22 @@ struct PetScreen: View {
 
         confirmUntil = model.millis + 10000
         holdFired = true
+    }
+
+    /// Fills the area outside the 466x466 square on a screen taller than it.
+    ///
+    /// The firmware's panel is round, so it has neither corners nor letterbox
+    /// and never needed a colour here. Matching whatever the square paints at
+    /// its own edge is what makes the seam invisible: the panel screens are
+    /// always `bgDay`, and only the idle scene follows the day/night sky.
+    private var letterboxColor: UInt16 {
+        if model.pet.awaitingStarter { return UI.bgDay }   // also a panel screen
+        switch screen {
+        case .idle, .game, .sack:
+            return model.pet.sleeping ? UI.bgNight : UI.bgDay
+        case .gallery, .card, .keyboard, .settings:
+            return UI.bgDay
+        }
     }
 
     /// View point -> the firmware's 466x466 coordinate space.
@@ -225,7 +239,7 @@ struct PetScreen: View {
                        message: pet.statusMessage, ink: ink)
             drawStreakBadge(ctx, ink: ink)
             drawPet(ctx, ink: ink, now: now)
-            if now < bathUntil { drawBath(ctx, now: now) }
+            drawBath(ctx, now: now)
             // Port of drawPetPMD's trailing heart draw, following the creature.
             if pet.showHeart {
                 ctx.drawIcon(TPIcon.heart, model.pose.x + 50, TP.petGround - 190, scale: 2)
@@ -582,15 +596,39 @@ struct PetScreen: View {
         ctx.gfxTextCentered(detail, 212, 2, UI.ink)
     }
 
-    /// Bath: a tub of water and rising bubbles over the creature.
+    /// Port of upstream's `drawBath`: soap suds over the creature — no tub.
+    ///
+    /// The bubbles sway on a sine, drift upward as the three seconds run down,
+    /// and in the last 800ms pop into little sparkle crosses.
     private func drawBath(_ ctx: GraphicsContext, now: UInt64) {
-        ctx.fillRoundRect(120, 250, 226, 70, 18, rgb565(0x4f, 0x96, 0xc4))
-        ctx.drawRoundRect(120, 250, 226, 70, 18, UI.ink)
-        for i in 0..<7 {
-            let phase = (now / 12 + UInt64(i) * 40) % 90
-            let bx = 140 + CGFloat(i) * 32
-            let by = 300 - CGFloat(phase)
-            ctx.fillCircle(bx, by, CGFloat(4 + i % 3), UI.white)
+        let until = model.bathUntil
+        guard until > now else { return }
+        let left = until - now
+
+        // Saturating, not `bathDuration - left`: upstream does this in wrapping
+        // uint32_t arithmetic, and the same expression traps in Swift the moment
+        // `left` exceeds the duration.
+        let elapsed = GameModel.bathDuration > left ? GameModel.bathDuration - left : 0
+
+        if left > 800 {
+            let t = Double(now) / 220.0
+            for b in model.bubbles {
+                let bx = b.x + CGFloat(sin(t + Double(b.phase)) * 6)
+                let by = b.y - CGFloat(elapsed / 90)
+                ctx.fillCircle(bx, by, b.r, UI.white)
+                ctx.strokeCircle(bx, by, b.r, 0x7E3D)
+                // The little highlight that reads as a soap bubble.
+                ctx.fillCircle(bx - b.r / 3, by - b.r / 3, b.r / 4, UI.bgDay)
+            }
+        } else {
+            for i in 0..<8 {
+                let b = model.bubbles[i]
+                let sx = b.x + CGFloat(i % 3) * 6 - 6
+                let sy = b.y - 18
+                let col: UInt16 = i % 2 == 1 ? UI.barWarn : UI.white
+                ctx.fillRect(sx - 6, sy - 1, 13, 3, col)
+                ctx.fillRect(sx - 1, sy - 6, 3, 13, col)
+            }
         }
     }
 
@@ -621,7 +659,7 @@ struct PetScreen: View {
     private static let sndPill = CGRect(x: 34, y: 296, width: 96, height: 30)
 
     private func renderSettings(_ ctx: GraphicsContext) {
-        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(model.pet.settingsTitle, 44, 3, UI.ink)
 
@@ -673,7 +711,7 @@ struct PetScreen: View {
     private static let kbH: CGFloat = 52
 
     private func renderKeyboard(_ ctx: GraphicsContext) {
-        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(model.pet.nameLabel, 56, 2, UI.ink)
 
@@ -845,7 +883,7 @@ struct PetScreen: View {
 
     /// Port of `renderCard`: four pages over the round panel, swiped between.
     private func renderCard(_ ctx: GraphicsContext, now: UInt64) {
-        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
 
         switch cardPage {
@@ -975,7 +1013,7 @@ struct PetScreen: View {
     /// (`galleryDirty`) because repainting the panel is slow; here every frame is
     /// redrawn anyway, so that flag has no equivalent.
     private func renderGallery(_ ctx: GraphicsContext, now: UInt64) {
-        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         if galleryDetail != 0 {
             renderGalleryDetail(ctx, dex: galleryDetail, now: now)
@@ -1066,7 +1104,7 @@ struct PetScreen: View {
     }
 
     private func renderStarterSelect(_ ctx: GraphicsContext) {
-        ctx.fillRect(0, 0, TP.screen, TP.screen, 0x0000)
+        ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(TPChooseStarterTitle(), 68, 2, UI.ink)
         for i in 0..<3 {
@@ -1296,9 +1334,9 @@ struct PetScreen: View {
                 screen = .game
                 model.startBallGame()
             case 2: pet.toggleLight()
-            default:
-                pet.clean()
-                bathUntil = model.millis + 2500
+            // Upstream washes the creature when the bath *finishes*, not here,
+            // so the suds play over a still-dirty creature as they should.
+            default: model.startBath()
             }
             return
         }
