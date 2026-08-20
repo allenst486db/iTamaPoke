@@ -1,8 +1,9 @@
 #import <Foundation/Foundation.h>
 #include "audio.h"   // upstream/audio.h -- declarations only, no ESP32 deps
 
-// The firmware drives an ES8311 codec. Here the sound effect IDs are just
-// forwarded to Swift, which decides how (or whether) to make noise.
+// The firmware drives an ES8311 codec over I2S. There is no such chip here, so
+// the effect IDs are forwarded to Swift, where TPAudio re-synthesises upstream's
+// square waves through AVAudioEngine.
 static void (*gSfxHook)(uint8_t) = NULL;
 static bool gEnabled = true;
 

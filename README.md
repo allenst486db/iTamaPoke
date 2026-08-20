@@ -57,14 +57,21 @@ evolution and farewell/runaway decisions with their animations.
 for the stat card, down for settings, hold the creature to be asked about
 letting it go.
 
-Two deliberate departures, both because a phone is not an ESP32:
+**Sound** is upstream's, re-synthesised. The firmware generates Game Boy-style
+square waves on an ES8311 codec; there is no such chip here, so
+`Sources/Shared/TPAudio.swift` generates the same waveform — upstream's note
+tables, 16kHz sample rate, amplitude and anti-click ramps — and plays it through
+`AVAudioEngine`, with a haptic alongside. The settings toggle switches both.
 
-- **Sound is haptics.** The ES8311 tone synth is not ported; the settings
-  toggle switches haptics instead.
-- **The clock screen has no clock.** Its hour/minute dial exists because the
-  firmware has no idea what time it is and the sky depends on it. iOS knows,
-  and pointing the game at a hand-set time is exactly what made the sky run
-  nine hours early. Language and sound — the rest of that screen — are ported.
+> The session is `.ambient`, so effects mix with whatever you are already
+> listening to and follow the ring/silent switch. A silent phone stays silent;
+> the haptic still fires.
+
+One deliberate departure, because a phone is not an ESP32: **the clock screen
+has no clock.** Its hour/minute dial exists because the firmware has no idea
+what time it is and the sky depends on it. iOS knows, and pointing the game at
+a hand-set time is exactly what made the sky run nine hours early. Language and
+sound — the rest of that screen — are ported.
 
 ---
 

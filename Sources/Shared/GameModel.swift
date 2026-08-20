@@ -85,12 +85,27 @@ final class GameModel: ObservableObject {
         TPSaveFile.writeExport()
         #endif
         refreshSprite()
-        // The ES8311 tone synth is not ported. Haptics are the closest native
-        // equivalent and keep taps feeling answered; real audio is a later step.
-        TPSetSfxHandler { [weak self] _ in
-            guard self?.hapticsEnabled ?? true else { return }
-            Self.playFeedback()
+        if soundEnabled { TPAudio.shared.start() }
+        // Upstream's ES8311 square-wave effects are reproduced by TPAudio; the
+        // haptic goes alongside, since a phone can answer a tap both ways and a
+        // silent phone should still feel responsive.
+        TPSetSfxHandler { [weak self] id in
+            self?.emitSfx(id)
         }
+    }
+
+    /// Plays an effect from the Swift side.
+    ///
+    /// `pet.cpp` raises hatch, evolve, medal, level and the farewells itself, but
+    /// the ones tied to input — tap, eat, play, heart — are raised by
+    /// `TamaPoke.ino`, which this port replaced with SwiftUI. They are re-raised
+    /// at the same points rather than being lost.
+    func playSfx(_ sfx: TPSfx) { emitSfx(sfx.rawValue) }
+
+    private func emitSfx(_ id: UInt8) {
+        guard soundEnabled else { return }
+        TPAudio.shared.play(id)
+        Self.playFeedback()
     }
 
     /// Reloads the sprite when the pet's form changes. Keyed on the egg flag too:
@@ -169,6 +184,8 @@ final class GameModel: ObservableObject {
             ball.step(dtMs: dt, now: now) { score in
                 let beatIt = score > self.pet.gameHigh
                 self.pet.playResult(UInt8(min(score, 255)))
+                // Upstream stings a record differently from an ordinary finish.
+                self.playSfx(beatIt && score > 0 ? .medal : .level)
                 return beatIt
             }
         case .sack:
@@ -177,6 +194,7 @@ final class GameModel: ObservableObject {
                 sack.newHigh = sack.hits > pet.strengthHigh
                 sack.gain = pet.trainStrength(sack.hits)
                 sack.overUntil = now + 3500
+                playSfx(sack.newHigh ? .medal : .play)
             }
             sack.shake *= 0.84
         case .none:
@@ -299,14 +317,20 @@ final class GameModel: ObservableObject {
     }
     #endif
 
-    /// Upstream's sound switch. Sound here is haptics, but it is the same
-    /// setting from the player's side, and it persists alongside the save.
-    private(set) var hapticsEnabled = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
+    /// Upstream's sound switch, driving both the tones and the haptic. Kept
+    /// under the old key so an existing save's preference carries over.
+    private(set) var soundEnabled = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
 
-    func setHaptics(_ on: Bool) {
-        hapticsEnabled = on
+    func setSound(_ on: Bool) {
+        soundEnabled = on
         UserDefaults.standard.set(on, forKey: "tamapoke/haptics")
-        if on { Self.playFeedback() }   // confirm by feel when switching on
+        if on {
+            TPAudio.shared.start()
+            TPAudio.shared.play(TPSfx.tap.rawValue)   // confirm when switching on
+            Self.playFeedback()
+        } else {
+            TPAudio.shared.stop()
+        }
     }
 
     private static func playFeedback() {

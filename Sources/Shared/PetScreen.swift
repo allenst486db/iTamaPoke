@@ -632,7 +632,7 @@ struct PetScreen: View {
         ctx.gfxText(clock, TP.cx - 105, 120, 7, UI.ink)
         ctx.gfxTextCentered(TimeZone.current.identifier, 210, 2, UI.track)
 
-        let snd = model.hapticsEnabled
+        let snd = model.soundEnabled
         let s = Self.sndPill
         ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
         ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
@@ -651,11 +651,12 @@ struct PetScreen: View {
 
     private func settingsTap(_ p: CGPoint) {
         if Self.sndPill.contains(p) {
-            model.setHaptics(!model.hapticsEnabled)
+            model.setSound(!model.soundEnabled)
             return
         }
         if Self.langPill.contains(p) {
             TPSetLanguage((TPLanguage() + 1) % UInt8(Self.langCodes.count))
+            model.playSfx(.tap)
             return
         }
         if p.y > 380 { screen = .idle }
@@ -827,7 +828,7 @@ struct PetScreen: View {
             model.endGames()
             return
         }
-        _ = model.tapBall(p)
+        if model.tapBall(p) { model.playSfx(.play) }
     }
 
     private func sackTap(_ p: CGPoint) {
@@ -1212,6 +1213,7 @@ struct PetScreen: View {
                 let ry = CGFloat(110 + i * 78)
                 if p.x >= 70, p.x <= 396, p.y >= ry, p.y <= ry + 70 {
                     pet.chooseStarter(TPStarterDex(i))
+                    model.playSfx(.tap)
                     return
                 }
             }
@@ -1243,6 +1245,7 @@ struct PetScreen: View {
             if p.y >= 288, p.y <= 352, p.x >= 101, p.x <= 365 {
                 let item = Int((p.x - 101) / 66)
                 if item == 3 { pet.feedCandy() } else { pet.feedBerry(UInt8(item)) }
+                model.playSfx(.eat)
             }
             feedMenuUntil = 0
             return
@@ -1250,6 +1253,7 @@ struct PetScreen: View {
 
         if pet.isEgg {
             pet.eggTap()
+            model.playSfx(.tap)
             return
         }
 
@@ -1274,6 +1278,7 @@ struct PetScreen: View {
             let dx = p.x - b.x, dy = p.y - b.y
             guard dx * dx + dy * dy <= 36 * 36 else { continue }   // BTN_HIT
             if pet.sleeping && i != 2 { return }
+            model.playSfx(.tap)
             switch i {
             case 0: feedMenuUntil = model.millis + 4000
             case 1:
@@ -1291,6 +1296,9 @@ struct PetScreen: View {
         }
 
         // inPetZone(): tapping the creature pets it
-        if p.x > 110, p.x < 356, p.y > 95, p.y < 310 { pet.caress() }
+        if p.x > 110, p.x < 356, p.y > 95, p.y < 310 {
+            pet.caress()
+            if !pet.sleeping { model.playSfx(.heart) }
+        }
     }
 }
