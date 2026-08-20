@@ -1129,8 +1129,8 @@ struct PetScreen: View {
         galleryPage = min(next, 9)
     }
 
-    /// Vertical swipe: up opens the stat card and closes it again, down is the
-    /// clock screen upstream — not ported, so it currently does nothing.
+    /// Vertical swipe: up opens the stat card and closes it again, down opens
+    /// settings — upstream's clock screen, minus the clock.
     private func onSwipeV(_ dir: Int) {
         let pet = model.pet
         if pet.awaitingStarter { return }

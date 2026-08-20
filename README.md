@@ -19,7 +19,7 @@ This repo contains **no Pokémon assets and no sprites**. It is source code only
 | Renderer, layout, UI palette, status strings — **translated** from upstream C++ | `Sources/Shared/`, `Sources/Core/TPPet.mm` | MIT © Quique Tortosa (derivative work) |
 | Shims, ObjC bridge structure, CI — original to this port | `Sources/Core/`, `.github/` | MIT |
 | Pokémon names, designs, species data | **not in this repo** | © Nintendo / Game Freak / The Pokémon Company |
-| Sprites | **not in this repo**, fetched per-user (phase 2) | [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), CC BY-NC 4.0 |
+| Sprites | **not in this repo**, fetched per-user, see [Sprites](#sprites) | [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), CC BY-NC 4.0 |
 
 **What you may do:** build this and install it on *your own* devices.
 
@@ -40,21 +40,31 @@ the same terms as upstream).
 
 ## Status
 
-Phase 1 — the vertical slice is in place: the upstream C++ game logic runs
-unmodified, the idle screen renders, and CI produces an installable artifact.
+Feature-complete against upstream: every screen and animation in the firmware
+is ported.
 
-**Working:** full game simulation (stat decay, evolution gating, egg rarity
-rolls, streak/bond/medals, genes, offline progression), starter selection,
-egg + hatching taps, idle scene (biome ground + real-time sky), need bars,
-the four action buttons, feed menu (with the firmware's own hand-drawn berry /
-candy / heart / poop icons), petting, sleep/wake, 6 UI languages, and animated
-creature sprites — including shiny forms — on both iPhone and Apple Watch once
-you [add them](#sprites).
+**The game:** the upstream C++ runs unmodified — stat decay, evolution gating,
+egg rarity rolls, streak/bond/medals, genes and offline progression are all its
+own code, not a reimplementation.
 
-**Not ported yet:** the sprite walk/gesture scheduler (the creature stands
-centred instead of wandering), the Pokédex gallery, stat card, ball minigame,
-training bag, bath scene, clock/settings screen, on-screen keyboard, and the
-evolution / farewell decision dialogs. Sound is haptics only.
+**Screens:** idle scene (biome ground, real-time sky, wandering creature),
+starter selection, egg and hatching, feed menu, bath, the Pokédex gallery with
+its detail view, the four-page stat card (profile, battle, medals, progress),
+the ball minigame, the training sack, the rename keyboard, settings, and the
+evolution and farewell/runaway decisions with their animations.
+
+**Reached the way the firmware reaches them:** swipe left for the Pokédex, up
+for the stat card, down for settings, hold the creature to be asked about
+letting it go.
+
+Two deliberate departures, both because a phone is not an ESP32:
+
+- **Sound is haptics.** The ES8311 tone synth is not ported; the settings
+  toggle switches haptics instead.
+- **The clock screen has no clock.** Its hour/minute dial exists because the
+  firmware has no idea what time it is and the sky depends on it. iOS knows,
+  and pointing the game at a hand-set time is exactly what made the sky run
+  nine hours early. Language and sound — the rest of that screen — are ported.
 
 ---
 
