@@ -1,22 +1,116 @@
-MIT License
+iTamaPoke Personal Use License 1.0
 
-Copyright (c) 2026 Quique Tortosa (original TamaPoke firmware)
 Copyright (c) 2026 TamaPoke iOS/watchOS port contributors
+(Original firmware: Copyright (c) 2026 Quique Tortosa — see "Upstream" below)
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+This is a custom license, not a certified open-source license. It is modeled
+in style on the PolyForm license family (https://polyformproject.org) but its
+terms are written specifically for this project and are not an official
+PolyForm license. Read it; do not assume it says what a license with a similar
+name usually says.
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+--------------------------------------------------------------------------
+1. What this covers
+--------------------------------------------------------------------------
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+This license applies to the source code, build scripts, and documentation in
+this repository ("the Software"), EXCLUDING:
+
+  - upstream/ — a git submodule pointing at github.com/socquique/TamaPoke,
+    used here under ITS OWN MIT license (see upstream/LICENSE). This license
+    grants no rights to and imposes no restriction on that project itself;
+    anyone can get it directly from its own repository under its own terms.
+
+  - Any third-party asset (character sprites, the app icon image, etc.) that
+    is deliberately NOT included in this repository. See NOTICE.
+
+--------------------------------------------------------------------------
+2. Personal Use — permitted without asking
+--------------------------------------------------------------------------
+
+You may, free of charge:
+
+  - use, read, and study the Software;
+  - modify it for yourself — including personal experiments such as
+    reskinning the creatures as a different species or animal, changing
+    names, or tweaking gameplay;
+  - build it and install the result on devices you personally own or
+    administer (your own iPhone, your own Apple Watch, a simulator);
+  - fork this repository on GitHub for the same personal purposes above.
+
+None of this requires payment or permission, commercial or not.
+
+--------------------------------------------------------------------------
+3. What is NOT permitted without the copyright holder's prior written
+   permission
+--------------------------------------------------------------------------
+
+Regardless of whether money changes hands, you may NOT, without asking first:
+
+  a. publish, distribute, or otherwise make available to anyone other than
+     yourself any build, binary, `.ipa`, package, or installable artifact of
+     the Software or of any modified or derivative version of it — through
+     the App Store, TestFlight, any alternative marketplace, a sideloading
+     service, a public download link, a GitHub Release, or any other channel;
+
+  b. do the same with a version where the characters, names, art style, or
+     species have been substantially replaced (for example: a version of
+     this project re-themed around cats, dogs, or any other creature) —
+     such a version is still a derivative of this Software and is covered by
+     this restriction exactly as the original is. Reskinning the art is not
+     a way around this clause;
+
+  c. present a fork of this repository, or a project built from it, as an
+     independent or unrelated product;
+
+  d. remove or alter this license, the NOTICE file, or the attribution
+     comments in translated source files.
+
+"Distribute" and "make available" include letting someone else install the
+app on their device by any means, even for free, even to a single other
+person, even inside a private group. Personal use under Section 2 stops at
+your own devices.
+
+--------------------------------------------------------------------------
+4. Asking permission
+--------------------------------------------------------------------------
+
+If you want to do something in Section 3, ask the copyright holder first.
+Permission, if given, will be for the specific thing you asked about — it
+does not carry over to a different release, a different reskin, or a
+different distribution channel.
+
+--------------------------------------------------------------------------
+5. Violations
+--------------------------------------------------------------------------
+
+The first time you are notified in writing that you have violated this
+license, your license continues if you come into full compliance and take
+practical steps to correct the violation (for example, taking a distributed
+build down) within 32 days of that notice. Otherwise, all rights granted to
+you under this license end immediately.
+
+--------------------------------------------------------------------------
+6. No liability
+--------------------------------------------------------------------------
+
+The Software is provided "AS IS", without warranty of any kind, express or
+implied, including but not limited to the warranties of merchantability,
+fitness for a particular purpose, and noninfringement. In no event shall the
+authors or copyright holders be liable for any claim, damages, or other
+liability arising from the Software or its use.
+
+--------------------------------------------------------------------------
+7. Upstream and third-party material
+--------------------------------------------------------------------------
+
+This license does not and cannot grant, restrict, or otherwise affect rights
+to:
+
+  - the upstream/ submodule (MIT, its own project, its own terms);
+  - Pokémon names, designs, and species data (c) Nintendo / Game Freak /
+    The Pokémon Company, not distributed here;
+  - sprites derived from PMD SpriteCollab, CC BY-NC 4.0, not distributed
+    here.
+
+See NOTICE for the full accounting of what is and is not in this repository.

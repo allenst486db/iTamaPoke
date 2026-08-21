@@ -1,11 +1,18 @@
 # TamaPoke for iPhone / Apple Watch
 
+**[한국어 README](README.ko.md)**
+
 A personal-build port of [socquique/TamaPoke](https://github.com/socquique/TamaPoke) —
 a gen-1-Pokémon-inspired tamagotchi firmware for the Waveshare ESP32-S3 round
 AMOLED board — to iOS and watchOS.
 
-> **Personal use only. Not distributable, not for the App Store.**
+> **Personal use only. Not distributable, not for the App Store — including
+> reskinned derivatives (different creatures, same engine).**
 > See [Legal](#legal) before doing anything with this.
+
+New here? [How to play](docs/GAMEPLAY.md) explains the game itself (this repo
+only explains the port). [Free vs. paid Apple account](docs/DEV_ACCOUNT.md)
+lays out exactly what differs between the two build paths below.
 
 ---
 
@@ -15,26 +22,37 @@ This repo contains **no Pokémon assets and no sprites**. It is source code only
 
 | Thing | Where it lives | License |
 |---|---|---|
-| Upstream firmware game logic (`pet.cpp`, `dex.h`, `i18n.cpp`) | `upstream/` submodule — a commit reference, no copied files | MIT © Quique Tortosa |
-| Renderer, layout, UI palette, status strings — **translated** from upstream C++ | `Sources/Shared/`, `Sources/Core/TPPet.mm` | MIT © Quique Tortosa (derivative work) |
-| Shims, ObjC bridge structure, CI — original to this port | `Sources/Core/`, `.github/` | MIT |
+| Upstream firmware game logic (`pet.cpp`, `dex.h`, `i18n.cpp`) | `upstream/` submodule — a commit reference, no copied files | MIT © Quique Tortosa, upstream's own repo/terms |
+| Renderer, layout, UI palette, status strings — **translated** from upstream C++ | `Sources/Shared/`, `Sources/Core/TPPet.mm` | this repo's [LICENSE](LICENSE) (see below) |
+| Shims, ObjC bridge structure, CI, build scripts — original to this port | `Sources/Core/`, `.github/`, `Scripts/` | this repo's [LICENSE](LICENSE) |
+| Default app icon (generic mascot, no third-party IP) | `Resources/DefaultAppIcon.png` | this repo's [LICENSE](LICENSE) |
 | Pokémon names, designs, species data | **not in this repo** | © Nintendo / Game Freak / The Pokémon Company |
 | Sprites | **not in this repo**, fetched per-user, see [Sprites](#sprites) | [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), CC BY-NC 4.0 |
 
-**What you may do:** build this and install it on *your own* devices.
+**What you may do:** build this and install it on *your own* devices, and
+modify your own copy however you like — including reskinning the creatures as
+something else entirely, just for yourself.
 
-**What you may not do:** publish it to the App Store (Apple review guideline
-5.2.1 requires proof of rights you cannot produce), distribute built binaries,
-put it in an alternative marketplace, or monetise it in any form. Free
-distribution is still distribution — "non-commercial" is not a legal defence
-against the underlying copyright. Do not commit fetched sprites; `.gitignore`
-already blocks `Resources/mons/`.
+**What you may not do:** publish it — to the App Store (Apple review
+guideline 5.2.1 requires proof of rights you cannot produce), TestFlight, an
+alternative marketplace, a sideloading service, a public download link, or
+handing a build to someone else at all, even for free, even to one person.
+**This restriction follows the engine, not the character art** — a version
+with the Pokémon replaced by generic cats, dogs, or anything else is still a
+derivative of this repository and is covered exactly the same way. Reskinning
+is not a loophole; see [LICENSE](LICENSE) Section 3 for the binding wording.
+Free/non-commercial is not a legal defence against either the underlying
+Pokémon copyright or this repo's own terms. Do not commit fetched sprites;
+`.gitignore` already blocks `Resources/mons/`.
 
-If you want something you *can* ship, replace the creature art, names, and dex
-data with your own. The MIT-licensed engine underneath is yours to keep.
+If you want something you genuinely *can* publish, you would need your own
+engine built independently against upstream's own MIT-licensed repository —
+not a redistribution of this port. See [LICENSE](LICENSE) Section 1 for
+exactly where that boundary is.
 
-Full attribution and scope: [NOTICE](NOTICE). License: [LICENSE](LICENSE) (MIT,
-the same terms as upstream).
+Full attribution and scope: [NOTICE](NOTICE). Binding terms: [LICENSE](LICENSE)
+— a short custom "Personal Use License", not a standard open-source license.
+Read it; it's four screens, not forty.
 
 ---
 
@@ -226,26 +244,39 @@ The watch app keeps its own separate save and has no Files folder.
 
 ## App icon
 
-Same reasoning as the sprites: a Pokémon character image is fan art, so the
-actual icon file is gitignored and the app ships with no home-screen icon out
-of the box. `Sources/{iOS,watchOS}/Assets.xcassets/AppIcon.appiconset/` is
-tracked (just the catalog structure), the `AppIcon.png` inside each is not.
+Unlike sprites, this ships with a real icon out of the box: `Resources/
+DefaultAppIcon.png` is a small generic mascot drawn for this project (no
+Pokémon, no third-party art), and is checked into git. A build-phase script,
+`Scripts/ensure_app_icon.sh` (wired into both targets via `project.yml`),
+copies it into each asset catalog automatically whenever nothing else has
+been placed there — including a fresh checkout and every CI build. You do not
+need to do anything to get *an* icon.
+
+If you'd rather use your own image (a Pokémon collage, or anything else —
+same fan-art caveat as sprites applies if it's someone else's IP):
 
 ```bash
 Scripts/fetch_app_icon.sh path/to/icon.png   # square, ideally 1024x1024
 xcodegen generate
 ```
 
-Both targets need their own copy for the same reason sprites do — a watchOS
-app can't read the phone app's asset catalog. The script copies the same
-image into both. Each catalog uses Xcode's "single size" App Icon (1024x1024,
-`idiom: universal`), so every smaller size iOS/watchOS actually needs is
-derived from that one file at build time — nothing else to generate, and an
-image with an alpha channel is fine, since both platforms mask their own
-rounded-corner shape over it regardless.
+**Running that script is what changes the icon** — it overwrites
+`AppIcon.png` in both asset catalogs, and `ensure_app_icon.sh` only ever fills
+in a *missing* file, so it never overwrites what you just set. The custom
+`AppIcon.png` files stay gitignored (same reasoning as sprites: fine to build
+onto your own device, not fine to commit or redistribute); only the generic
+default is tracked.
 
-> **CI builds never contain an icon either** — same as sprites, the file
-> isn't in the repo, so the app just gets whatever default the OS shows.
+Both targets need their own copy of whichever icon you use — a watchOS app
+can't read the phone app's asset catalog. Each catalog uses Xcode's "single
+size" App Icon (1024×1024, `idiom: universal`), so every smaller size
+iOS/watchOS actually needs is derived from that one file at build time —
+nothing else to generate, and an image with an alpha channel is fine, since
+both platforms mask their own rounded-corner shape over it regardless.
+
+> **CI builds always ship the default icon**, never a custom one — a custom
+> `AppIcon.png` only exists on whatever machine ran `fetch_app_icon.sh`, and
+> CI's checkout never has it.
 
 ---
 

@@ -1,7 +1,9 @@
 NOTICE — attribution and scope for iTamaPoke
 
-This file is informational. The license itself is LICENSE (MIT), and nothing
-here adds conditions to it.
+This file is informational. The binding terms are in LICENSE (a custom
+"Personal Use License" — read it, it is short). Nothing here adds conditions
+beyond what LICENSE already says; this file exists to lay out attribution and
+exactly what is and is not in this repository.
 
 
 ATTRIBUTION
@@ -12,9 +14,12 @@ This repository is a derivative work of TamaPoke by Quique Tortosa
 Substantial parts of Sources/ are direct translations of that project's C++
 into Swift and Objective-C++ — notably the scene renderer, the idle-screen
 layout and input handling, the UI palette and layout constants, and the
-status-string logic. Those portions remain (c) Quique Tortosa, and the MIT
-terms in LICENSE apply to them as they do to the rest. Each file carrying
-translated code names its origin in a header comment.
+status-string logic. Those portions remain (c) Quique Tortosa. LICENSE's
+personal-use permission and no-redistribution restriction apply to this
+repository's copy of them exactly as to the rest of the port; the upstream
+project itself remains available from its own repository under its own MIT
+terms regardless of anything said here. Each file carrying translated code
+names its origin in a header comment.
 
 upstream/ is a git submodule: this repository stores only a commit reference,
 no copied files. Its own LICENSE governs its contents.
@@ -36,7 +41,11 @@ NOT COVERED by any license granted here
 USE
 
 This is an unofficial fan project for personal use, not affiliated with or
-endorsed by Nintendo. The MIT grant in LICENSE covers the source code in this
-repository; it does not and cannot grant rights to the third-party material
-listed above. Do not publish builds, distribute binaries, or monetise this in
-any form. See the "Legal" section of README.md.
+endorsed by Nintendo. LICENSE covers the source code in this repository; it
+does not and cannot grant rights to the third-party material listed above.
+
+In short, and see LICENSE Section 3 for the binding version: do not publish
+builds, distribute binaries, or make this (or a reskinned derivative of it —
+same engine, different creatures) available to anyone but yourself, in any
+form, for money or not. Building it for your own devices, and modifying your
+own copy however you like, is fine. See the "Legal" section of README.md.

@@ -48,6 +48,11 @@ targets:
     dependencies:
       - target: TamaPokeWatch
         embed: true
+    preBuildScripts:
+      - path: Scripts/ensure_app_icon.sh
+        name: Ensure app icon
+        outputFiles:
+          - $(SRCROOT)/Sources/iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.allenst486db.itamapoke
@@ -81,6 +86,11 @@ targets:
         type: folder
         buildPhase: resources
         optional: true
+    preBuildScripts:
+      - path: Scripts/ensure_app_icon.sh
+        name: Ensure app icon
+        outputFiles:
+          - $(SRCROOT)/Sources/watchOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.allenst486db.itamapoke.watchkitapp

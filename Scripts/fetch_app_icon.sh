@@ -1,10 +1,17 @@
 #!/usr/bin/env bash
 #
-# Copies an app icon image into both targets' asset catalogs.
+# Copies an app icon image into both targets' asset catalogs, REPLACING
+# whatever icon is there now -- including the default mascot icon
+# (Resources/DefaultAppIcon.png, committed, generic, no third-party IP) that
+# Scripts/ensure_app_icon.sh puts there automatically when nothing else has
+# been set. Running this script is what changes the app icon away from that
+# default; there is no separate "activate my icon" step.
 #
-# Like Resources/mons/, the icon PNGs are gitignored: a Pokemon character
-# image is fan art, fine to build onto your own device, not fine to commit
-# or redistribute. See README "App icon".
+# Like Resources/mons/, a Pokemon character image here is fan art: fine to
+# build onto your own device, not fine to commit or redistribute. The
+# AppIcon.png destinations stay gitignored for exactly that reason, so your
+# custom icon never accidentally gets committed -- only Resources/
+# DefaultAppIcon.png (the generic one) is tracked. See README "App icon".
 #
 #   Scripts/fetch_app_icon.sh path/to/icon.png
 #
