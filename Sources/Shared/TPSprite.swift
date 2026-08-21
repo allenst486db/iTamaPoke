@@ -56,12 +56,16 @@ final class TPSprite {
 
     // MARK: - Loading
 
-    /// Loads `mons/p<dex>.bin` from the app bundle, or `mons/ps<dex>.bin` when
-    /// shiny — falling back to the normal sprite if no shiny file is bundled,
-    /// exactly as `PmdMon::load` falls back on the SD card.
+    /// Loads `mons/p<dex>.bin`, or `mons/ps<dex>.bin` when shiny — falling back
+    /// to the normal sprite if no shiny file exists, exactly as `PmdMon::load`
+    /// falls back on the SD card. Each name is looked up via
+    /// `TPMonsSource.url`, which checks Documents/mons (Files app) before the
+    /// app bundle — see that file for why.
     ///
-    /// Returns nil when the file is absent, which is the normal state: sprites
-    /// are never committed to this repo, so a CI build has none. See README.
+    /// Returns nil when the file is absent from both places, which is the
+    /// normal state for a build made without Scripts/fetch_sprites.sh or a
+    /// Documents/mons drop-in: sprites are never committed to this repo. See
+    /// README.
     static func load(dex: Int16, shiny: Bool) -> TPSprite? {
         guard dex > 0 else { return nil }
         var names: [String] = []
@@ -69,8 +73,7 @@ final class TPSprite {
         names.append(String(format: "p%03d", dex))
 
         for name in names {
-            guard let url = Bundle.main.url(forResource: name, withExtension: "bin",
-                                            subdirectory: "mons"),
+            guard let url = TPMonsSource.url(name: name, ext: "bin"),
                   let data = try? Data(contentsOf: url),
                   let sprite = TPSprite(data: data)
             else { continue }

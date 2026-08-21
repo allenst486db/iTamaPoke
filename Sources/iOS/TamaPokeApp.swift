@@ -2,6 +2,8 @@ import SwiftUI
 
 @main
 struct TamaPokeApp: App {
+    @Environment(\.scenePhase) private var scenePhase
+
     var body: some Scene {
         WindowGroup {
             PetScreen()
@@ -10,6 +12,14 @@ struct TamaPokeApp: App {
                 .background(Color.black)
                 .statusBarHidden()
                 .persistentSystemOverlays(.hidden)
+        }
+        .onChange(of: scenePhase) { _, phase in
+            // Whatever the user has dropped into Documents/mons (Files app)
+            // since last time gets a chance to reach the watch here, rather
+            // than needing its own settings button -- see
+            // Sources/Shared/TPWatchSpriteSync.swift for why this exists and
+            // why it's cheap to call on every foreground.
+            if phase == .active { TPWatchSpriteSync.shared.syncToWatch() }
         }
     }
 }

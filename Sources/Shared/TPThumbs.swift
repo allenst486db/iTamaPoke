@@ -26,8 +26,7 @@ final class TPThumbs {
     var isLoaded: Bool { bytes != nil }
 
     private init() {
-        guard let url = Bundle.main.url(forResource: "thumbs", withExtension: "bin",
-                                        subdirectory: "mons"),
+        guard let url = TPMonsSource.url(name: "thumbs", ext: "bin"),
               let data = try? Data(contentsOf: url)
         else {
             bytes = nil
