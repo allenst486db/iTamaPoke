@@ -39,6 +39,10 @@ final class GameModel: ObservableObject {
         var x: CGFloat = TP.cx
         var elapsedMs: UInt64 = 0
         var loop: Bool = true
+        /// Vertical nudge applied on top of the frame, for motion the sprite
+        /// sheet itself cannot express. Upstream does the same thing for its
+        /// happy bounce (`y -= 6` in drawPetSD).
+        var yOffset: CGFloat = 0
     }
     private(set) var pose = PetPose()
 
@@ -273,6 +277,7 @@ final class GameModel: ObservableObject {
 
         var act = TPAct.idle
         var loop = true
+        var yOffset: CGFloat = 0
 
         switch pet.mood {
         case .sleeping where sprite.has(.sleep):
@@ -281,6 +286,19 @@ final class GameModel: ObservableObject {
         case .eating where sprite.has(.eat):
             act = .eat
             behT0 = 0        // upstream free-runs the eat cycle off millis()
+        case .eating:
+            // Only 28 of the 151 sprite sheets carry an Eat animation — the
+            // SpriteCollab art simply does not have one for the rest, which is
+            // why feeding a starter looks right and feeding its evolution looks
+            // like nothing happened. Upstream falls through to the walk
+            // scheduler here, so the creature may even wander off mid-meal.
+            //
+            // Fill the gap rather than copy it: stand still and chew. This only
+            // ever runs when the sheet has no Eat frames, so a species that does
+            // have them is untouched.
+            act = .idle
+            behMode = 0
+            yOffset = (now / 170) % 2 == 0 ? -3 : 0
         case .sad where sprite.has(.hurt):
             act = .hurt
         default:
@@ -308,7 +326,8 @@ final class GameModel: ObservableObject {
 
         pose = PetPose(act: act, x: behX,
                        elapsedMs: now &- behT0,
-                       loop: loop || act == .idle)
+                       loop: loop || act == .idle,
+                       yOffset: yOffset)
     }
 
     /// Port of upstream `behNext`: 35% stroll, 25% a gesture, else stand still.

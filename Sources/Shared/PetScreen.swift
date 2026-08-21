@@ -306,7 +306,8 @@ struct PetScreen: View {
         let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
         ctx.draw(Image(decorative: img, scale: 1).interpolation(.none),
                  in: CGRect(x: pose.x - w / 2,
-                            y: TP.petGround - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                            y: TP.petGround - CGFloat((a.base > 0 ? a.base : a.h) * s)
+                               + pose.yOffset,
                             width: w, height: h))
     }
 
