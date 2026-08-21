@@ -116,3 +116,59 @@ hardware's own square-wave tone, not a new sound — see the main
 [README](../README.md#status) if you're curious how. A haptic plays alongside
 sound, and either can be turned off from settings without turning off the
 other.
+
+---
+
+## The actual numbers
+
+Everything above in plain language; this is the same values straight from
+the (unmodified) game code, for anyone who wants to know exactly what's
+going on. Also in [the main README](../README.md#game-manual-the-actual-numbers).
+
+**Leveling:** 1 real minute = 1 in-game minute. **+1 level per real hour** —
+purely time-based, so good care doesn't speed it up, but neglect *delays*
+evolution. Keeps aging while the app is closed, catching up to **2 weeks**
+on reopen.
+
+**Stats (0–100), start at 80/80/80/100, per minute while awake:**
+
+| Stat | Drain/min | Extra drain |
+|---|---|---|
+| FOOD | −2 | |
+| ENE (energy) | −1 | −1 more if overweight |
+| HYG (hygiene) | −1 | −4 per visible mess |
+| JOY (happiness) | −1 | −2 if FOOD < 30, −2 if HYG < 30 |
+
+A stat hitting ≤10 is a **care slip-up**: delays evolution by 1 level, cools
+the bond. About a 15%/minute chance of a mess appearing once FOOD > 40.
+
+**Actions:** berry +25 FOOD (a species' hidden favorite flavor: +35 FOOD,
++10 JOY, and reveals itself); candy +10 FOOD/+12 JOY but +12 weight; ball
+minigame trains SPEED and burns weight; training sack trains STRENGTH
+(~4 hits per point, capped per session); bath clears mess and maxes HYG;
+petting +5 JOY and bond; sleep cuts drains to roughly a quarter speed and
+disables slip-ups/running away entirely.
+
+**Eggs:** first creature is a starter you pick (Bulbasaur/Charmander/
+Squirtle). Every egg after rolls a rarity tier — Common/Rare/Legendary
+(Legendary only unlocks after 25+ registered species) — biased toward
+evolution lines you haven't completed, and shiny odds run from a base
+1-in-48 up to about 1-in-8 with strong streak and bond, doubling briefly
+right after a farewell.
+
+**Evolution:** level ≥ the species' threshold (16 for most base forms, ~30
+for stone-style, ~40 for trade-style) *and* every stat ≥ 40 at that instant.
+Never automatic — always a button you tap. Declining re-offers next level.
+
+**Endings** (all lead to a new egg): **Farewell** — final form, 3 days old,
+your choice, blesses the next egg. **Runaway** — all four stats at 0 for a
+full hour, curses the next egg (forces Common). **Release** — long-press any
+time, neutral.
+
+**Streak/bond/medals:** streak is player-wide (survives across creatures) —
+first care of each real day advances it, milestones at 3/7/30/100 days,
+skipping a day breaks it. Bond is per-creature, resets on hatch. Both
+improve egg rarity and shiny odds. 8 medals exist (level thresholds,
+favorite berry found, 7-day streak, max bond, reaching final form, "fit" =
+never overweight and no slip-ups) — tracked per-creature plus a running
+total across every creature you've raised.

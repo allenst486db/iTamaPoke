@@ -1,362 +1,225 @@
-# TamaPoke for iPhone / Apple Watch
+# iTamaPoke
+
+![Platform](https://img.shields.io/badge/platform-iPhone%20%2B%20Apple%20Watch-black?logo=apple&logoColor=white)
+![Code](https://img.shields.io/badge/code-custom%20license-blue)
+![Status](https://img.shields.io/badge/status-personal%20project%2C%20bugs%20possible-yellow)
 
 **[한국어 README](README.ko.md)**
 
 A personal-build port of [socquique/TamaPoke](https://github.com/socquique/TamaPoke) —
-a gen-1-Pokémon-inspired tamagotchi firmware for the Waveshare ESP32-S3 round
-AMOLED board — to iOS and watchOS.
+a gen-1-Pokémon-inspired tamagotchi firmware for a round AMOLED board — to
+iPhone and Apple Watch. The game itself is unchanged: the same C++ that runs
+on the original hardware runs here too, just drawn on a different screen.
 
-> **Personal use only. Not distributable, not for the App Store — including
-> reskinned derivatives (different creatures, same engine).**
-> See [Legal](#legal) before doing anything with this.
+> **Personal use only. Do not publish or hand out builds — including
+> reskinned versions (different creatures, same engine).**
+> See [License](#license) before doing anything with this.
 
-New here? [How to play](docs/GAMEPLAY.md) explains the game itself (this repo
-only explains the port). [Free vs. paid Apple account](docs/DEV_ACCOUNT.md)
-lays out exactly what differs between the two build paths below.
+New here? Start with one of these:
 
----
+| | |
+|---|---|
+| 🎮 [How to play](docs/GAMEPLAY.md) | What the game actually does, page by page |
+| 📲 [Install guide](docs/INSTALL.md) | Step-by-step, no coding knowledge assumed — **works on both Mac and Windows now** |
+| 🍎 [Free vs. paid Apple account](docs/DEV_ACCOUNT.md) | Which install path is right for you |
 
-## Legal
-
-This repo contains **no Pokémon assets and no sprites**. It is source code only:
-
-| Thing | Where it lives | License |
-|---|---|---|
-| Upstream firmware game logic (`pet.cpp`, `dex.h`, `i18n.cpp`) | `upstream/` submodule — a commit reference, no copied files | MIT © Quique Tortosa, upstream's own repo/terms |
-| Renderer, layout, UI palette, status strings — **translated** from upstream C++ | `Sources/Shared/`, `Sources/Core/TPPet.mm` | this repo's [LICENSE](LICENSE) (see below) |
-| Shims, ObjC bridge structure, CI, build scripts — original to this port | `Sources/Core/`, `.github/`, `Scripts/` | this repo's [LICENSE](LICENSE) |
-| Default app icon (generic mascot, no third-party IP) | `Resources/DefaultAppIcon.png` | this repo's [LICENSE](LICENSE) |
-| Pokémon names, designs, species data | **not in this repo** | © Nintendo / Game Freak / The Pokémon Company |
-| Sprites | **not in this repo**, fetched per-user, see [Sprites](#sprites) | [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab), CC BY-NC 4.0 |
-
-**What you may do:** build this and install it on *your own* devices, and
-modify your own copy however you like — including reskinning the creatures as
-something else entirely, just for yourself.
-
-**What you may not do:** publish it — to the App Store (Apple review
-guideline 5.2.1 requires proof of rights you cannot produce), TestFlight, an
-alternative marketplace, a sideloading service, a public download link, or
-handing a build to someone else at all, even for free, even to one person.
-**This restriction follows the engine, not the character art** — a version
-with the Pokémon replaced by generic cats, dogs, or anything else is still a
-derivative of this repository and is covered exactly the same way. Reskinning
-is not a loophole; see [LICENSE](LICENSE) Section 3 for the binding wording.
-Free/non-commercial is not a legal defence against either the underlying
-Pokémon copyright or this repo's own terms. Do not commit fetched sprites;
-`.gitignore` already blocks `Resources/mons/`.
-
-If you want something you genuinely *can* publish, you would need your own
-engine built independently against upstream's own MIT-licensed repository —
-not a redistribution of this port. See [LICENSE](LICENSE) Section 1 for
-exactly where that boundary is.
-
-Full attribution and scope: [NOTICE](NOTICE). Binding terms: [LICENSE](LICENSE)
-— a short custom "Personal Use License", not a standard open-source license.
-Read it; it's four screens, not forty.
+> ⚠️ **This is a solo hobby port, not a finished product.** Some bugs are
+> likely, especially on the Apple Watch side and the free-account install
+> path (still being verified). If something looks wrong, that's expected at
+> this stage — not something you broke.
 
 ---
 
 ## Status
 
-Feature-complete against upstream: every screen and animation in the firmware
-is ported.
+Feature-complete against upstream: every screen and animation in the
+firmware is ported and running the same underlying game logic.
 
-**The game:** the upstream C++ runs unmodified — stat decay, evolution gating,
-egg rarity rolls, streak/bond/medals, genes and offline progression are all its
-own code, not a reimplementation.
+**Screens:** idle scene with a real-time day/night sky, starter selection,
+egg and hatching, feed menu, bath, the Pokédex gallery, the four-page stat
+card (profile / battle / medals / progress), the ball minigame, the training
+sack, the rename keyboard, settings, and the evolution / farewell / runaway
+decisions with their animations.
 
-**Screens:** idle scene (biome ground, real-time sky, wandering creature),
-starter selection, egg and hatching, feed menu, bath, the Pokédex gallery with
-its detail view, the four-page stat card (profile, battle, medals, progress),
-the ball minigame, the training sack, the rename keyboard, settings, and the
-evolution and farewell/runaway decisions with their animations.
+**Sound** is the original hardware's own square-wave tones, re-synthesised
+in software rather than re-recorded — see [How the port
+works](#how-the-port-works).
 
-**Reached the way the firmware reaches them:** swipe left for the Pokédex, up
-for the stat card, down for settings, hold the creature to be asked about
-letting it go.
+**One deliberate difference:** the settings screen has no manual clock. The
+original hardware sets its own clock by hand because it has no other way to
+know the time; the phone already knows, so this port just uses that instead.
 
-**Sound** is upstream's, re-synthesised. The firmware generates Game Boy-style
-square waves on an ES8311 codec; there is no such chip here, so
-`Sources/Shared/TPAudio.swift` generates the same waveform — upstream's note
-tables, 16kHz sample rate, amplitude and anti-click ramps — and plays it through
-`AVAudioEngine`, with a haptic alongside. The settings toggle switches both.
+---
 
-> The session is `.ambient`, so effects mix with whatever you are already
-> listening to and follow the ring/silent switch. A silent phone stays silent;
-> the haptic still fires.
+## Game manual (the actual numbers)
 
-One deliberate departure, because a phone is not an ESP32: **the clock screen
-has no clock.** Its hour/minute dial exists because the firmware has no idea
-what time it is and the sky depends on it. iOS knows, and pointing the game at
-a hand-set time is exactly what made the sky run nine hours early. Language and
-sound — the rest of that screen — are ported.
+Same engine as upstream, so the same numbers — this is the same table from
+[upstream's README](https://github.com/socquique/TamaPoke#game-manual-the-actual-numbers),
+kept here for reference. For the plain-language version, see [How to
+play](docs/GAMEPLAY.md).
+
+**Leveling:** 1 real minute = 1 in-game minute. **+1 level every hour** of
+real time — leveling itself doesn't speed up from good care, but neglect
+*delays evolution*. Time keeps passing while the app is closed (like the
+original hardware's RTC), catching up to **2 weeks** on reopen.
+
+**The four stats (0–100):** FOOD, JOY, ENE (energy), HYG (hygiene). Start at
+80/80/80/100, and while awake, per minute: FOOD −2, ENE −1 (extra −1 if
+overweight), HYG −1 (extra −4 per visible mess), JOY −1 (extra −2 if FOOD or
+HYG < 30). A stat hitting ≤10 is a **care slip-up** — it delays evolution by
+one level and cools the bond.
+
+**Actions:** Berries +25 FOOD (a species' hidden favorite flavor gives more,
+plus bond); Candy +10 FOOD/+12 JOY but adds weight; the ball minigame trains
+SPEED; the training sack trains STRENGTH; bath clears mess; petting is a
+small JOY/bond bump; sleep slows every drain roughly 4× and disables
+slip-ups and running away.
+
+**Eggs:** your very first creature is a starter you pick. Every egg after
+that rolls a rarity (Common/Rare/Legendary — Legendary only unlocks after
+you've registered 25+ species), biased toward evolution lines you haven't
+finished, improved by streak/bond, and shiny odds run from a base **1-in-48**
+up to **1-in-8** with a strong streak and bond.
+
+**Evolution:** needs level ≥ the species' threshold *and* every stat ≥ 40 at
+that moment. Never automatic — you tap a button to trigger it.
+
+**Endings:** Farewell (final form, 3 days old, your choice — blesses the
+next egg), Runaway (all four stats at 0 for a full hour — curses the next
+egg), Release (long-press any time). All three lead to a new egg.
 
 ---
 
 ## How the port works
 
-The firmware draws into a fixed **466×466** framebuffer. That coordinate space
-is preserved verbatim in `Sources/Shared/TPGraphics.swift`, and the SwiftUI
-`Canvas` applies a single scale transform. Two consequences:
+The firmware draws into a fixed **466×466** framebuffer. That exact
+coordinate space is preserved in this port, with a single scale transform
+applied for the iPhone/Watch screen sizes — so `drawScene`, `drawBars`, and
+every other draw call port **line-for-line** from the original C++.
 
-- `drawScene`, `drawBars`, `drawButtons` and friends port **line-for-line** —
-  every `CX - strlen(s) * 6` centring expression stays correct as written.
-- iPhone and Apple Watch differ only by that scale factor. No separate layouts.
+The game logic itself is **not rewritten**. The original `pet.cpp` and
+`i18n.cpp` compile as-is, against small shim headers that stand in for
+Arduino/ESP32-specific pieces (timers, random, key/value storage). A thin
+bridge layer exposes that C++ object to the Swift UI — nothing about the
+simulation, stat decay, evolution rules, or egg odds is reimplemented.
 
-The C++ game logic is **not rewritten**. `upstream/pet.cpp` and
-`upstream/i18n.cpp` compile as-is against two shim headers:
-
-| Shim | Replaces | Backed by |
-|---|---|---|
-| `Sources/Core/Arduino.h` | `millis()`, `random()`, `min/max`, `Serial` | `mach_absolute_time`, `arc4random` |
-| `Sources/Core/Preferences.h` | ESP32 NVS key/value store | `NSUserDefaults` |
-| `Sources/Core/AudioStub.mm` | ES8311 codec + I2S tone synth | a callback into Swift (haptics) |
-
-`Sources/Core/TPPet.mm` is a deliberately thin Objective-C++ facade over the C++
-`Pet`. All string composition lives there rather than in Swift, because
-`i18n.h`'s `StrId` enum is only visible on that side — mirroring the ids in
-Swift would drift silently on a submodule bump.
-
-**The firmware already keeps time across power-off via its RTC**, catching up to
-two weeks of elapsed simulation on boot. That design maps exactly onto iOS
-foregrounding, which is why this port needs no background execution at all.
-
----
-
-## Building
-
-Two workflows. Which one you can use is decided entirely by what kind of Apple
-account you have — CI can sign for a paid membership and cannot sign for a free
-Apple ID, and there is no way around that.
-
-| | [Build (unsigned)](.github/workflows/build.yml) | [Build (signed)](.github/workflows/build-signed.yml) |
-|---|---|---|
-| Apple account | free Apple ID | paid Developer Program ($99/yr) |
-| Runs | every push + manually | manually only |
-| Setup | none | 4 repository secrets |
-| Output | `.ipa` you must re-sign yourself | `.ipa` that installs as-is |
-| Expires | 7 days | 1 year |
-| Apple Watch | usually dropped on install | correctly signed, no re-signing step to drop it |
-| Needs a Mac | no | no |
-
-### Build (unsigned) — free Apple ID
-
-Push, and the run artifact `TamaPoke-unsigned-ipa` appears on the Actions tab.
-Sign it on the way to the device (see [Installing](#installing)).
-
-### Build (signed) — paid Developer Program
-
-Add these under **Settings → Secrets and variables → Actions**:
-
-| Secret | Where it comes from |
-|---|---|
-| `APPLE_TEAM_ID` | Developer portal → Membership, 10 characters |
-| `ASC_KEY_ID` | App Store Connect → Users and Access → Integrations |
-| `ASC_ISSUER_ID` | same page, a UUID |
-| `ASC_PRIVATE_KEY` | the `AuthKey_*.p8` file's full contents, `BEGIN`/`END` lines included |
-
-The API key needs the **App Manager** role — it creates App IDs and provisioning
-profiles on demand. It does *not* register devices, so plug your iPhone and your
-Apple Watch into Xcode once beforehand; a build signed for unregistered devices
-installs on nothing.
-
-Then **Actions → Build (signed) → Run workflow**. `debugging` is the default
-export method; `release-testing` (formerly "ad-hoc") is there if you want a build
-to hand to someone else on your team's device list.
-
-The team ID is read from a secret rather than committed, so `project.yml` stays
-clean in a public repo.
-
-> This workflow deliberately does **not** upload to TestFlight. TestFlight means
-> App Store Connect review, and this app cannot pass it — see [Legal](#legal).
-
-### Locally on a Mac
-
-```bash
-brew install xcodegen && xcodegen generate && open TamaPoke.xcodeproj
-```
-
-The `.xcodeproj` is generated from `project.yml` and is never committed.
-
----
-
-## Sprites
-
-The app ships with **no creature art**, so out of the box it draws the firmware's
-own "No sprites" notice where the creature goes. The art is Pokémon fan work
-derived from [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
-(CC BY-NC): fine to build onto your own device, not fine to commit or
-redistribute. `Resources/mons/` is gitignored for exactly that reason.
-
-The upstream submodule already carries the packed sprites, so there is nothing to
-download — just copy the species you want in:
-
-```bash
-Scripts/fetch_sprites.sh 7        # one species, by Pokédex number
-Scripts/fetch_sprites.sh 1 4 7    # the three starters
-Scripts/fetch_sprites.sh all      # all 151, about 20 MB
-xcodegen generate                 # so Xcode picks them up
-```
-
-A species with no file falls back to the "No sprites" notice, so copying a subset
-is a supported state — but the creature disappears again when it evolves into a
-form you did not copy. `--shiny` adds the shiny variants; without them a shiny
-creature draws in its normal colours rather than vanishing.
-
-Sprites are read from the app bundle at `mons/p<dex>.bin` (`ps<dex>.bin` when
-shiny) in upstream's TPK2 format, decoded by `Sources/Shared/TPSprite.swift`.
-Only the current species is resident at a time.
-
-**Both targets bundle their own copy.** A watchOS app cannot read the phone
-app's resources, and this watch app runs standalone, so it needs its own set.
-The full 302-file set is ~40 MB per bundle, which makes the `.ipa` ~80 MB since
-it carries the watch app inside. If that matters more than completeness, copy
-only the species you play with — the watch installs a lot faster for it.
-
-> **CI builds never contain sprites** — the files are not in the repo, so an
-> `.ipa` from either workflow shows the placeholder. Copy the sprites in and
-> build from Xcode to see the creature.
-
----
-
-## Saves and the Files app
-
-The iPhone app publishes its Documents folder, so the creature shows up in
-**Files → On My iPhone → iTamaPoke** as `iTamaPoke-save.json`, rewritten every
-time the game saves. Copy it out for a backup, or onto another device.
-
-To restore one, put it back in that folder renamed to `iTamaPoke-import.json`
-and open the app. It loads on launch, then renames itself `.imported-<time>` so
-a restart cannot silently roll the creature back — which is also why the export
-is never re-imported on its own. **Importing replaces the creature on that
-device.** A `README.txt` in the folder says the same thing, so the flow is
-discoverable from Files without this page.
-
-The document is the whole `tamapoke/` `UserDefaults` namespace — the same keys
-`Pet::save` writes — rather than a hand-listed set of fields, so a submodule
-bump that adds a key cannot silently drop it from your backup. Malformed files
-are rejected before anything is written. Sprites are not part of it; they come
-from the app bundle.
-
-The watch app keeps its own separate save and has no Files folder.
-
----
-
-## App icon
-
-Unlike sprites, this ships with a real icon out of the box: `Resources/
-DefaultAppIcon.png` is a small generic mascot drawn for this project (no
-Pokémon, no third-party art), and is checked into git. A build-phase script,
-`Scripts/ensure_app_icon.sh` (wired into both targets via `project.yml`),
-copies it into each asset catalog automatically whenever nothing else has
-been placed there — including a fresh checkout and every CI build. You do not
-need to do anything to get *an* icon.
-
-If you'd rather use your own image (a Pokémon collage, or anything else —
-same fan-art caveat as sprites applies if it's someone else's IP):
-
-```bash
-Scripts/fetch_app_icon.sh path/to/icon.png   # square, ideally 1024x1024
-xcodegen generate
-```
-
-**Running that script is what changes the icon** — it overwrites
-`AppIcon.png` in both asset catalogs, and `ensure_app_icon.sh` only ever fills
-in a *missing* file, so it never overwrites what you just set. The custom
-`AppIcon.png` files stay gitignored (same reasoning as sprites: fine to build
-onto your own device, not fine to commit or redistribute); only the generic
-default is tracked.
-
-Both targets need their own copy of whichever icon you use — a watchOS app
-can't read the phone app's asset catalog. Each catalog uses Xcode's "single
-size" App Icon (1024×1024, `idiom: universal`), so every smaller size
-iOS/watchOS actually needs is derived from that one file at build time —
-nothing else to generate, and an image with an alpha channel is fine, since
-both platforms mask their own rounded-corner shape over it regardless.
-
-> **CI builds always ship the default icon**, never a custom one — a custom
-> `AppIcon.png` only exists on whatever machine ran `fetch_app_icon.sh`, and
-> CI's checkout never has it.
+Sound is the same story: the firmware generates Game Boy–style square waves
+on its own audio chip. There's no such chip here, so the same waveform
+(same note tables, same sample rate, same envelope) is synthesised in
+software instead of using a new sound.
 
 ---
 
 ## Installing
 
-Before the first build, change `PRODUCT_BUNDLE_IDENTIFIER` in `project.yml` from
-`com.allenst486db.itamapoke` if you are not that account — provisioning refuses
-identifiers already claimed by another developer.
+Full step-by-step walkthrough (screenshots-level detail, assumes no coding
+background): **[docs/INSTALL.md](docs/INSTALL.md)**.
 
-> ⚠️ **Getting the app onto an Apple Watch is the hard part.** Sideloading tools
-> handle embedded watch apps badly — AltStore does not install them at all, and
-> Sideloadly commonly drops them. Both CI workflows **fail** if the watch app is
-> missing from the bundle, so a green run means it shipped; whether the *install*
-> keeps it is up to the tool. If you want the watch app, install from Xcode.
+The short version — three ways to get this running, easiest first:
 
-### From Xcode — works with any Apple ID, and the only reliable path to the watch
+| | Needs | Works on | Apple Watch | Notes |
+|---|---|---|---|---|
+| **Unsigned `.ipa` + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | often not carried over — see note below | Easiest path; re-sign every 7 days. **Still being verified — see the warning above.** |
+| **Signed `.ipa` from GitHub Actions** | paid Apple Developer account ($99/yr) | Mac or Windows | installs correctly | No sideloading tool needed at all |
+| **Build with Xcode yourself** | a Mac | Mac only | most reliable path | For anyone comfortable with Xcode already |
 
-Needs a Mac. Free Apple IDs work here: the interactive sign-in that CI cannot do
-is exactly what Xcode does for you.
+Whichever path you take, the app installs with **no creature art built in**
+— see [Sprites](#sprites) for how that gets added, which now works the same
+way regardless of which install path you used.
 
-1. **Enable Developer Mode on both devices** (iOS 16+ / watchOS 9+):
-   Settings → Privacy & Security → Developer Mode → on, then restart. The watch
-   has its own toggle — turning it on for the iPhone does not cover it.
-2. Generate and open the project:
-   ```bash
-   brew install xcodegen && xcodegen generate && open TamaPoke.xcodeproj
-   ```
-3. Select the **TamaPoke** target → Signing & Capabilities → tick *Automatically
-   manage signing* → pick your Team. Repeat for the **TamaPokeWatch** target.
-   Both must be the same team.
-   > The `.xcodeproj` is generated, so this is reset by every `xcodegen generate`.
-   > Re-pick the team after regenerating, or pass `DEVELOPMENT_TEAM=YOURTEAMID`
-   > to `xcodebuild` if you build from the command line.
-4. Connect the iPhone over USB and tap **Trust** on the device.
-5. Pick the **TamaPoke** scheme and your iPhone as the destination → `⌘R`.
-6. First launch only: iPhone → Settings → General → VPN & Device Management →
-   trust your developer certificate. The app will not open until you do.
-7. For the watch: pick the **TamaPokeWatch** scheme and your Apple Watch as the
-   destination → `⌘R`. Keep the watch unlocked and on its charger; the first
-   install can take several minutes and often looks stalled before it lands.
+---
 
-To drop the cable, tick *Connect via network* in Window → Devices and Simulators.
+## Sprites
 
-With a free Apple ID the app stops launching after **7 days** — re-run `⌘R` to
-renew it. A paid membership makes it a year.
+The app never ships with Pokémon art baked in — that's fan art with its own
+license (see [License](#license)), so it's added after installing, not
+included in any build.
 
-### From a signed `.ipa` — paid Developer Program
+**The simple way — works after any install method:** open the **Files**
+app → **On My iPhone → iTamaPoke** → make a folder named `mons` → copy in
+`.bin` sprite files (get them from
+[upstream's repo](https://github.com/socquique/TamaPoke), `tools/sdcard/mons/`
+— see [Install guide](docs/INSTALL.md) for exactly where to click). Restart
+the app afterward. Add `thumbs.bin` too, or the Pokédex screen shows nothing
+at all. If you also have an Apple Watch paired, opening the phone app briefly
+tries to relay whatever you added over to the watch automatically — opening
+the watch app afterward tends to make that happen immediately.
 
-Download the `TamaPoke-signed-ipa` artifact from a *Build (signed)* run. It is
-already signed for your team's registered devices, so no re-signing tool is
-involved: open Xcode → Window → **Devices and Simulators**, select your iPhone,
-and drag the `.ipa` onto the *Installed Apps* list ([Apple Configurator](
-https://apps.apple.com/app/apple-configurator/id1037126344) also works).
+**The Xcode way — for a build you make yourself:** `Scripts/fetch_sprites.sh`
+copies sprites from the `upstream/` submodule straight into the build, so
+they're baked into the app the moment you build. See
+[docs/INSTALL.md](docs/INSTALL.md) ("Path C") for the exact commands.
 
-### From an unsigned `.ipa` — free Apple ID, no Mac
+A species with no sprite file just shows a placeholder instead of a broken
+screen, so partial sets are fine.
 
-1. Download the `TamaPoke-unsigned-ipa` artifact from a *Build (unsigned)* run.
-2. Install [AltStore](https://altstore.io) (AltServer runs on Windows) or
-   [Sideloadly](https://sideloadly.io).
-3. Sign it with your free Apple ID and install over USB or Wi-Fi.
+---
 
-Free-account limits: the app expires after **7 days** and must be re-signed
-(AltServer refreshes it automatically while it is running), and a free Apple ID
-allows 3 sideloaded apps at a time.
+## Saves and the Files app
 
-Expect the watch app not to survive this route — see the warning above. The
-iPhone app is unaffected either way: the watch target is standalone
-(`WKRunsIndependentlyOfCompanionApp`), so it can be installed on its own from
-Xcode later without reinstalling the phone app.
+The iPhone app keeps its save in **Files → On My iPhone → iTamaPoke** as
+`iTamaPoke-save.json`, rewritten automatically whenever the game saves. Copy
+it out as a backup, or onto another device.
+
+To restore one, drop it back in renamed to `iTamaPoke-import.json` and open
+the app — it loads once, then renames itself so a restart can't silently
+re-import it again. **This replaces the creature currently on that device.**
+
+The Apple Watch app keeps a fully separate save and has no Files folder of
+its own.
+
+---
+
+## App icon
+
+Ships with a small generic mascot icon by default (no Pokémon art, drawn
+for this project). Want your own? `Scripts/fetch_app_icon.sh path/to/icon.png`
+replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
+
+---
+
+## License
+
+- **This port's own code** (the Swift/watchOS layer, scripts, docs):
+  **[LICENSE](LICENSE)** — a short custom license, not a standard
+  open-source one. Personal use and modification are free; publishing or
+  handing out any build (including a reskinned one) needs the copyright
+  holder's permission first. Read it — it's a few screens, not forty.
+- **Portions translated line-for-line from upstream's C++** (the renderer,
+  layout, and similar): remain © Quique Tortosa, MIT — the exact MIT notice
+  travels with this repo in [NOTICE](NOTICE) so it's included regardless of
+  how you obtained this repo, per MIT's own terms.
+- **The `upstream/` submodule itself**: not ours to relicense — get it
+  directly from [its own repository](https://github.com/socquique/TamaPoke)
+  under its own MIT terms.
+- **Pokémon names, designs, and sprites**: © Nintendo / Game Freak / The
+  Pokémon Company; sprite art from
+  [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) (CC BY-NC
+  4.0). **Not distributed anywhere in this repository or its builds** — see
+  [Sprites](#sprites) for how you add your own copy after installing.
+
+This is an unofficial fan project, not affiliated with or endorsed by
+Nintendo. Full accounting of what is and isn't covered: [NOTICE](NOTICE).
+
+---
+
+## Credits
+
+Game design, engine, and original hardware: **Quique Tortosa**
+([socquique/TamaPoke](https://github.com/socquique/TamaPoke)). Sprites:
+[PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab). Battle stats:
+[PokéAPI](https://pokeapi.co). Pokémon is a trademark of Nintendo / Game
+Freak / The Pokémon Company.
 
 ---
 
 ## Upstream
 
-Pinned at `37ba1c4` (v1.4). To pull in upstream fixes:
+Pinned at `37ba1c4`. To pull in upstream fixes:
 
 ```bash
 git submodule update --remote upstream
 ```
 
-Then rebuild — the shims are the only coupling, so most upstream changes cost
-nothing. If `pet.h` grows a new Arduino symbol, add it to `Sources/Core/Arduino.h`;
-do not patch `upstream/`.
+Then rebuild — the shim layer is the only coupling, so most upstream changes
+cost nothing on this side.
