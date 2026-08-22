@@ -21,6 +21,8 @@
 |---|---|
 | 🎮 [게임 방법](docs/GAMEPLAY.ko.md) | 게임이 실제로 어떻게 동작하는지, 화면별로 |
 | 📲 [설치 가이드](docs/INSTALL.ko.md) | 코딩 지식 없이도 따라할 수 있는 단계별 설명 — **이제 Mac과 Windows 둘 다 가능** |
+| 🖼️ [설치 가이드 — 화면 캡처판](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/install_guide.html) | 같은 내용을 실제 화면 캡처와 함께 — 영/한, 라이트/다크 전환 가능 |
+| 🛠️ [Xcode 빌드 가이드](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/xcode_build_guide.html) | Xcode로 직접 빌드해서 설치하는 과정을 그림으로 |
 | 🍎 [무료 vs 유료 Apple 계정](docs/DEV_ACCOUNT.md) | 어떤 설치 경로가 나에게 맞는지 |
 
 > ⚠️ **이건 완성된 상용 제품이 아니라 개인이 취미로 포팅한 프로젝트입니다.**

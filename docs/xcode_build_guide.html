@@ -1,0 +1,374 @@
+<title>Xcode 빌드 가이드</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@500;600&family=IBM+Plex+Sans+KR:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap');
+
+:root{
+  --bg:#F6EFE6;
+  --surface:#FFFFFF;
+  --surface-2:#EFE6D8;
+  --text:#201F29;
+  --muted:#6B6F8C;
+  --accent:#D8483D;
+  --accent-ink:#FFFFFF;
+  --accent-2:#2E8F73;
+  --border:rgba(32,31,41,0.14);
+  --code-bg:#EFE9DC;
+  --shadow: 0 1px 2px rgba(32,31,41,0.06), 0 8px 24px rgba(32,31,41,0.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#11162A;
+    --surface:#1A2140;
+    --surface-2:#212A4C;
+    --text:#F1ECE1;
+    --muted:#9AA2C6;
+    --accent:#F0685D;
+    --accent-ink:#1A1013;
+    --accent-2:#4FC79F;
+    --border:rgba(241,236,225,0.14);
+    --code-bg:#161C36;
+    --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#11162A;
+  --surface:#1A2140;
+  --surface-2:#212A4C;
+  --text:#F1ECE1;
+  --muted:#9AA2C6;
+  --accent:#F0685D;
+  --accent-ink:#1A1013;
+  --accent-2:#4FC79F;
+  --border:rgba(241,236,225,0.14);
+  --code-bg:#161C36;
+  --shadow: 0 1px 2px rgba(0,0,0,0.3), 0 12px 32px rgba(0,0,0,0.35);
+}
+
+*{box-sizing:border-box;}
+body{
+  margin:0;
+  background:var(--bg);
+  color:var(--text);
+  font-family:'IBM Plex Sans KR','IBM Plex Sans',-apple-system,sans-serif;
+  line-height:1.7;
+  font-size:16px;
+}
+.wrap{max-width:760px;margin:0 auto;padding:56px 24px 120px;}
+
+.eyebrow{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:12.5px;
+  letter-spacing:.14em;
+  text-transform:uppercase;
+  color:var(--accent-2);
+  font-weight:600;
+}
+h1{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:clamp(28px,5vw,38px);
+  font-weight:600;
+  line-height:1.25;
+  text-wrap:balance;
+  margin:10px 0 14px;
+  letter-spacing:-0.01em;
+}
+.sub{color:var(--muted);font-size:17px;max-width:60ch;margin:0 0 32px;}
+h2{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:21px;
+  font-weight:600;
+  margin:64px 0 6px;
+  padding-top:20px;
+  border-top:1px solid var(--border);
+  letter-spacing:-0.01em;
+}
+h2 .num{color:var(--accent);margin-right:10px;}
+h2 + .lede{color:var(--muted);margin:0 0 24px;font-size:15px;}
+h3{font-size:16.5px;font-weight:600;margin:28px 0 10px;}
+p{margin:0 0 16px;}
+a{color:var(--accent);text-decoration:underline;text-decoration-color:var(--border);text-underline-offset:3px;}
+a:hover{text-decoration-color:currentColor;}
+strong{font-weight:600;}
+code{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:0.86em;
+  background:var(--code-bg);
+  padding:0.15em 0.4em;
+  border-radius:4px;
+}
+pre{
+  background:var(--code-bg);
+  border:1px solid var(--border);
+  border-radius:10px;
+  padding:16px 18px;
+  overflow-x:auto;
+  margin:0 0 18px;
+}
+pre code{background:none;padding:0;font-size:13.5px;line-height:1.65;}
+
+.card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:20px 22px;
+  box-shadow:var(--shadow);
+  margin:0 0 18px;
+}
+.note{
+  border-left:3px solid var(--accent-2);
+  background:var(--surface);
+  border-radius:0 10px 10px 0;
+  padding:14px 18px;
+  margin:0 0 18px;
+  font-size:14.5px;
+  color:var(--text);
+}
+.note b{color:var(--accent-2);}
+.warn{
+  border-left:3px solid var(--accent);
+  background:var(--surface);
+  border-radius:0 10px 10px 0;
+  padding:14px 18px;
+  margin:0 0 18px;
+  font-size:14.5px;
+}
+.warn b{color:var(--accent);}
+
+figure{margin:24px 0 30px;}
+figure svg{max-width:100%;height:auto;display:block;}
+figcaption{
+  font-size:13px;
+  color:var(--muted);
+  margin-top:10px;
+  text-align:center;
+}
+
+.steps{list-style:none;margin:0;padding:0;counter-reset:step;}
+.steps > li{
+  counter-increment:step;
+  position:relative;
+  padding:0 0 28px 44px;
+  border-left:2px solid var(--border);
+  margin-left:15px;
+}
+.steps > li:last-child{border-color:transparent;padding-bottom:0;}
+.steps > li::before{
+  content:counter(step);
+  position:absolute;
+  left:-15px;top:0;
+  width:30px;height:30px;
+  background:var(--surface-2);
+  border:1px solid var(--border);
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-family:'IBM Plex Mono',monospace;
+  font-weight:600;
+  font-size:13px;
+  color:var(--text);
+}
+.steps > li > .title{font-weight:600;margin-bottom:6px;}
+
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin:0 0 20px;}
+@media (max-width:600px){.split{grid-template-columns:1fr;}}
+.pathcard{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:14px;
+  padding:18px 20px;
+}
+.pathcard.free{border-top:3px solid var(--accent-2);}
+.pathcard.paid{border-top:3px solid var(--accent);}
+.pathcard .tag{
+  font-family:'IBM Plex Mono',monospace;
+  font-size:11.5px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+}
+.pathcard h3{margin-top:6px;}
+.pathcard ul{margin:10px 0 0;padding-left:18px;font-size:14.5px;color:var(--muted);}
+.pathcard ul li{margin-bottom:4px;}
+.pathcard ul li b{color:var(--text);font-weight:600;}
+
+hr.rule{border:none;border-top:1px solid var(--border);margin:56px 0;}
+.foot{color:var(--muted);font-size:13.5px;text-align:center;margin-top:48px;}
+</style>
+
+<div class="wrap">
+
+  <div class="eyebrow">iTamaPoke · 빌드 가이드</div>
+  <h1>Xcode로 내 기기에 직접 빌드하기</h1>
+  <p class="sub">
+    이 문서는 <code>iTamaPoke</code> 저장소를 받아서 본인의 아이폰과 애플워치에
+    설치하기까지 전체 과정을 그림과 함께 순서대로 보여줍니다. GitHub Actions로
+    받은 <code>.ipa</code>를 사이드로딩하는 방법이 아니라, <b>Xcode로 직접
+    빌드해서 케이블로 설치</b>하는, 워치까지 확실하게 되는 경로입니다.
+  </p>
+
+  <h2><span class="num">§1</span>먼저: 어느 경로로 갈지 정하기</h2>
+  <p class="lede">계정 종류가 아니라, "워치까지 필요한가"로 갈리는 갈림길입니다.</p>
+
+  <div class="split">
+    <div class="pathcard free">
+      <div class="tag">무료 Apple ID</div>
+      <h3>이 가이드 그대로</h3>
+      <ul>
+        <li><b>비용</b> 없음</li>
+        <li><b>워치 설치</b> 이 방법으로만 확실함</li>
+        <li><b>유효기간</b> 7일마다 ⌘R로 재실행</li>
+      </ul>
+    </div>
+    <div class="pathcard paid">
+      <div class="tag">유료 Developer ($99/년)</div>
+      <h3>GitHub Actions 서명 빌드도 대안</h3>
+      <ul>
+        <li>CI가 서명까지 끝낸 <code>.ipa</code> 배포 가능</li>
+        <li>워치도 정상 설치됨</li>
+        <li>1년 유효 — 자세한 차이는 <a href="../docs/DEV_ACCOUNT.md">DEV_ACCOUNT.md</a></li>
+      </ul>
+    </div>
+  </div>
+
+  <p>
+    둘 중 무엇을 갖고 있든 <b>이 가이드(Xcode 직접 빌드)는 항상 통합니다</b> —
+    무료 계정은 사실 이 방법 말고는 워치 설치가 거의 안 되기 때문에, 이 문서는
+    무료 계정 기준으로 설명합니다.
+  </p>
+
+  <figure>
+    <svg viewBox="0 0 680 190" role="img" aria-label="소스 코드부터 기기 설치까지 이어지는 빌드 파이프라인: 저장소 clone, 서브모듈, 스프라이트 스크립트, xcodegen, Xcode, 케이블 연결, 두 개의 기기(아이폰/애플워치)로 갈라짐">
+      <defs>
+        <marker id="arrow1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+          <path d="M0,0 L10,5 L0,10 z" fill="currentColor"/>
+        </marker>
+      </defs>
+      <g fill="none" stroke="currentColor" stroke-width="1.4" opacity="0.9">
+        <line x1="60" y1="60" x2="140" y2="60" marker-end="url(#arrow1)"/>
+        <line x1="220" y1="60" x2="300" y2="60" marker-end="url(#arrow1)"/>
+        <line x1="380" y1="60" x2="460" y2="60" marker-end="url(#arrow1)"/>
+        <line x1="540" y1="60" x2="560" y2="60"/>
+        <path d="M560,60 C610,60 610,25 560,25" marker-end="url(#arrow1)"/>
+        <path d="M560,60 C610,60 610,95 560,95" marker-end="url(#arrow1)"/>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor" text-anchor="middle">
+        <text x="100" y="90">clone</text>
+        <text x="260" y="90">fetch_sprites.sh</text>
+        <text x="420" y="90">xcodegen</text>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="12" fill="currentColor">
+        <rect x="0" y="40" width="60" height="40" rx="8" fill="none" stroke="currentColor"/>
+        <text x="30" y="64" text-anchor="middle">repo</text>
+        <rect x="140" y="40" width="80" height="40" rx="8" fill="none" stroke="currentColor"/>
+        <text x="180" y="58" text-anchor="middle" font-size="10.5">Resources</text>
+        <text x="180" y="70" text-anchor="middle" font-size="10.5">/mons</text>
+        <rect x="300" y="40" width="80" height="40" rx="8" fill="none" stroke="currentColor"/>
+        <text x="340" y="64" text-anchor="middle">.xcodeproj</text>
+        <rect x="460" y="40" width="100" height="40" rx="8" fill="var(--accent)" stroke="none"/>
+        <text x="510" y="64" text-anchor="middle" fill="var(--accent-ink)">Xcode ⌘R</text>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="11.5" fill="currentColor">
+        <rect x="610" y="5" width="60" height="34" rx="17" fill="none" stroke="currentColor"/>
+        <text x="640" y="26" text-anchor="middle" font-size="10">iPhone</text>
+        <rect x="610" y="78" width="60" height="34" rx="17" fill="none" stroke="currentColor"/>
+        <text x="640" y="99" text-anchor="middle" font-size="10">Watch</text>
+      </g>
+      <g font-family="IBM Plex Mono, monospace" font-size="10.5" fill="var(--muted-ink, currentColor)" opacity="0.75">
+        <text x="30" y="135">upstream/ 서브모듈</text>
+        <text x="180" y="135">캐릭터 파일 선택 복사</text>
+        <text x="340" y="135">프로젝트 생성</text>
+        <text x="510" y="135">USB, 팀 선택 후 실행</text>
+      </g>
+    </svg>
+    <figcaption>저장소를 받아 스프라이트를 복사하고, 프로젝트를 생성해 Xcode로 아이폰·애플워치 양쪽에 설치하기까지의 흐름.</figcaption>
+  </figure>
+
+  <h2><span class="num">§2</span>준비물</h2>
+  <ul style="padding-left:20px;color:var(--text)">
+    <li>Mac (Xcode가 설치된) — Apple Silicon/Intel 무관</li>
+    <li><a href="https://apps.apple.com/app/xcode/id497799835">Xcode</a> (App Store)</li>
+    <li>Apple ID 하나 (무료면 충분, 워치까지 이 방법이 제일 확실함)</li>
+    <li>본인 아이폰, 애플워치 (USB 케이블로 최초 1회 연결)</li>
+  </ul>
+
+  <h2><span class="num">§3</span>순서대로 따라하기</h2>
+
+  <ol class="steps">
+    <li>
+      <div class="title">저장소 받기</div>
+      <p>서브모듈(<code>upstream/</code>)까지 함께 받아야 게임 로직이 포함됩니다.</p>
+      <pre><code>git clone --recurse-submodules &lt;저장소 주소&gt;
+cd iTamaPoke</code></pre>
+    </li>
+    <li>
+      <div class="title">캐릭터 스프라이트 넣기 (선택)</div>
+      <p>안 해도 빌드는 됩니다 — 캐릭터 자리에 "No sprites" 표시만 나옵니다.</p>
+      <pre><code>Scripts/fetch_sprites.sh 1 4 7   # 스타터 3종만
+# 또는
+Scripts/fetch_sprites.sh all    # 151종 전체, 약 20MB</code></pre>
+      <div class="note"><b>참고</b> — 이 파일들은 git에 올라가지 않습니다(<code>.gitignore</code>).
+      개인 기기에 빌드하는 용도로만 존재합니다. <a href="../README.md#라이선스">라이선스</a> 참고.</div>
+    </li>
+    <li>
+      <div class="title">Xcode 프로젝트 생성하기</div>
+      <pre><code>brew install xcodegen
+xcodegen generate
+open TamaPoke.xcodeproj</code></pre>
+      <p><code>.xcodeproj</code>는 매번 새로 만들어지는 파일이라 커밋되어 있지 않습니다 — 이 명령을 실행할 때마다 생성됩니다.</p>
+    </li>
+    <li>
+      <div class="title">두 기기 모두 개발자 모드 켜기</div>
+      <p>아이폰과 애플워치 <b>각각</b>: 설정 → 개인정보 보호 및 보안 → 개발자 모드 → 켜기 → 재시작.
+      워치는 별도 토글이라 아이폰에서 켰다고 워치까지 켜지지 않습니다.</p>
+    </li>
+    <li>
+      <div class="title">서명 설정하기</div>
+      <p>Xcode에서 <b>TamaPoke</b> 타겟 선택 → Signing &amp; Capabilities → <i>Automatically manage signing</i> 체크 →
+      본인 Apple ID(팀) 선택. <b>TamaPokeWatch</b> 타겟도 똑같이, 반드시 같은 팀으로.</p>
+      <div class="warn"><b>주의</b> — <code>xcodegen generate</code>를 다시 돌리면 이 설정이 초기화됩니다.
+      재생성할 때마다 팀을 다시 선택하세요.</div>
+    </li>
+    <li>
+      <div class="title">아이폰에 설치</div>
+      <p>USB로 연결 → 기기에서 <b>신뢰</b> 탭 → <b>TamaPoke</b> 스킴, 본인 아이폰을 대상으로 선택 → <code>⌘R</code>.</p>
+      <p>첫 실행 시 한 번만: 아이폰 설정 → 일반 → VPN 및 기기 관리 → 개발자 인증서 신뢰. 이걸 안 하면 앱이 안 열립니다.</p>
+    </li>
+    <li>
+      <div class="title">애플워치에 설치</div>
+      <p><b>TamaPokeWatch</b> 스킴, 본인 애플워치를 대상으로 선택 → <code>⌘R</code>.
+      워치는 잠금 해제 상태로 충전기에 꽂아두세요 — 처음 설치는 몇 분씩 걸리고 멈춘 것처럼 보이는 게 정상입니다.</p>
+    </li>
+    <li>
+      <div class="title">(선택) 아이콘 바꾸기</div>
+      <p>아무것도 안 하면 기본 마스코트 아이콘이 자동으로 들어갑니다. 본인 이미지로 바꾸려면:</p>
+      <pre><code>Scripts/fetch_app_icon.sh path/to/icon.png
+xcodegen generate</code></pre>
+    </li>
+  </ol>
+
+  <h2><span class="num">§4</span>7일마다 해야 하는 것</h2>
+  <p class="lede">무료 Apple ID의 유일한 단점입니다.</p>
+  <div class="card">
+    <p style="margin:0">
+      무료 Apple ID로 서명한 앱은 <b>7일이 지나면 실행이 멈춥니다.</b> 다시 쓰려면
+      기기를 Mac에 연결하고 같은 스킴으로 <code>⌘R</code>을 한 번 더 누르면 됩니다 —
+      새로 설치하는 게 아니라 서명만 갱신되는 것이라 게임 데이터는 그대로 남습니다.
+      유료 Developer Program은 1년까지 갱신 없이 유지됩니다.
+    </p>
+  </div>
+
+  <h2><span class="num">§5</span>막히는 지점 정리</h2>
+  <div class="card">
+    <p><b>워치에 안 깔려요.</b> Xcode로 직접 설치하는 이 방법이 아니라면(사이드로딩 등)
+    거의 항상 워치 앱이 빠집니다. 이 가이드대로 <b>TamaPokeWatch</b> 스킴을 따로
+    실행했는지 확인하세요.</p>
+    <p><b>"신뢰할 수 없는 개발자" 라고 떠요.</b> §3의 6번, 인증서 신뢰 단계를
+    건너뛴 경우입니다.</p>
+    <p style="margin:0"><b>다른 사람 계정으로 이미 등록된 번들 ID라고 나와요.</b>
+    <code>project.yml</code>의 <code>PRODUCT_BUNDLE_IDENTIFIER</code>를 본인만의 값으로 바꾸세요.</p>
+  </div>
+
+  <hr class="rule"/>
+  <p class="foot">전체 배경 설명은 저장소의 <a href="../README.ko.md">README</a>를,
+  게임 자체 설명은 <a href="../docs/GAMEPLAY.ko.md">게임 방법</a>을 참고하세요.</p>
+
+</div>
