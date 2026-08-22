@@ -33,8 +33,15 @@ enum TP {
     static let galY: CGFloat = 84
     static let galCell: CGFloat = 80
 
-    /// "Train strength" button on the stat card's battle page.
-    static let trainBtn = CGRect(x: 96, y: 300, width: 274, height: 40)
+    /// "Train strength" and "wild battle" buttons on the stat card's battle
+    /// page (the second ported from ShadowEnemyx/TamaPoke "Expanded" --
+    /// see upstream-expanded/README.md, hence sitting above the original).
+    static let wildBattleBtn = CGRect(x: 96, y: 290, width: 274, height: 36)
+    /// Expedition HUD chip on the idle screen (ShadowEnemyx fork).
+    static let expeditionHud = CGRect(x: 310, y: 106, width: 112, height: 34)
+    // Bottom edge lands at 368, six units clear of the card's page-dot row
+    // (drawn at a fixed y: 374 shared by every page -- see renderCard).
+    static let trainBtn = CGRect(x: 96, y: 332, width: 274, height: 36)
     // "Let it go?" confirmation buttons.
     static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
     static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
@@ -159,6 +166,13 @@ extension GraphicsContext {
     /// Centred on `TP.cx`, matching the firmware's `CX - strlen(s) * (3*size)` idiom.
     func gfxTextCentered(_ s: String, _ y: CGFloat, _ size: Int, _ c: UInt16) {
         gfxText(s, TP.cx - CGFloat(s.count) * CGFloat(size) * 3, y, size, c)
+    }
+
+    /// Centred within a `w`-wide box starting at `x` (a button label, say),
+    /// rather than on the whole panel like `gfxTextCentered`.
+    func gfxTextCentered2(_ s: String, _ x: CGFloat, _ w: CGFloat, _ y: CGFloat,
+                          _ size: Int, _ c: UInt16) {
+        gfxText(s, x + (w - CGFloat(s.count) * CGFloat(size) * 6) / 2, y, size, c)
     }
 
     /// An SF Symbol where the firmware drew a 16x16 pixel-map icon. Deliberate

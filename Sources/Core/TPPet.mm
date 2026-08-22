@@ -10,6 +10,7 @@
 #include "dex.h"
 #include "i18n.h"
 #include "dayphase.h"
+#include "battle.h"   // BattleReward only, here -- the actual runtime lives in TPBattle.mm
 
 // The one live game state. Upstream keeps a file-scope `Pet pet;` in the .ino
 // and every subsystem reaches for it; mirroring that keeps the port honest.
@@ -117,6 +118,35 @@ static const DexEntry *TPDexEntry(int16_t dex);
 - (BOOL)lovesBerry:(uint8_t)color { return gPet.lovesBerry(color); }
 - (void)playResult:(uint8_t)score { gPet.playResult(score); }
 - (uint8_t)trainStrength:(uint16_t)hits { return gPet.trainStrength(hits); }
+- (uint8_t)applyCatchResult:(uint8_t)score { return gPet.applyCatchResult(score); }
+
+- (NSString *)applyBattleWinWithDex:(int16_t)dex closeWin:(BOOL)closeWin {
+  BattleReward reward = gPet.applyBattleWin(dex, closeWin);
+  if (reward.amount == 0) return @"";
+  StrId fmt = S_SPD_GAIN_FMT;
+  if (reward.stat == BATTLE_REWARD_ATK) fmt = S_ATK_GAIN_FMT;
+  else if (reward.stat == BATTLE_REWARD_DEF) fmt = S_DEF_GAIN_FMT;
+  char out[24];
+  snprintf(out, sizeof(out), T(fmt), reward.amount);
+  return [NSString stringWithUTF8String:out];
+}
+- (void)applyBattleLoss { gPet.applyBattleLoss(); }
+- (uint8_t)catchChanceForWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                        petLevel:(uint8_t)petLevel closeWin:(BOOL)closeWin {
+  return gPet.catchChanceForWild(dex, wildLevel, petLevel, closeWin);
+}
+- (uint8_t)respectCatchChanceForWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                               petLevel:(uint8_t)petLevel {
+  return gPet.respectCatchChanceForWild(dex, wildLevel, petLevel);
+}
+- (BOOL)tryCatchWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel petLevel:(uint8_t)petLevel
+               closeWin:(BOOL)closeWin luckRoll:(uint8_t)luckRoll {
+  return gPet.tryCatchWild(dex, wildLevel, petLevel, closeWin, luckRoll);
+}
+- (BOOL)tryRespectCatchWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                       petLevel:(uint8_t)petLevel luckRoll:(uint8_t)luckRoll {
+  return gPet.tryRespectCatchWild(dex, wildLevel, petLevel, luckRoll);
+}
 
 - (void)chooseStarter:(int16_t)dex { gPet.chooseStarter(dex); }
 - (void)evolve          { gPet.evolve(); }
@@ -261,6 +291,24 @@ static NSString *TPNamedPrompt(StrId id) {
 - (NSString *)backHint       { return [NSString stringWithUTF8String:T(S_BACK)]; }
 - (NSString *)bondLabel      { return [NSString stringWithUTF8String:T(S_VIN)]; }
 - (NSString *)battleTitle    { return [NSString stringWithUTF8String:T(S_BATTLE)]; }
+- (NSString *)battleRecordLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_WL_FMT), gPet.battleWins, gPet.battleLosses);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)battleStreakLine {
+  char out[18];
+  snprintf(out, sizeof(out), T(S_BSTREAK_FMT), gPet.battleStreak);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)battleBestLine {
+  char out[16];
+  snprintf(out, sizeof(out), T(S_BBEST_FMT), gPet.bestBattleStreak);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)wildBattleText { return [NSString stringWithUTF8String:T(S_WILD_BATTLE)]; }
+- (NSString *)catchTitleText { return [NSString stringWithUTF8String:T(S_CATCH_TITLE)]; }
+- (NSString *)playTitleText { return [NSString stringWithUTF8String:T(S_PLAY)]; }
 - (NSString *)progressTitle  { return [NSString stringWithUTF8String:T(S_PROGRESS)]; }
 - (NSString *)trainButtonText{ return [NSString stringWithUTF8String:T(S_TRAIN_STR)]; }
 - (NSString *)medalBannerTitle { return [NSString stringWithUTF8String:T(S_MEDAL_BANNER)]; }
@@ -560,6 +608,152 @@ static uint16_t TPTypeColor(uint8_t type) {
 - (uint16_t)typeColorForDex:(int16_t)dex {
   const DexEntry *d = TPDexEntry(dex);
   return TPTypeColor(d->type1);
+}
+
+// --- expedition -----------------------------------------------------------
+// The fork's expeditionNowEpoch() falls back from a real RTC chip to
+// lastSeenEpoch; there's no RTC chip here at all, so this always uses the
+// same wall-clock source syncClock() already does (TPNowEpoch(), declared
+// above this file's -syncClock).
+static uint32_t TPExpeditionNowEpoch() { return TPNowEpoch(); }
+
+static StrId TPExpItemStrId(NSInteger i) {
+  switch (i) {
+    case 0: return S_ITEM_SNACK;
+    case 1: return S_ITEM_ENERGY;
+    case 2: return S_ITEM_CARE;
+    default: return S_ITEM_TRAIN;
+  }
+}
+
+- (NSString *)expeditionTitle { return [NSString stringWithUTF8String:T(S_EXPEDITION)]; }
+- (BOOL)expeditionReady  { return gPet.expeditionReady(TPExpeditionNowEpoch()); }
+- (BOOL)expeditionActive { return gPet.expeditionActive(TPExpeditionNowEpoch()); }
+
+- (NSString *)expeditionFoundLine {
+  char out[40];
+  const char *item = T(TPExpItemStrId(gPet.expeditionRewardItem));
+  snprintf(out, sizeof(out), T(S_FOUND_ITEM_FMT), item);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)expeditionClaimText { return [NSString stringWithUTF8String:T(S_EXP_CLAIM)]; }
+
+- (NSString *)expeditionBackInLine {
+  uint32_t now = TPExpeditionNowEpoch();
+  uint32_t left = (gPet.expeditionEndEpoch > now ? gPet.expeditionEndEpoch - now + 59UL : 0) / 60UL;
+  char out[32];
+  snprintf(out, sizeof(out), T(S_EXP_IN_FMT), (unsigned)left);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)expeditionWaitText { return [NSString stringWithUTF8String:T(S_WAIT)]; }
+- (NSString *)expeditionInventoryFullText { return [NSString stringWithUTF8String:T(S_INV_FULL)]; }
+- (NSString *)expeditionNeedEnergyText {
+  char out[32];
+  snprintf(out, sizeof(out), T(S_NEED_ENE_FMT), 12);
+  return [NSString stringWithUTF8String:out];
+}
+- (BOOL)expeditionInventoryFull { return gPet.expeditionInventoryFull(); }
+
+static const uint8_t kExpMinutes[3] = { 15, 30, 60 };
+- (NSString *)expeditionDurationLabel:(NSInteger)i {
+  if (i < 0 || i > 2) return @"";
+  StrId ids[3] = { S_EXP_15, S_EXP_30, S_EXP_60 };
+  return [NSString stringWithUTF8String:T(ids[i])];
+}
+- (NSString *)expeditionCostLabel:(NSInteger)i {
+  if (i < 0 || i > 2) return @"";
+  char out[16];
+  snprintf(out, sizeof(out), "-%u ENE", Pet::expeditionEnergyCost(kExpMinutes[i]));
+  return [NSString stringWithUTF8String:out];
+}
+- (BOOL)expeditionCanStart:(NSInteger)i {
+  if (i < 0 || i > 2) return NO;
+  return gPet.canStartExpedition(kExpMinutes[i], TPExpeditionNowEpoch());
+}
+- (void)claimExpedition {
+  ExpeditionItem item = gPet.claimExpedition(TPExpeditionNowEpoch());
+  (void)item;  // sound/feedback handled in Swift from the return value's side effect (count changed)
+}
+- (void)startExpedition:(NSInteger)i {
+  if (i < 0 || i > 2) return;
+  gPet.startExpedition(kExpMinutes[i], TPExpeditionNowEpoch(),
+                       (uint8_t)arc4random_uniform(100), (uint8_t)arc4random_uniform(3));
+}
+
+- (NSString *)inventoryTitle { return [NSString stringWithUTF8String:T(S_INVENTORY)]; }
+- (NSString *)expeditionItemLabel:(NSInteger)i {
+  if (i < 0 || i > 3) return @"";
+  return [NSString stringWithUTF8String:T(TPExpItemStrId(i))];
+}
+- (NSUInteger)expeditionItemCount:(NSInteger)i {
+  if (i < 0 || i > 3) return 0;
+  return gPet.itemCounts[i];
+}
+// RGB565 literals matching this file's other UI_BAR_* colour choices
+// (0x5DCD ok/green, 0xED07 warn/yellow, 0xEA87 bad/red -- see
+// Sources/Shared/TPGraphics.swift's UI enum, which these are kept in sync
+// with by hand since this file can't import Swift).
+- (uint16_t)expeditionItemColor:(NSInteger)i {
+  switch (i) {
+    case 0: return 0xED07;  // warn: snack
+    case 1: return 0x4C98;  // energy
+    case 2: return 0x5DCD;  // ok: care
+    case 3: return 0xEA87;  // bad: train
+    default: return 0x8C4D;
+  }
+}
+- (void)useExpeditionItem:(NSInteger)i {
+  if (i < 0 || i > 2) return;  // 3 (train) goes through -useTrainItem: instead
+  if (gPet.itemCounts[i] == 0) return;
+  gPet.useExpeditionItem((ExpeditionItem)i);
+}
+
+- (NSString *)trainChoiceTitle { return [NSString stringWithUTF8String:T(S_ITEM_TRAIN)]; }
+- (NSString *)trainStatLabel:(NSInteger)i {
+  if (i < 0 || i > 2) return @"";
+  StrId ids[3] = { S_TRAIN_ATK, S_TRAIN_DEF, S_TRAIN_SPE };
+  return [NSString stringWithUTF8String:T(ids[i])];
+}
+- (uint8_t)trainStatValue:(NSInteger)i {
+  switch (i) {
+    case 0: return gPet.trAtk;
+    case 1: return gPet.trDef;
+    case 2: return gPet.trSpe;
+    default: return 0;
+  }
+}
+- (BOOL)trainStatUsable:(NSInteger)i { return [self trainStatValue:i] < 100; }
+- (NSString *)trainMaxedText { return [NSString stringWithUTF8String:T(S_ITEM_MAXED)]; }
+- (void)useTrainItem:(NSInteger)statIndex {
+  if (statIndex < 0 || statIndex > 2) return;
+  if (gPet.itemCounts[EXP_ITEM_TRAIN] == 0) return;
+  gPet.useExpeditionItem(EXP_ITEM_TRAIN, (int8_t)statIndex);
+}
+
+- (NSInteger)expeditionHudState {
+  switch (gPet.expeditionHudState(TPExpeditionNowEpoch())) {
+    case EXP_HUD_ACTIVE: return 1;
+    case EXP_HUD_READY:  return 2;
+    case EXP_HUD_BAG:    return 3;
+    default:              return 0;
+  }
+}
+- (NSString *)expeditionHudLabel {
+  NSInteger state = self.expeditionHudState;
+  if (state == 1) {
+    char out[24];
+    uint32_t now = TPExpeditionNowEpoch();
+    uint32_t left = (gPet.expeditionEndEpoch > now ? gPet.expeditionEndEpoch - now + 59UL : 0) / 60UL;
+    snprintf(out, sizeof(out), "%s %lum", T(S_EXP_HUD_TOUR), (unsigned long)left);
+    return [NSString stringWithUTF8String:out];
+  }
+  if (state == 2) return [NSString stringWithUTF8String:T(S_EXP_READY)];
+  if (state == 3) {
+    char out[20];
+    snprintf(out, sizeof(out), "%s x%u", T(S_EXP_HUD_BAG), gPet.expeditionItemCount());
+    return [NSString stringWithUTF8String:out];
+  }
+  return @"";
 }
 
 // --- minigame / training ------------------------------------------------

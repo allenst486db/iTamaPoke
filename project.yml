@@ -41,6 +41,8 @@ targets:
         group: upstream-expanded
       - path: upstream-expanded/i18n.cpp
         group: upstream-expanded
+      - path: upstream-expanded/battle.cpp
+        group: upstream-expanded
       # TPK2 sprites, copied in by Scripts/fetch_sprites.sh. A folder reference
       # so they land as mons/ inside the bundle, and optional because they are
       # gitignored -- a fresh checkout (and every CI build) has none, and must
@@ -89,6 +91,8 @@ targets:
       - path: upstream-expanded/pet.cpp
         group: upstream-expanded
       - path: upstream-expanded/i18n.cpp
+        group: upstream-expanded
+      - path: upstream-expanded/battle.cpp
         group: upstream-expanded
       # Same sprite folder as the iOS app. Both bundles carry their own copy --
       # a watchOS app cannot read the phone app's resources, and this one runs

@@ -39,18 +39,21 @@ firmware is ported and running the same underlying game logic.
 
 **Screens:** idle scene with a real-time day/night sky, starter selection,
 egg and hatching, feed menu, bath, the Pokédex gallery (with an
-All/Raised/Caught filter), the seven-page stat card (profile / personality /
-daily goals / box / battle / medals / progress), the ball minigame, the
-training sack, the rename keyboard, settings, and the evolution / farewell /
-runaway decisions with their animations.
+All/Raised/Caught filter), the eight-page stat card (profile / personality /
+daily goals / box / battle / medals / progress / expedition), a wild-battle
+screen (attack / dodge / rest, with a catch offer on a win), a catch
+minigame alongside the original ball minigame, the training sack, the
+rename keyboard, settings, and the evolution / farewell / runaway decisions
+with their animations.
 
-**Personality, Daily goals, Box, and the Pokédex filter** are ported from
+**Personality, Daily goals, Box, the Pokédex filter, the battle system, the
+catch minigame, and expeditions** are ported from
 [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke) ("TamaPoke
 — Expanded"), a separate community fork — not from the `upstream/` submodule,
 which pins socquique/TamaPoke and doesn't have these. See
 [`upstream-expanded/README.md`](upstream-expanded/README.md) for exactly
-which files that is and why. The Box page will stay empty (0 caught) until a
-catch minigame exists to fill it — that part of the fork isn't ported yet.
+which files that is and why. The Box page fills in as you win wild battles
+and catch what you beat.
 
 **Sound** is the original hardware's own square-wave tones, re-synthesised
 in software rather than re-recorded — see [How the port

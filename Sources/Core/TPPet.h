@@ -148,6 +148,46 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 - (NSString *)typeTextForDex:(int16_t)dex;   ///< "FIRE" or "FIRE FLY"
 - (uint16_t)typeColorForDex:(int16_t)dex;    ///< RGB565, primary type
 
+// --- expedition (ShadowEnemyx fork; see upstream-expanded/README.md) ----
+@property (nonatomic, readonly, copy) NSString *expeditionTitle;
+@property (nonatomic, readonly) BOOL expeditionReady;    ///< a tour finished, reward waiting
+@property (nonatomic, readonly) BOOL expeditionActive;   ///< a tour is currently out
+@property (nonatomic, readonly, copy) NSString *expeditionFoundLine;   ///< "Found: Snack"
+@property (nonatomic, readonly, copy) NSString *expeditionClaimText;
+@property (nonatomic, readonly, copy) NSString *expeditionBackInLine;  ///< "Back in 12m"
+@property (nonatomic, readonly, copy) NSString *expeditionWaitText;
+@property (nonatomic, readonly, copy) NSString *expeditionInventoryFullText;
+@property (nonatomic, readonly, copy) NSString *expeditionNeedEnergyText;
+@property (nonatomic, readonly) BOOL expeditionInventoryFull;
+- (NSString *)expeditionDurationLabel:(NSInteger)i;   ///< i: 0=15m 1=30m 2=60m
+- (NSString *)expeditionCostLabel:(NSInteger)i;       ///< "-N ENE"
+- (BOOL)expeditionCanStart:(NSInteger)i;
+- (void)claimExpedition;
+/// i: 0=15m 1=30m 2=60m. No-ops (silently) if not actually startable --
+/// callers should already have checked -expeditionCanStart:.
+- (void)startExpedition:(NSInteger)i;
+
+@property (nonatomic, readonly, copy) NSString *inventoryTitle;
+- (NSString *)expeditionItemLabel:(NSInteger)i;   ///< i: 0 snack 1 energy 2 care 3 train
+- (NSUInteger)expeditionItemCount:(NSInteger)i;
+- (uint16_t)expeditionItemColor:(NSInteger)i;      ///< RGB565
+/// Uses item i. Train (i==3) opens the stat-choice UI instead (Swift-side
+/// state) rather than consuming here -- call -useTrainItem: for that one.
+- (void)useExpeditionItem:(NSInteger)i;
+
+@property (nonatomic, readonly, copy) NSString *trainChoiceTitle;
+- (NSString *)trainStatLabel:(NSInteger)i;    ///< 0 ATK, 1 DEF, 2 SPE
+- (uint8_t)trainStatValue:(NSInteger)i;       ///< 0..100
+- (BOOL)trainStatUsable:(NSInteger)i;         ///< value < 100
+@property (nonatomic, readonly, copy) NSString *trainMaxedText;
+- (void)useTrainItem:(NSInteger)statIndex;
+
+// --- HUD chip (idle screen) ----------------------------------------------
+/// 0 hidden, 1 active (tour running), 2 ready (reward waiting), 3 bag (idle
+/// with items, tap opens the card).
+@property (nonatomic, readonly) NSInteger expeditionHudState;
+@property (nonatomic, readonly, copy) NSString *expeditionHudLabel;
+
 // --- stat card ---------------------------------------------------------
 @property (nonatomic, readonly) uint16_t atkStat;
 @property (nonatomic, readonly) uint16_t defStat;
@@ -191,6 +231,12 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *backHint;
 @property (nonatomic, readonly, copy) NSString *bondLabel;
 @property (nonatomic, readonly, copy) NSString *battleTitle;
+@property (nonatomic, readonly, copy) NSString *battleRecordLine;   ///< "W12 L3" (ShadowEnemyx fork)
+@property (nonatomic, readonly, copy) NSString *battleStreakLine;   ///< "Streak 2"
+@property (nonatomic, readonly, copy) NSString *battleBestLine;     ///< "Best 7"
+@property (nonatomic, readonly, copy) NSString *wildBattleText;     ///< "WILD BATTLE" button label
+@property (nonatomic, readonly, copy) NSString *catchTitleText;     ///< Catch minigame screen title
+@property (nonatomic, readonly, copy) NSString *playTitleText;      ///< "PLAY" -- Ball/Catch picker title
 @property (nonatomic, readonly, copy) NSString *progressTitle;
 @property (nonatomic, readonly, copy) NSString *trainButtonText;
 @property (nonatomic, readonly, copy) NSString *medalsLine;       ///< "Medals 3/8"
@@ -243,6 +289,24 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 - (BOOL)lovesBerry:(uint8_t)color;
 - (void)playResult:(uint8_t)score;  ///< minigame reward (trains SPEED)
 - (uint8_t)trainStrength:(uint16_t)hits;
+/// Catch minigame reward (trains SPEED, same as -playResult: -- upstream's
+/// applyCatchResult and playResult both hand out gameGain the same way).
+/// Returns the joy/speed gain, like -trainStrength:.
+- (uint8_t)applyCatchResult:(uint8_t)score;
+
+// --- battle (used by TPBattle, which owns the actual battle runtime; this
+// stays the only thing that touches the live Pet directly) ---------------
+/// Reward text (e.g. "+2 ATK"), or "" when nothing was gained.
+- (NSString *)applyBattleWinWithDex:(int16_t)dex closeWin:(BOOL)closeWin;
+- (void)applyBattleLoss;
+- (uint8_t)catchChanceForWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                        petLevel:(uint8_t)petLevel closeWin:(BOOL)closeWin;
+- (uint8_t)respectCatchChanceForWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                               petLevel:(uint8_t)petLevel;
+- (BOOL)tryCatchWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel petLevel:(uint8_t)petLevel
+               closeWin:(BOOL)closeWin luckRoll:(uint8_t)luckRoll;
+- (BOOL)tryRespectCatchWildDex:(int16_t)dex wildLevel:(uint8_t)wildLevel
+                       petLevel:(uint8_t)petLevel luckRoll:(uint8_t)luckRoll;
 
 - (void)chooseStarter:(int16_t)dex;
 - (void)evolve;

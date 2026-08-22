@@ -58,8 +58,9 @@ this repository as a whole (see LICENSE Section 1) — MIT permits a derivative
 to carry additional terms as long as this notice ships with it, which is
 exactly what this section does.
 
-The Personality, Daily goals, Box, and Pokédex-filter features are
-translated from a second, separate source: ShadowEnemyx/TamaPoke
+The Personality, Daily goals, Box, and Pokédex-filter features, the
+wild-battle system, the catch minigame, and expeditions are translated from
+a second, separate source: ShadowEnemyx/TamaPoke
 (https://github.com/ShadowEnemyx/TamaPoke), a community fork of the same
 project credited above (not socquique's own repository, and not the
 `upstream/` submodule, which stays pinned to socquique's). It carries the

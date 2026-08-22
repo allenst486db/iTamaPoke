@@ -3,6 +3,7 @@
 *.xcworkspace/
 DerivedData/
 build/
+build_*/
 *.xcarchive
 *.ipa
 .DS_Store

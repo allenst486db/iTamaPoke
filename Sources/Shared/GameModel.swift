@@ -82,9 +82,10 @@ final class GameModel: ObservableObject {
     /// because they advance on the tick, and a Canvas draw must not step physics.
     private(set) var ball = TPBallGame()
     private(set) var sack = TPSackGame()
+    private(set) var catchGame = TPCatchGame()
     /// Which one is running. Gating on the games' own fields instead would leave
     /// a finished sack's deadline pinned, and that stale value froze the ball.
-    private enum ActiveGame { case none, ball, sack }
+    private enum ActiveGame { case none, ball, sack, catchGame }
     private var activeGame: ActiveGame = .none
     private var lastGameMs: UInt64 = 0
 
@@ -223,6 +224,12 @@ final class GameModel: ObservableObject {
         lastGameMs = millis
     }
 
+    func startCatchGame() {
+        catchGame.start(now: millis)
+        activeGame = .catchGame
+        lastGameMs = millis
+    }
+
     /// Clears the deadlines as well as stopping the clock, so a later run cannot
     /// inherit a finished one's state.
     func endGames() {
@@ -230,12 +237,24 @@ final class GameModel: ObservableObject {
         ball.overUntil = 0
         sack.until = 0
         sack.overUntil = 0
+        catchGame.overUntil = 0
     }
 
     /// True when the tap connected, so the caller can fire haptics.
     func tapBall(_ p: CGPoint) -> Bool { ball.tap(p, now: millis) }
 
     func tapSack() { sack.tap(now: millis) }
+
+    /// Unlike the ball, a miss here also counts toward game-over -- see
+    /// TPCatchGame.tap.
+    func tapCatch(_ p: CGPoint) -> TPCatchTapResult {
+        catchGame.tap(p, now: millis) { score in
+            let beatIt = score > self.pet.catchHigh
+            _ = self.pet.applyCatchResult(UInt8(min(score, 255)))
+            self.playSfx(beatIt && score > 0 ? .medal : .level)
+            return beatIt
+        }
+    }
 
     private func stepGames(now: UInt64) {
         let dt = now &- lastGameMs
@@ -260,6 +279,14 @@ final class GameModel: ObservableObject {
                 playSfx(sack.newHigh ? .medal : .play)
             }
             sack.shake *= 0.84
+        case .catchGame:
+            guard catchGame.overUntil == 0 else { return }
+            catchGame.step(now: now) { score in
+                let beatIt = score > self.pet.catchHigh
+                _ = self.pet.applyCatchResult(UInt8(min(score, 255)))
+                self.playSfx(beatIt && score > 0 ? .medal : .level)
+                return beatIt
+            }
         case .none:
             break
         }

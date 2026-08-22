@@ -97,6 +97,89 @@ struct TPBallGame {
     }
 }
 
+/// Catch minigame: tap a moving target before it (or your patience) runs out.
+/// Translated from ShadowEnemyx/TamaPoke ("TamaPoke — Expanded"), a separate
+/// community fork -- not from the upstream/ submodule; see
+/// upstream-expanded/README.md. Mirrors spawnCatchTarget/catchTap/
+/// finishCatchGame in that fork's TamaPoke.ino.
+struct TPCatchGame {
+    var score: UInt16 = 0
+    var misses = 0
+    var targetX: CGFloat = 233
+    var targetY: CGFloat = 220
+    /// 0 food, 1 red berry, 2 green berry -- which icon the target draws as.
+    var icon = 0
+    var targetUntil: UInt64 = 0
+    var runUntil: UInt64 = 0
+    /// Impact ring: where and when the last hit landed.
+    var hitX: CGFloat = 0
+    var hitY: CGFloat = 0
+    var hitAt: UInt64 = 0
+    var overUntil: UInt64 = 0
+    var newHigh = false
+
+    mutating func start(now: UInt64) {
+        score = 0
+        misses = 0
+        overUntil = 0
+        hitAt = 0
+        runUntil = now + 20000
+        respawn(now: now)
+    }
+
+    mutating func respawn(now: UInt64) {
+        targetX = CGFloat(86 + Int.random(in: 0..<294))
+        targetY = CGFloat(118 + Int.random(in: 0..<206))
+        icon = Int.random(in: 0..<3)
+        let speedup = min(UInt64(score) * 35, 530)
+        targetUntil = now + (980 - speedup)
+    }
+
+    /// Call once per frame; fires `onGameOver` when the timer or three misses
+    /// end the run.
+    mutating func step(now: UInt64, onGameOver: (UInt16) -> Bool) {
+        guard overUntil == 0 else { return }
+        if now >= runUntil || misses >= 3 {
+            newHigh = onGameOver(score)
+            overUntil = now + 4000
+            return
+        }
+        if now >= targetUntil {
+            misses += 1
+            if misses >= 3 {
+                newHigh = onGameOver(score)
+                overUntil = now + 4000
+            } else {
+                respawn(now: now)
+            }
+        }
+    }
+
+    /// A miss (unlike the ball game's) counts toward the same three strikes
+    /// as a missed target -- upstream's catchTap ends the run on a bad tap
+    /// same as on a timeout.
+    mutating func tap(_ p: CGPoint, now: UInt64, onGameOver: (UInt16) -> Bool) -> TPCatchTapResult {
+        guard overUntil == 0 else { return .ignored }
+        let dx = targetX - p.x, dy = targetY - p.y
+        if dx * dx + dy * dy <= 52 * 52 {
+            score += 1
+            hitX = targetX
+            hitY = targetY
+            hitAt = now
+            respawn(now: now)
+            return .hit
+        }
+        misses += 1
+        if misses >= 3 {
+            newHigh = onGameOver(score)
+            overUntil = now + 4000
+        }
+        return .miss
+    }
+}
+
+enum TPCatchTapResult { case hit, miss, ignored }
+
 /// Training sack state: 10 seconds of tapping, then the strength it bought.
 struct TPSackGame {
     var hits: UInt16 = 0
