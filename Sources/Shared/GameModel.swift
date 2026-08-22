@@ -366,7 +366,13 @@ final class GameModel: ObservableObject {
             // Re-applies wall-clock drift. This is the offline-progression path
             // the firmware runs off its RTC, and why backgrounding is harmless.
             pet.syncClock()
+            // The system tears down the audio engine/session in the background
+            // (neither platform declares a background-audio mode), so `stop()`
+            // below leaves TPAudio's own `running` flag accurate; this is what
+            // actually gets sound working again on return, not just SND being on.
+            if soundEnabled { TPAudio.shared.start() }
         case .inactive, .background:
+            TPAudio.shared.stop()
             pet.flushSave()
             #if os(iOS)
             TPSaveFile.writeExport()
