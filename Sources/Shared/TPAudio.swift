@@ -56,6 +56,10 @@ final class TPAudio {
     /// Rendered once on first use and reused: the effects are fixed waveforms.
     private var cache: [UInt8: AVAudioPCMBuffer] = [:]
     private var running = false
+    /// watchOS activates the session asynchronously; these hold the gap so the
+    /// effect that triggered `start()` is not swallowed while we wait.
+    private var activating = false
+    private var pending: UInt8?
 
     private init() {
         format = AVAudioFormat(standardFormatWithSampleRate: Self.sampleRate, channels: 1)!
@@ -66,8 +70,37 @@ final class TPAudio {
     /// Configures the session so effects duck politely and, crucially, do not
     /// stop whatever the player is already listening to.
     func start() {
-        guard !running else { return }
-        #if os(iOS) || os(watchOS)
+        guard !running, !activating else { return }
+        #if os(watchOS)
+        // `.playback` was tried here first to get the effects out of the
+        // speaker at all, but that category is defined to ignore the mute
+        // switch -- appropriate for a music app, wrong for game SFX. `.ambient`
+        // is the one that honors mute, same as the iOS branch below; the
+        // speaker stayed silent before because activation wasn't being
+        // awaited (see below), not because of the category.
+        do {
+            try AVAudioSession.sharedInstance().setCategory(.ambient,
+                                                            mode: .default,
+                                                            options: [.mixWithOthers])
+        } catch {
+            NSLog("iTamaPoke: audio session unavailable — \(error)")
+            return
+        }
+        activating = true
+        AVAudioSession.sharedInstance().activate(options: []) { [weak self] ok, error in
+            DispatchQueue.main.async {
+                guard let self else { return }
+                self.activating = false
+                guard ok else {
+                    NSLog("iTamaPoke: audio session refused activation — \(String(describing: error))")
+                    self.pending = nil
+                    return
+                }
+                self.startEngine()
+            }
+        }
+        #else
+        #if os(iOS)
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.ambient, mode: .default)
@@ -77,26 +110,50 @@ final class TPAudio {
             return
         }
         #endif
+        startEngine()
+        #endif
+    }
+
+    private func startEngine() {
+        guard !running else { return }
         do {
             try engine.start()
             player.play()
             running = true
         } catch {
             NSLog("iTamaPoke: audio engine failed to start — \(error)")
+            pending = nil
+            return
+        }
+        if let id = pending {
+            pending = nil
+            play(id)
         }
     }
 
     func stop() {
+        pending = nil
         guard running else { return }
         player.stop()
         engine.stop()
         running = false
+        #if os(watchOS)
+        // Hand the route back, or the watch keeps the app marked as the active
+        // audio client and stays out of its normal silent behaviour.
+        try? AVAudioSession.sharedInstance().setActive(false)
+        #endif
     }
 
     /// Queues one effect. Silently does nothing when audio could not start, so
     /// a device that refuses the session never breaks the game.
     func play(_ id: UInt8) {
-        guard running, id < Self.effects.count else { return }
+        guard id < Self.effects.count else { return }
+        // Held rather than dropped only while watchOS is mid-activation; with no
+        // session coming this stays nil and the effect is discarded as before.
+        guard running else {
+            if activating { pending = id }
+            return
+        }
         let buffer = cache[id] ?? render(id)
         cache[id] = buffer
         guard let buffer else { return }

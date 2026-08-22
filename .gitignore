@@ -20,3 +20,7 @@ Resources/*.pak
 # image is ignored. See README "App icon" and Scripts/fetch_app_icon.sh.
 Sources/iOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 Sources/watchOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
+# Same file, wherever a custom source copy gets dropped before running
+# fetch_app_icon.sh -- Resources/DefaultAppIcon.png (the generic mascot) is
+# the only icon PNG meant to be tracked.
+Resources/AppIcon.png
