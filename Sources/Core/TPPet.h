@@ -83,6 +83,71 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 /// Name of the medal being celebrated, nil when none is.
 @property (nonatomic, readonly, copy, nullable) NSString *newMedalName;
 
+// --- personality / daily / box ------------------------------------------
+// Ported from ShadowEnemyx/TamaPoke ("TamaPoke — Expanded", a separate
+// community fork socquique's own README links to) rather than from the base
+// upstream/ submodule -- see upstream-expanded/README.md. Battle/expedition
+// fields the fork also added are not exposed here; nothing draws them.
+@property (nonatomic, readonly) NSInteger personalityKind;       ///< 0 balanced..4 lazy
+@property (nonatomic, readonly, copy) NSString *personalityTitle;
+@property (nonatomic, readonly, copy) NSString *personalityName;
+@property (nonatomic, readonly, copy) NSString *personalityHint;
+// personalityKind above (0..4) doubles as the colour key; Swift maps it to
+// UI.barOK/barWarn/barBad plus two colours those constants don't cover.
+@property (nonatomic, readonly, copy) NSString *personalityAgeLine;
+@property (nonatomic, readonly, copy) NSString *recordsTitle;
+@property (nonatomic, readonly, copy) NSString *ballRecordLabel;
+@property (nonatomic, readonly, copy) NSString *catchRecordLabel;
+@property (nonatomic, readonly, copy) NSString *memoRecordLabel;
+@property (nonatomic, readonly, copy) NSString *cleanRecordLabel;
+@property (nonatomic, readonly, copy) NSString *typeRecordLabel;
+@property (nonatomic, readonly) uint16_t catchHigh;
+@property (nonatomic, readonly) uint16_t memoHigh;
+@property (nonatomic, readonly) uint16_t cleanHigh;
+@property (nonatomic, readonly) uint16_t typeHigh;
+@property (nonatomic, readonly) uint16_t bestBattleStreak;
+
+@property (nonatomic, readonly, copy) NSString *dailyTitle;
+@property (nonatomic, readonly, copy) NSString *dayPhaseLabel;   ///< Morning/Day/Evening/Night
+@property (nonatomic, readonly) NSInteger dailyGoalCount;        ///< always 3
+@property (nonatomic, readonly, copy) NSString *dailyRewardLine; ///< "REWARD 1/3"
+@property (nonatomic, readonly, copy) NSString *doneText;
+/// Rotates in a new set of 3 goals once a real day has passed. Safe to call
+/// on every frame the Daily page is visible -- a no-op most of the time.
+- (void)ensureDailyGoals;
+- (NSString *)dailyGoalLabelAtIndex:(NSInteger)i;
+- (NSUInteger)dailyGoalProgressAtIndex:(NSInteger)i;
+- (NSUInteger)dailyGoalTargetAtIndex:(NSInteger)i;
+- (BOOL)dailyGoalCompleteAtIndex:(NSInteger)i;
+/// 0 care, 1 play, 2 battle, 3 catch, 4 memo -- Swift maps this to a colour.
+- (NSInteger)dailyGoalKindAtIndex:(NSInteger)i;
+
+@property (nonatomic, readonly, copy) NSString *boxTitle;
+@property (nonatomic, readonly) uint16_t caughtCount;   ///< wild pokemon caught (separate from raised)
+@property (nonatomic, readonly) uint16_t knownDexCount; ///< raised OR caught
+@property (nonatomic, readonly) uint8_t nextDexGoal;
+@property (nonatomic, readonly, copy) NSString *caughtCountLine;
+@property (nonatomic, readonly, copy) NSString *knownCountLine;
+@property (nonatomic, readonly, copy) NSString *dexGoalLine;
+@property (nonatomic, readonly, copy) NSString *boxSortLabel;
+@property (nonatomic, readonly, copy) NSString *noCatchesText;
+@property (nonatomic, readonly, copy) NSString *raisedMarkText;
+- (NSString *)pageLineForPage:(NSInteger)page count:(NSInteger)count;
+- (void)cycleBoxSort;
+- (NSInteger)boxPageCountWithRowsPerPage:(NSInteger)rows;
+/// -1 when this row is past the end of the (sorted, filtered) caught list.
+- (int16_t)boxDexAtIndex:(NSInteger)index;
+- (BOOL)isCaught:(int16_t)dex;
+
+// --- Pokedex All/Raised/Caught filter ------------------------------------
+@property (nonatomic, readonly, copy) NSString *raisedCaughtLine;  ///< "R:1 C:0"
+@property (nonatomic, readonly, copy) NSString *filterAllText;
+@property (nonatomic, readonly, copy) NSString *filterCaughtText;
+
+// --- type (Box rows + Pokedex detail) ------------------------------------
+- (NSString *)typeTextForDex:(int16_t)dex;   ///< "FIRE" or "FIRE FLY"
+- (uint16_t)typeColorForDex:(int16_t)dex;    ///< RGB565, primary type
+
 // --- stat card ---------------------------------------------------------
 @property (nonatomic, readonly) uint16_t atkStat;
 @property (nonatomic, readonly) uint16_t defStat;

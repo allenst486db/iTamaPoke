@@ -9,6 +9,7 @@
 #include "pet.h"
 #include "dex.h"
 #include "i18n.h"
+#include "dayphase.h"
 
 // The one live game state. Upstream keeps a file-scope `Pet pet;` in the .ino
 // and every subsystem reaches for it; mirroring that keeps the port honest.
@@ -329,6 +330,238 @@ static NSString *TPNamedPrompt(StrId id) {
   return [NSString stringWithUTF8String:out];
 }
 
+// --- personality / daily / box (ShadowEnemyx/TamaPoke "Expanded" fork) --
+// See upstream-expanded/README.md. Colour/label logic below mirrors
+// renderCardPersonality / renderCardDaily / renderCardBox / renderGallery's
+// filter row in that fork's TamaPoke.ino, which isn't vendored itself (only
+// the Pet class and string table are) -- these are the Swift-facing
+// equivalents of that drawing code, not a straight port of it.
+
+static StrId TPPersonalityNameId(PetPersonality p) {
+  switch (p) {
+    case PERS_PLAYFUL: return S_PERS_PLAYFUL;
+    case PERS_BRAVE:   return S_PERS_BRAVE;
+    case PERS_CALM:    return S_PERS_CALM;
+    case PERS_LAZY:    return S_PERS_LAZY;
+    default:           return S_PERS_BALANCED;
+  }
+}
+static StrId TPPersonalityHintId(PetPersonality p) {
+  switch (p) {
+    case PERS_PLAYFUL: return S_PERS_PLAYFUL_HINT;
+    case PERS_BRAVE:   return S_PERS_BRAVE_HINT;
+    case PERS_CALM:    return S_PERS_CALM_HINT;
+    case PERS_LAZY:    return S_PERS_LAZY_HINT;
+    default:           return S_PERS_BALANCED_HINT;
+  }
+}
+- (NSInteger)personalityKind { return (NSInteger)gPet.personality(); }
+- (NSString *)personalityTitle { return [NSString stringWithUTF8String:T(S_PERSONALITY)]; }
+- (NSString *)personalityName {
+  return [NSString stringWithUTF8String:T(TPPersonalityNameId(gPet.personality()))];
+}
+- (NSString *)personalityHint {
+  return [NSString stringWithUTF8String:T(TPPersonalityHintId(gPet.personality()))];
+}
+- (NSString *)personalityAgeLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_AGE_DAYS_FMT), (unsigned long)(gPet.ageMinutes / 1440));
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)recordsTitle      { return [NSString stringWithUTF8String:T(S_RECORDS)]; }
+- (NSString *)ballRecordLabel   { return [NSString stringWithUTF8String:T(S_GAME_BALL)]; }
+- (NSString *)catchRecordLabel  { return [NSString stringWithUTF8String:T(S_GAME_CATCH)]; }
+- (NSString *)memoRecordLabel   { return [NSString stringWithUTF8String:T(S_GAME_MEMO)]; }
+- (NSString *)cleanRecordLabel  { return [NSString stringWithUTF8String:T(S_GAME_CLEAN)]; }
+- (NSString *)typeRecordLabel   { return [NSString stringWithUTF8String:T(S_GAME_TYPE)]; }
+- (uint16_t)catchHigh    { return gPet.catchHi; }
+- (uint16_t)memoHigh     { return gPet.memoHi; }
+- (uint16_t)cleanHigh    { return gPet.cleanHi; }
+- (uint16_t)typeHigh     { return gPet.typeHi; }
+- (uint16_t)bestBattleStreak { return gPet.bestBattleStreak; }
+
+- (NSString *)dailyTitle { return [NSString stringWithUTF8String:T(S_DAILY)]; }
+// Port of the fork's currentDayPhase()/sceneHour() -- both live in
+// TamaPoke.ino (not vendored), built from dayphase.h helpers that are.
+static uint8_t TPCurrentDayPhase() {
+  return dayPhaseFromHour(sceneHourFromEpoch(gPet.lastSeenEpoch));
+}
+- (NSString *)dayPhaseLabel {
+  StrId id;
+  switch (TPCurrentDayPhase()) {
+    case 0:  id = S_MORNING; break;
+    case 2:  id = S_EVENING; break;
+    case 3:  id = S_NIGHT;   break;
+    default: id = S_DAY;     break;
+  }
+  return [NSString stringWithUTF8String:T(id)];
+}
+- (NSInteger)dailyGoalCount { return DAILY_GOAL_COUNT; }
+- (NSString *)doneText { return [NSString stringWithUTF8String:T(S_DONE)]; }
+- (NSString *)dailyRewardLine {
+  NSUInteger done = 0;
+  for (NSInteger i = 0; i < DAILY_GOAL_COUNT; i++)
+    if ([self dailyGoalCompleteAtIndex:i]) done++;
+  char out[24];
+  snprintf(out, sizeof(out), "%s %u/%u", T(S_REWARD), (unsigned)done, DAILY_GOAL_COUNT);
+  return [NSString stringWithUTF8String:out];
+}
+- (void)ensureDailyGoals { gPet.ensureDailyGoals(); }
+- (NSString *)dailyGoalLabelAtIndex:(NSInteger)i {
+  if (i < 0 || i >= DAILY_GOAL_COUNT) return @"";
+  StrId id;
+  switch (gPet.dailyGoalType[i]) {
+    case DAILY_GOAL_PLAY:   id = S_GOAL_PLAY;   break;
+    case DAILY_GOAL_BATTLE: id = S_GOAL_BATTLE; break;
+    case DAILY_GOAL_CATCH:  id = S_GOAL_CATCH;  break;
+    case DAILY_GOAL_MEMO:   id = S_GOAL_MEMO;   break;
+    default:                id = S_GOAL_CARE;   break;
+  }
+  return [NSString stringWithUTF8String:T(id)];
+}
+- (NSUInteger)dailyGoalProgressAtIndex:(NSInteger)i {
+  if (i < 0 || i >= DAILY_GOAL_COUNT) return 0;
+  uint8_t target = gPet.dailyGoalTarget(gPet.dailyGoalType[i]);
+  uint8_t p = gPet.dailyGoalProgress[i];
+  return p > target ? target : p;
+}
+- (NSUInteger)dailyGoalTargetAtIndex:(NSInteger)i {
+  if (i < 0 || i >= DAILY_GOAL_COUNT) return 0;
+  return gPet.dailyGoalTarget(gPet.dailyGoalType[i]);
+}
+- (BOOL)dailyGoalCompleteAtIndex:(NSInteger)i {
+  if (i < 0 || i >= DAILY_GOAL_COUNT) return NO;
+  return gPet.dailyGoalComplete((uint8_t)i);
+}
+- (NSInteger)dailyGoalKindAtIndex:(NSInteger)i {
+  if (i < 0 || i >= DAILY_GOAL_COUNT) return 0;
+  switch (gPet.dailyGoalType[i]) {
+    case DAILY_GOAL_PLAY:   return 1;
+    case DAILY_GOAL_BATTLE: return 2;
+    case DAILY_GOAL_CATCH:  return 3;
+    case DAILY_GOAL_MEMO:   return 4;
+    default:                return 0;  // care
+  }
+}
+
+- (NSString *)boxTitle { return [NSString stringWithUTF8String:T(S_BOX)]; }
+- (uint16_t)caughtCount    { return gPet.caughtCount(); }
+- (uint16_t)knownDexCount  { return gPet.knownDexCount(); }
+- (uint8_t)nextDexGoal     { return gPet.nextDexGoal(); }
+- (NSString *)caughtCountLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_CAUGHT_COUNT_FMT), gPet.caughtCount());
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)knownCountLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_KNOWN_FMT), gPet.knownDexCount());
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)dexGoalLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_DEX_GOAL_FMT), gPet.nextDexGoal());
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)noCatchesText  { return [NSString stringWithUTF8String:T(S_NO_CATCHES)]; }
+- (NSString *)raisedMarkText { return [NSString stringWithUTF8String:T(S_RAISED_MARK)]; }
+
+// 0 dex order, 1 by type, 2 raised-first. Only sort mode kept client-side --
+// everything else reads straight off the live Pet each call.
+static NSInteger gBoxSort = 0;
+- (NSString *)boxSortLabel {
+  if (gBoxSort == 1) return [NSString stringWithUTF8String:T(S_SORT_TYPE)];
+  if (gBoxSort == 2) return [NSString stringWithUTF8String:T(S_SORT_RAISED)];
+  return [NSString stringWithUTF8String:T(S_SORT_DEX)];
+}
+- (void)cycleBoxSort { gBoxSort = (gBoxSort + 1) % 3; }
+
+- (NSString *)pageLineForPage:(NSInteger)page count:(NSInteger)count {
+  char out[16];
+  snprintf(out, sizeof(out), T(S_PAGE_FMT), (int)page, (int)count);
+  return [NSString stringWithUTF8String:out];
+}
+
+static bool TPBoxComesBefore(int16_t a, int16_t b) {
+  if (gBoxSort == 1) {
+    const DexEntry &da = DEX_TBL[a], &db = DEX_TBL[b];
+    if (da.type1 != db.type1) return da.type1 < db.type1;
+    if (da.type2 != db.type2) return da.type2 < db.type2;
+  } else if (gBoxSort == 2) {
+    bool ra = gPet.isRegistered(a), rb = gPet.isRegistered(b);
+    if (ra != rb) return ra;
+  }
+  return a < b;
+}
+
+// Rebuilt on every call rather than cached: the box is small (<=151 entries)
+// and this only runs while the Box page is on screen.
+static uint16_t TPBoxBuildList(int16_t *out) {
+  uint16_t n = 0;
+  for (int16_t dex = 1; dex <= DEX_COUNT; dex++)
+    if (gPet.isCaught(dex)) out[n++] = dex;
+  for (uint16_t i = 1; i < n; i++) {
+    int16_t v = out[i];
+    int j = (int)i - 1;
+    while (j >= 0 && TPBoxComesBefore(v, out[j])) { out[j + 1] = out[j]; j--; }
+    out[j + 1] = v;
+  }
+  return n;
+}
+- (NSInteger)boxPageCountWithRowsPerPage:(NSInteger)rows {
+  NSInteger pages = (gPet.caughtCount() + rows - 1) / rows;
+  return pages > 0 ? pages : 1;
+}
+- (int16_t)boxDexAtIndex:(NSInteger)index {
+  int16_t list[DEX_COUNT];
+  uint16_t n = TPBoxBuildList(list);
+  return (index >= 0 && index < n) ? list[index] : -1;
+}
+- (BOOL)isCaught:(int16_t)dex { return gPet.isCaught(dex); }
+
+- (NSString *)raisedCaughtLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_RAISED_CAUGHT_FMT), gPet.registeredCount(), gPet.caughtCount());
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)filterAllText    { return [NSString stringWithUTF8String:T(S_FILTER_ALL)]; }
+- (NSString *)filterCaughtText { return [NSString stringWithUTF8String:T(S_CAUGHT_MARK)]; }
+
+// Type names/colours aren't in the string table (upstream keeps them as a
+// raw per-language array inside TamaPoke.ino, which isn't vendored) --
+// English-only here, same simplification the existing speciesName/DEX_TBL
+// name already makes regardless of the active language.
+static const char *const kTypeNames[19] = {
+  "", "NORMAL", "FIRE", "WATER", "ELEC", "GRASS", "ICE", "FIGHT", "POISON",
+  "GROUND", "FLY", "PSY", "BUG", "ROCK", "GHOST", "DRAGON", "DARK", "STEEL", "FAIRY"
+};
+static uint16_t TPTypeColor(uint8_t type) {
+  switch (type) {
+    case TYPE_FIRE: return 0xEA87;     case TYPE_WATER: return 0x4C98;
+    case TYPE_ELECTRIC: return 0xBCA1; case TYPE_GRASS: return 0x3C49;
+    case TYPE_ICE: return 0x5D99;      case TYPE_FIGHTING: return 0xA2A5;
+    case TYPE_POISON: return 0x8A73;   case TYPE_GROUND: return 0xB447;
+    case TYPE_FLYING: return 0x8D7F;   case TYPE_PSYCHIC: return 0xD28F;
+    case TYPE_BUG: return 0x7CC4;      case TYPE_ROCK: return 0x9407;
+    case TYPE_GHOST: return 0x6B33;    case TYPE_DRAGON: return 0x5A5F;
+    case TYPE_DARK: return 0x5ACB;     case TYPE_STEEL: return 0xA534;
+    case TYPE_FAIRY: return 0xF3B7;    default: return 0x8C4D;
+  }
+}
+- (NSString *)typeTextForDex:(int16_t)dex {
+  const DexEntry *d = TPDexEntry(dex);
+  if (d->type1 >= 19) return @"";
+  if (d->type2 == TYPE_NONE || d->type2 >= 19)
+    return [NSString stringWithUTF8String:kTypeNames[d->type1]];
+  char out[24];
+  snprintf(out, sizeof(out), "%s %s", kTypeNames[d->type1], kTypeNames[d->type2]);
+  return [NSString stringWithUTF8String:out];
+}
+- (uint16_t)typeColorForDex:(int16_t)dex {
+  const DexEntry *d = TPDexEntry(dex);
+  return TPTypeColor(d->type1);
+}
+
 // --- minigame / training ------------------------------------------------
 - (uint16_t)gameHigh      { return gPet.gameHi; }
 - (uint16_t)strengthHigh  { return gPet.strHi; }
@@ -362,7 +595,10 @@ static NSString *TPFormatted(StrId id, unsigned v) {
 - (NSString *)noText    { return [NSString stringWithUTF8String:T(S_NO)]; }
 - (NSString *)nameLabel     { return [NSString stringWithUTF8String:T(S_NAME)]; }
 - (NSString *)settingsTitle { return [NSString stringWithUTF8String:T(S_SET_TIME)]; }
-- (NSString *)soundOnText   { return [NSString stringWithUTF8String:T(S_SND_ON)]; }
+// The fork replaced the base's on/off S_SND_ON with a multi-level SoundMode
+// (S_SND_FULL/MED/LOW/OFF); this app only has a binary switch, so FULL is
+// the "on" label.
+- (NSString *)soundOnText   { return [NSString stringWithUTF8String:T(S_SND_FULL)]; }
 - (NSString *)soundOffText  { return [NSString stringWithUTF8String:T(S_SND_OFF)]; }
 
 

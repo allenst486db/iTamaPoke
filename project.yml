@@ -33,10 +33,14 @@ targets:
       - path: Sources/Core
       - path: Sources/Shared
       - path: Sources/iOS
-      - path: upstream/pet.cpp
-        group: upstream
-      - path: upstream/i18n.cpp
-        group: upstream
+      # See upstream-expanded/README.md: pet.cpp/i18n.cpp come from a
+      # separate community fork now, not upstream/ -- only one `class Pet`
+      # definition can be compiled in, and the fork's is a superset that adds
+      # the Personality/Daily/Box pages and Pokedex filter.
+      - path: upstream-expanded/pet.cpp
+        group: upstream-expanded
+      - path: upstream-expanded/i18n.cpp
+        group: upstream-expanded
       # TPK2 sprites, copied in by Scripts/fetch_sprites.sh. A folder reference
       # so they land as mons/ inside the bundle, and optional because they are
       # gitignored -- a fresh checkout (and every CI build) has none, and must
@@ -61,6 +65,9 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
         HEADER_SEARCH_PATHS:
           - $(SRCROOT)/Sources/Core
+          # Listed before upstream/ so "pet.h"/"i18n.h"/"dex.h"/"audio.h"
+          # resolve to the fork's versions -- see upstream-expanded/README.md.
+          - $(SRCROOT)/upstream-expanded
           - $(SRCROOT)/upstream
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
@@ -75,10 +82,14 @@ targets:
       - path: Sources/Core
       - path: Sources/Shared
       - path: Sources/watchOS
-      - path: upstream/pet.cpp
-        group: upstream
-      - path: upstream/i18n.cpp
-        group: upstream
+      # See upstream-expanded/README.md: pet.cpp/i18n.cpp come from a
+      # separate community fork now, not upstream/ -- only one `class Pet`
+      # definition can be compiled in, and the fork's is a superset that adds
+      # the Personality/Daily/Box pages and Pokedex filter.
+      - path: upstream-expanded/pet.cpp
+        group: upstream-expanded
+      - path: upstream-expanded/i18n.cpp
+        group: upstream-expanded
       # Same sprite folder as the iOS app. Both bundles carry their own copy --
       # a watchOS app cannot read the phone app's resources, and this one runs
       # standalone (WKRunsIndependentlyOfCompanionApp), so it needs its own.
@@ -99,6 +110,9 @@ targets:
         SWIFT_OBJC_BRIDGING_HEADER: Sources/Core/TamaPoke-Bridging-Header.h
         HEADER_SEARCH_PATHS:
           - $(SRCROOT)/Sources/Core
+          # Listed before upstream/ so "pet.h"/"i18n.h"/"dex.h"/"audio.h"
+          # resolve to the fork's versions -- see upstream-expanded/README.md.
+          - $(SRCROOT)/upstream-expanded
           - $(SRCROOT)/upstream
         TARGETED_DEVICE_FAMILY: "4"
         GENERATE_INFOPLIST_FILE: NO

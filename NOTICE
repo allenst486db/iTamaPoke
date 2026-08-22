@@ -58,6 +58,18 @@ this repository as a whole (see LICENSE Section 1) — MIT permits a derivative
 to carry additional terms as long as this notice ships with it, which is
 exactly what this section does.
 
+The Personality, Daily goals, Box, and Pokédex-filter features are
+translated from a second, separate source: ShadowEnemyx/TamaPoke
+(https://github.com/ShadowEnemyx/TamaPoke), a community fork of the same
+project credited above (not socquique's own repository, and not the
+`upstream/` submodule, which stays pinned to socquique's). It carries the
+same MIT license and the same original copyright holder — see
+`upstream-expanded/LICENSE` — so the notice text above covers it too; the
+extra paragraph here is only to name the actual source of that code. Unlike
+`upstream/`, `upstream-expanded/` is a handful of plain vendored files, not a
+submodule, and not a full copy of that fork — see
+`upstream-expanded/README.md` for exactly which files and why.
+
 
 CREDITS
 

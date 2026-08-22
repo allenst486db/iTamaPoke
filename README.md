@@ -38,10 +38,19 @@ Feature-complete against upstream: every screen and animation in the
 firmware is ported and running the same underlying game logic.
 
 **Screens:** idle scene with a real-time day/night sky, starter selection,
-egg and hatching, feed menu, bath, the Pokédex gallery, the four-page stat
-card (profile / battle / medals / progress), the ball minigame, the training
-sack, the rename keyboard, settings, and the evolution / farewell / runaway
-decisions with their animations.
+egg and hatching, feed menu, bath, the Pokédex gallery (with an
+All/Raised/Caught filter), the seven-page stat card (profile / personality /
+daily goals / box / battle / medals / progress), the ball minigame, the
+training sack, the rename keyboard, settings, and the evolution / farewell /
+runaway decisions with their animations.
+
+**Personality, Daily goals, Box, and the Pokédex filter** are ported from
+[ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke) ("TamaPoke
+— Expanded"), a separate community fork — not from the `upstream/` submodule,
+which pins socquique/TamaPoke and doesn't have these. See
+[`upstream-expanded/README.md`](upstream-expanded/README.md) for exactly
+which files that is and why. The Box page will stay empty (0 caught) until a
+catch minigame exists to fill it — that part of the fork isn't ported yet.
 
 **Sound** is the original hardware's own square-wave tones, re-synthesised
 in software rather than re-recorded — see [How the port

@@ -38,8 +38,15 @@ struct PetScreen: View {
     @State private var galleryPage = 0
     /// Dex number of the species in the detail view, 0 for the grid.
     @State private var galleryDetail: Int16 = 0
-    /// Stat card page: 0 profile, 1 battle, 2 medals, 3 progress.
+    /// Stat card page: 0 profile, 1 personality, 2 daily, 3 box, 4 battle,
+    /// 5 medals, 6 progress. Pages 1-3 are ported from ShadowEnemyx/TamaPoke
+    /// ("Expanded") -- see upstream-expanded/README.md.
     @State private var cardPage = 0
+    private let cardPageCount = 7
+    /// Box page (page 3's own internal pagination, BOX_ROWS-per-page).
+    @State private var boxPage = 0
+    /// Pokedex filter: 0 all, 1 raised, 2 caught.
+    @State private var galleryFilter = 0
 
     /// Rename keyboard buffer.
     @State private var nameDraft = ""
@@ -882,20 +889,24 @@ struct PetScreen: View {
 
     // MARK: - Stat card
 
-    /// Port of `renderCard`: four pages over the round panel, swiped between.
+    /// Port of `renderCard`: seven pages over the round panel, swiped between.
     private func renderCard(_ ctx: GraphicsContext, now: UInt64) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
 
         switch cardPage {
         case 0:  renderCardProfile(ctx, now: now)
-        case 1:  renderCardStats(ctx)
-        case 2:  renderCardMedals(ctx)
+        case 1:  renderCardPersonality(ctx)
+        case 2:  renderCardDaily(ctx)
+        case 3:  renderCardBox(ctx)
+        case 4:  renderCardStats(ctx)
+        case 5:  renderCardMedals(ctx)
         default: renderCardProgress(ctx)
         }
 
-        for i in 0..<4 {
-            let cx = 194 + CGFloat(i) * 26
+        let dotsX = TP.cx - CGFloat(cardPageCount - 1) * 13
+        for i in 0..<cardPageCount {
+            let cx = dotsX + CGFloat(i) * 26
             if i == cardPage { ctx.fillCircle(cx, 374, 5, UI.ink) }
             else { ctx.strokeCircle(cx, 374, 4, UI.ink) }
         }
@@ -929,6 +940,165 @@ struct PetScreen: View {
                      maxBar: 100, color: rgb565(0xd4, 0x52, 0x7e))
         ctx.gfxTextCentered(pet.infoLine, 296, 2, UI.ink)
         ctx.gfxTextCentered(pet.renameHint, 332, 2, UI.track)
+    }
+
+    // MARK: - Personality / Daily / Box
+    // Ported from ShadowEnemyx/TamaPoke ("TamaPoke — Expanded"), a separate
+    // community fork socquique's own README links to -- not from the
+    // upstream/ submodule. See upstream-expanded/README.md.
+
+    /// personalityKind: 0 balanced, 1 playful, 2 brave, 3 calm, 4 lazy.
+    private func personalityColor(_ kind: Int) -> UInt16 {
+        switch kind {
+        case 1:  return UI.barWarn   // playful
+        case 2:  return UI.barBad    // brave
+        case 3:  return 0x4C98       // calm
+        case 4:  return 0xB3C8       // lazy
+        default: return UI.barOK     // balanced
+        }
+    }
+
+    private func renderCardPersonality(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        let col = personalityColor(pet.personalityKind)
+        ctx.gfxTextCentered(pet.personalityTitle, 44, 3, UI.ink)
+
+        ctx.fillRoundRect(62, 86, 342, 70, 16, col)
+        let name = pet.personalityName
+        let nameSize = name.count <= 10 ? 3 : 2
+        ctx.gfxTextCentered(name, nameSize == 3 ? 104 : 111, nameSize, UI.bgDay)
+        ctx.gfxTextCentered(pet.personalityHint, 136, 2, UI.bgDay)
+
+        drawCardStat(ctx, y: 182, label: pet.bondLabel, value: UInt16(pet.bond),
+                     maxBar: 100, color: rgb565(0xd4, 0x52, 0x7e))
+        drawCardStat(ctx, y: 220, label: TPBarLabel(1), value: UInt16(pet.joy),
+                     maxBar: 100, color: UI.barWarn)
+
+        // Upstream's GFX bitmap font is much more compact vertically than the
+        // system monospaced font this draws with, so these two lines (12px
+        // apart in the original) collide at size 2; the age line drops to
+        // size 1 and the gap widens well past what the original needed.
+        ctx.gfxTextCentered(pet.personalityAgeLine, 246, 1, UI.track)
+        ctx.gfxTextCentered(pet.recordsTitle, 268, 2, UI.ink)
+        drawPersonalityRecord(ctx, x: 52,  y: 294, label: pet.ballRecordLabel,  value: pet.gameHigh,  color: UI.barOK)
+        drawPersonalityRecord(ctx, x: 178, y: 294, label: pet.catchRecordLabel, value: pet.catchHigh, color: UI.barWarn)
+        drawPersonalityRecord(ctx, x: 304, y: 294, label: pet.memoRecordLabel,  value: pet.memoHigh,  color: 0x4C98)
+        drawPersonalityRecord(ctx, x: 52,  y: 334, label: pet.cleanRecordLabel, value: pet.cleanHigh, color: UI.barOK)
+        drawPersonalityRecord(ctx, x: 178, y: 334, label: pet.typeRecordLabel,  value: pet.typeHigh,  color: 0xF3B7)
+        drawPersonalityRecord(ctx, x: 304, y: 334, label: pet.battleTitle,      value: pet.bestBattleStreak, color: UI.barBad)
+    }
+
+    /// Port of `drawPersonalityRecord`: a small bordered box, label top-left,
+    /// number bottom-right.
+    private func drawPersonalityRecord(_ ctx: GraphicsContext, x: CGFloat, y: CGFloat,
+                                       label: String, value: UInt16, color: UInt16) {
+        ctx.fillRoundRect(x, y, 118, 34, 8, UI.white)
+        ctx.drawRoundRect(x, y, 118, 34, 8, color)
+        ctx.gfxText(label, x + 10, y + 6, 1, color)
+        let num = "\(value)"
+        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12, y + 14, 2, UI.ink)
+    }
+
+    private func dailyGoalColor(_ kind: Int) -> UInt16 {
+        switch kind {
+        case 1:  return UI.barWarn                    // play
+        case 2:  return UI.barBad                      // battle
+        case 3:  return UI.barOK                        // catch
+        case 4:  return 0x4C98                          // memo
+        default: return rgb565(0xd4, 0x52, 0x7e)        // care
+        }
+    }
+
+    private func renderCardDaily(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        pet.ensureDailyGoals()
+        ctx.gfxTextCentered(pet.dailyTitle, 44, 3, UI.ink)
+        ctx.gfxTextCentered(pet.dayPhaseLabel, 78, 1, UI.track)
+
+        var done = 0
+        for i in 0..<pet.dailyGoalCount {
+            drawDailyGoalRow(ctx, y: 104 + CGFloat(i) * 70, index: i)
+            if pet.dailyGoalComplete(at: i) { done += 1 }
+        }
+        ctx.gfxTextCentered(pet.dailyRewardLine, 324, 2,
+                            done == pet.dailyGoalCount ? UI.barOK : UI.track)
+    }
+
+    /// Port of `drawDailyGoalRow`: a filled pill once complete, outline until
+    /// then, with a checkmark once done.
+    private func drawDailyGoalRow(_ ctx: GraphicsContext, y: CGFloat, index: NSInteger) {
+        let pet = model.pet
+        let done = pet.dailyGoalComplete(at: index)
+        let col = dailyGoalColor(pet.dailyGoalKind(at: index))
+        ctx.fillRoundRect(58, y, 350, 52, 12, done ? col : UI.white)
+        ctx.drawRoundRect(58, y, 350, 52, 12, col)
+        ctx.gfxText(pet.dailyGoalLabel(at: index), 82, y + 18, 2, done ? UI.bgDay : UI.ink)
+
+        let progress = pet.dailyGoalProgress(at: index)
+        let target = pet.dailyGoalTarget(at: index)
+        if done {
+            ctx.gfxText(pet.doneText, 286, y + 18, 2, UI.bgDay)
+            ctx.fillCircle(374, y + 26, 12, UI.bgDay)
+            ctx.gfxText("v", 368, y + 18, 2, col)
+        } else {
+            ctx.gfxText("\(progress)/\(target)", 286, y + 18, 2, UI.ink)
+        }
+    }
+
+    private func renderCardBox(_ ctx: GraphicsContext) {
+        let pet = model.pet
+        let rows = 5
+        let pages = pet.boxPageCount(withRowsPerPage: rows)
+        if boxPage >= pages { boxPage = max(0, pages - 1) }
+
+        // Left-aligned rather than upstream's centred title: centring it
+        // collides with "CAUGHT x/151" below, which is also left-aligned at
+        // x=72 -- upstream can afford both centred (title) and left-aligned
+        // (count) this close together because its bitmap font is far more
+        // compact than the system font this draws with.
+        ctx.gfxText(pet.boxTitle, 72, 34, 3, UI.ink)
+
+        let sort = pet.boxSortLabel
+        ctx.fillRoundRect(302, 62, 106, 28, 9, UI.white)
+        ctx.drawRoundRect(302, 62, 106, 28, 9, UI.ink)
+        ctx.gfxText(sort, 302 + (106 - CGFloat(sort.count) * 6) / 2, 73, 1, UI.ink)
+
+        // caughtCountLine/knownCountLine share the same x as
+        // renderCardPersonality's age/records pair, and the same fix: the
+        // second (smaller, secondary) line drops to size 1 for clearance.
+        ctx.gfxText(pet.caughtCountLine, 72, 74, 2, UI.ink)
+        ctx.gfxText(pet.knownCountLine, 72, 100, 1, UI.track)
+        ctx.gfxText(pet.dexGoalLine, 258, 100, 1, UI.track)
+
+        if pet.caughtCount == 0 {
+            ctx.fillRoundRect(82, 178, 302, 72, 16, UI.white)
+            ctx.drawRoundRect(82, 178, 302, 72, 16, UI.track)
+            ctx.gfxTextCentered(pet.noCatchesText, 207, 2, UI.track)
+            return
+        }
+
+        for i in 0..<rows {
+            let dex = pet.boxDex(at: boxPage * rows + i)
+            guard dex > 0 else { break }
+            let y = 122 + CGFloat(i) * 42
+            let raised = pet.isRegistered(dex)
+            ctx.fillRoundRect(58, y, 350, 34, 9, UI.white)
+            ctx.drawRoundRect(58, y, 350, 34, 9, TPDexAccent(dex))
+            let name = String(format: "#%03d %@", dex, TPDexName(dex))
+            ctx.gfxText(name, 72, y + (name.count <= 16 ? 7 : 5), name.count <= 16 ? 2 : 1, UI.ink)
+            ctx.gfxText(pet.typeText(forDex: dex), 72, y + 24, 1, pet.typeColor(forDex: dex))
+            if raised {
+                ctx.gfxText(pet.raisedMarkText, 330, y + 15, 1, UI.barOK)
+            }
+        }
+
+        let prevOn = boxPage > 0
+        let nextOn = boxPage + 1 < pages
+        ctx.fillRoundRect(76, 348, 94, 38, 11, prevOn ? UI.track : 0xE71C)
+        ctx.fillRoundRect(296, 348, 94, 38, 11, nextOn ? UI.track : 0xE71C)
+        ctx.gfxText("<", 111, 357, 3, UI.bgDay)
+        ctx.gfxText(">", 331, 357, 3, UI.bgDay)
+        ctx.gfxTextCentered(pet.pageLine(forPage: boxPage + 1, count: pages), 360, 2, UI.track)
     }
 
     private func renderCardStats(_ ctx: GraphicsContext) {
@@ -1023,23 +1193,77 @@ struct PetScreen: View {
         }
     }
 
+    /// Whether `dex` passes the active All/Raised/Caught filter. Port of
+    /// `galleryDexVisible` from ShadowEnemyx/TamaPoke's fork -- see
+    /// upstream-expanded/README.md.
+    private func galleryDexVisible(_ dex: Int16) -> Bool {
+        guard dex >= 1, dex <= 151 else { return false }
+        switch galleryFilter {
+        case 1:  return model.pet.isRegistered(dex)
+        case 2:  return model.pet.isCaught(dex)
+        default: return true
+        }
+    }
+
+    private func galleryFilteredCount() -> Int {
+        if galleryFilter == 0 { return 151 }
+        var n = 0
+        for dex in Int16(1)...151 where galleryDexVisible(dex) { n += 1 }
+        return n
+    }
+
+    /// The `index`-th dex number that passes the active filter, 0 when past
+    /// the end of the filtered list.
+    private func galleryDexAt(_ index: Int) -> Int16 {
+        var i = index
+        for dex in Int16(1)...151 {
+            guard galleryDexVisible(dex) else { continue }
+            if i == 0 { return dex }
+            i -= 1
+        }
+        return 0
+    }
+
+    private func galleryPageCount() -> Int {
+        max(1, (galleryFilteredCount() + 15) / 16)
+    }
+
     private func renderGalleryGrid(_ ctx: GraphicsContext) {
         let pet = model.pet
-        ctx.gfxTextCentered(pet.pokedexLine, 36, 3, UI.ink)
+        // Same size-2-is-too-tall-for-a-12px-gap issue as the Personality
+        // page (see renderCardPersonality) -- the R:/C: line drops to size 1.
+        ctx.gfxTextCentered("POKEDEX", 22, 3, UI.ink)
+        ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
 
+        let filters = [pet.filterAllText, pet.raisedMarkText, pet.filterCaughtText]
+        for i in 0..<3 {
+            let fx = 74 + CGFloat(i) * 106
+            let selected = i == galleryFilter
+            ctx.fillRoundRect(fx, 74, 96, 18, 6, selected ? UI.ink : UI.white)
+            ctx.drawRoundRect(fx, 74, 96, 18, 6, UI.ink)
+            let label = filters[i]
+            ctx.gfxText(label, fx + (96 - CGFloat(label.count) * 6) / 2, 80, 1,
+                       selected ? UI.bgDay : UI.ink)
+        }
+
+        if galleryPage >= galleryPageCount() { galleryPage = 0 }
         for r in 0..<4 {
             for c in 0..<4 {
-                let dex = Int16(galleryPage * 16 + r * 4 + c + 1)
-                if dex > 151 { break }
+                let dex = galleryDexAt(galleryPage * 16 + r * 4 + c)
+                if dex <= 0 { continue }
                 let x = TP.galX + CGFloat(c) * TP.galCell
                 let y = TP.galY + CGFloat(r) * TP.galCell
                 let registered = pet.isRegistered(dex)
+                let caught = pet.isCaught(dex)
+                let known = registered || caught
 
-                if let img = TPThumbs.shared.image(dex: dex, silhouette: !registered),
+                if let img = TPThumbs.shared.image(dex: dex, silhouette: !known),
                    let sz = TPThumbs.shared.size(dex: dex) {
                     drawThumb(ctx, img, size: sz, cellX: x, cellY: y, scale: 2)
                     if pet.isShinyRegistered(dex) {
                         ctx.gfxText("*", x + 62, y + 4, 2, UI.barWarn)
+                    } else if caught && !registered {
+                        ctx.gfxText("C", x + 60, y + 6, 1, UI.barWarn)
                     }
                 } else {
                     // No atlas bundled: upstream falls back to the bare number.
@@ -1048,8 +1272,10 @@ struct PetScreen: View {
             }
         }
 
-        for i in 0..<10 {
-            let cx = 170 + CGFloat(i) * 14
+        let pages = galleryPageCount()
+        let dotsX = TP.cx - CGFloat(pages - 1) * 7
+        for i in 0..<pages {
+            let cx = dotsX + CGFloat(i) * 14
             if i == galleryPage {
                 ctx.fillCircle(cx, 436, 4, UI.ink)
             } else {
@@ -1145,7 +1371,7 @@ struct PetScreen: View {
         if pet.awaitingStarter { return }
 
         if screen == .card {           // left advances, matching upstream
-            cardPage = min(max(cardPage + (dir > 0 ? -1 : 1), 0), 3)
+            cardPage = min(max(cardPage + (dir > 0 ? -1 : 1), 0), cardPageCount - 1)
             return
         }
 
@@ -1154,6 +1380,7 @@ struct PetScreen: View {
             screen = .gallery
             galleryPage = 0
             galleryDetail = 0
+            galleryFilter = 0
             return
         }
         if galleryDetail != 0 {          // in detail: back to the grid
@@ -1166,7 +1393,7 @@ struct PetScreen: View {
             screen = .idle
             return
         }
-        galleryPage = min(next, 9)
+        galleryPage = min(next, galleryPageCount() - 1)
     }
 
     /// Vertical swipe: up opens the stat card and closes it again, down opens
@@ -1211,8 +1438,9 @@ struct PetScreen: View {
     }
 
     /// Port of upstream's card tap handler: the name area renames on page 0,
-    /// the train button opens the sack on page 1, and — this is the part that
-    /// was missing — anywhere else just closes the card. Upstream's is a plain
+    /// the sort button/page arrows work the box on page 3, the train button
+    /// opens the sack on page 4, and — this is the part that was missing —
+    /// anywhere else just closes the card. Upstream's is a plain
     /// `else { cardOpen = false; }`, not a swipe requirement; without it the
     /// only way out was `onSwipeV`, which needs an 80px vertical drag and reads
     /// as "you have to swipe, tapping the hint text does nothing."
@@ -1222,7 +1450,24 @@ struct PetScreen: View {
             nameDraft = model.pet.nick
             return
         }
-        if cardPage == 1, TP.trainBtn.contains(p) {
+        if cardPage == 3 {
+            let pet = model.pet
+            if p.x >= 302, p.x <= 408, p.y >= 62, p.y <= 90 {
+                pet.cycleBoxSort()
+                boxPage = 0
+                return
+            }
+            let pages = pet.boxPageCount(withRowsPerPage: 5)
+            if p.x >= 76, p.x <= 170, p.y >= 348, p.y <= 386, boxPage > 0 {
+                boxPage -= 1
+                return
+            }
+            if p.x >= 296, p.x <= 390, p.y >= 348, p.y <= 386, boxPage + 1 < pages {
+                boxPage += 1
+                return
+            }
+        }
+        if cardPage == 4, TP.trainBtn.contains(p) {
             let pet = model.pet
             guard !pet.isEgg, !pet.sleeping, pet.ceremony == TPCeremony.none else {
                 screen = .idle
@@ -1240,15 +1485,23 @@ struct PetScreen: View {
             galleryDetail = 0
             return
         }
-        if p.y < 72 {                    // the header is the way out
+        if p.y < 46 {                    // the header is the way out
             screen = .idle
+            return
+        }
+        if p.y >= 68, p.y < TP.galY {     // All/Raised/Caught filter row
+            let f = Int((p.x - 74) / 106)
+            if f >= 0, f < 3, p.x >= 74 + CGFloat(f) * 106, p.x <= 170 + CGFloat(f) * 106 {
+                galleryFilter = f
+                galleryPage = 0
+            }
             return
         }
         let c = Int((p.x - TP.galX) / TP.galCell)
         let r = Int((p.y - TP.galY) / TP.galCell)
         guard c >= 0, c <= 3, r >= 0, r <= 3 else { return }
-        let dex = Int16(galleryPage * 16 + r * 4 + c + 1)
-        guard dex <= 151 else { return }
+        let dex = galleryDexAt(galleryPage * 16 + r * 4 + c)
+        guard dex > 0 else { return }
         galleryDetail = dex
     }
 
