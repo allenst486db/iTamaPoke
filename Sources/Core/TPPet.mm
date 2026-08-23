@@ -428,6 +428,53 @@ static StrId TPPersonalityHintId(PetPersonality p) {
 - (uint16_t)typeHigh     { return gPet.typeHi; }
 - (uint16_t)bestBattleStreak { return gPet.bestBattleStreak; }
 
+static NSString *TPFormatted(StrId id, unsigned v) {
+  char out[40];
+  snprintf(out, sizeof(out), T(id), v);
+  return [NSString stringWithUTF8String:out];
+}
+
+- (uint8_t)applyMemoResult:(uint8_t)rounds { return gPet.applyMemoResult(rounds); }
+- (uint8_t)applyCleanResult:(uint8_t)score { return gPet.applyCleanResult(score); }
+- (uint8_t)applyTypeResult:(uint8_t)score  { return gPet.applyTypeResult(score); }
+- (NSString *)memoWatchText { return [NSString stringWithUTF8String:T(S_MEMO_WATCH)]; }
+- (NSString *)memoWrongText { return [NSString stringWithUTF8String:T(S_MEMO_WRONG)]; }
+- (NSString *)memoTurnLine:(NSInteger)input of:(NSInteger)len {
+  char out[28];
+  snprintf(out, sizeof(out), T(S_MEMO_TURN_FMT), (unsigned)input, (unsigned)len);
+  return [NSString stringWithUTF8String:out];
+}
+- (NSString *)roundLine:(NSInteger)round { return TPFormatted(S_ROUND_FMT, (uint16_t)round); }
+- (NSString *)cleanTitleText { return [NSString stringWithUTF8String:T(S_CLEAN_TITLE)]; }
+- (NSString *)typeTitleText  { return [NSString stringWithUTF8String:T(S_TYPE_TITLE)]; }
+- (NSString *)defGainLine:(uint8_t)gain { return TPFormatted(S_DEF_GAIN_FMT, gain); }
+- (NSString *)hygGainLine:(uint8_t)gain { return TPFormatted(S_HYG_GAIN_FMT, gain); }
+- (NSString *)atkGainLine:(uint8_t)gain { return TPFormatted(S_ATK_GAIN_FMT, gain); }
+
+- (uint8_t)collectionFrame { return gPet.collectionFrame; }
+- (uint8_t)unlockedCollectionFrameCount { return gPet.unlockedCollectionFrameCount(); }
+- (BOOL)setCollectionFrame:(uint8_t)frame {
+  bool changed = gPet.setCollectionFrame(frame);
+  if (changed) gPet.flushSave();
+  return changed;
+}
+- (NSString *)collectionTitle { return [NSString stringWithUTF8String:T(S_COLLECTION)]; }
+- (NSString *)collectionRankName {
+  return [NSString stringWithUTF8String:T((StrId)(S_RANK_TRAINER + gPet.collectionRank()))];
+}
+- (NSString *)knownLine { return TPFormatted(S_KNOWN_FMT, gPet.knownDexCount()); }
+- (NSString *)frameLine {
+  char out[24];
+  snprintf(out, sizeof(out), T(S_FRAME_FMT), gPet.collectionFrame + 1,
+           gPet.unlockedCollectionFrameCount());
+  return [NSString stringWithUTF8String:out];
+}
+
+- (NSString *)soundModeLabel:(NSInteger)mode {
+  StrId ids[4] = { S_SND_OFF, S_SND_LOW, S_SND_MED, S_SND_FULL };
+  return [NSString stringWithUTF8String:T(ids[mode >= 0 && mode <= 3 ? mode : 0])];
+}
+
 - (NSString *)dailyTitle { return [NSString stringWithUTF8String:T(S_DAILY)]; }
 // Port of the fork's currentDayPhase()/sceneHour() -- both live in
 // TamaPoke.ino (not vendored), built from dayphase.h helpers that are.
@@ -609,6 +656,10 @@ static uint16_t TPTypeColor(uint8_t type) {
   const DexEntry *d = TPDexEntry(dex);
   return TPTypeColor(d->type1);
 }
+- (NSString *)typeNameForType:(uint8_t)type {
+  return [NSString stringWithUTF8String:type < 19 ? kTypeNames[type] : ""];
+}
+- (uint16_t)typeColorForType:(uint8_t)type { return TPTypeColor(type); }
 
 // --- expedition -----------------------------------------------------------
 // The fork's expeditionNowEpoch() falls back from a real RTC chip to
@@ -762,12 +813,6 @@ static const uint8_t kExpMinutes[3] = { 15, 30, 60 };
 - (NSString *)newRecordText { return [NSString stringWithUTF8String:T(S_NEW_RECORD)]; }
 - (NSString *)hitFastText   { return [NSString stringWithUTF8String:T(S_HIT_FAST)]; }
 
-static NSString *TPFormatted(StrId id, unsigned v) {
-  char out[40];
-  snprintf(out, sizeof(out), T(id), v);
-  return [NSString stringWithUTF8String:out];
-}
-
 - (NSString *)scoreLine:(uint16_t)score        { return TPFormatted(S_SCORE_FMT, score); }
 - (NSString *)recordLine:(uint16_t)record      { return TPFormatted(S_RECORD_FMT, record); }
 - (NSString *)shortRecordLine:(uint16_t)record { return TPFormatted(S_REC_FMT, record); }
@@ -792,8 +837,6 @@ static NSString *TPFormatted(StrId id, unsigned v) {
 // The fork replaced the base's on/off S_SND_ON with a multi-level SoundMode
 // (S_SND_FULL/MED/LOW/OFF); this app only has a binary switch, so FULL is
 // the "on" label.
-- (NSString *)soundOnText   { return [NSString stringWithUTF8String:T(S_SND_FULL)]; }
-- (NSString *)soundOffText  { return [NSString stringWithUTF8String:T(S_SND_OFF)]; }
 
 
 @end

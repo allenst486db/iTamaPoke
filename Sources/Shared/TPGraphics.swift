@@ -29,8 +29,11 @@ enum TP {
     static let choiceKeep = CGRect(x: 93, y: 268, width: 280, height: 52)
 
     // Pokedex grid: 4x4 cells per page, from the .ino's GAL_* defines.
+    // galY is 100 here, not upstream's 84: the All/Raised/Caught filter row
+    // (a fork addition, drawn at y 74-92) didn't exist in the original, and
+    // at 84 the tallest thumbnails ran up into it.
     static let galX: CGFloat = 73
-    static let galY: CGFloat = 84
+    static let galY: CGFloat = 100
     static let galCell: CGFloat = 80
 
     /// "Train strength" and "wild battle" buttons on the stat card's battle

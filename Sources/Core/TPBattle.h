@@ -15,6 +15,12 @@ NS_ASSUME_NONNULL_BEGIN
 
 @property (class, nonatomic, readonly) TPBattle *shared;
 
+/// battle.cpp's battleTypeEffectPct, for the Type quiz's distractor filter
+/// (100 = neutral, above = super-effective). Types are dex.h's TYPE_* ids.
++ (uint8_t)typeEffectPct:(uint8_t)attackType
+               defender1:(uint8_t)defendType1
+               defender2:(uint8_t)defendType2;
+
 // --- wild encounter prompt (idle screen) ---------------------------------
 /// Call once per tick with whether the idle screen is actually showing (no
 /// other modal open) -- mirrors the fork's mainScreenReadyForWild(), which

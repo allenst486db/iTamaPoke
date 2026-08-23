@@ -41,13 +41,14 @@ firmware is ported and running the same underlying game logic.
 egg and hatching, feed menu, bath, the Pokédex gallery (with an
 All/Raised/Caught filter), the eight-page stat card (profile / personality /
 daily goals / box / battle / medals / progress / expedition), a wild-battle
-screen (attack / dodge / rest, with a catch offer on a win), a catch
-minigame alongside the original ball minigame, the training sack, the
-rename keyboard, settings, and the evolution / farewell / runaway decisions
-with their animations.
+screen (attack / dodge / rest, with a catch offer on a win), a five-tile play
+menu (Ball, Catch, Memo, Clean, Type), the training sack, the rename
+keyboard, settings, and the evolution / farewell / runaway decisions with
+their animations.
 
 **Personality, Daily goals, Box, the Pokédex filter, the battle system, the
-catch minigame, and expeditions** are ported from
+Catch/Memo/Clean/Type minigames, expeditions, and the sound-effect
+synthesizer (chip-tune waveforms, four-level sound mode)** are ported from
 [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke) ("TamaPoke
 — Expanded"), a separate community fork — not from the `upstream/` submodule,
 which pins socquique/TamaPoke and doesn't have these. See
@@ -55,8 +56,9 @@ which pins socquique/TamaPoke and doesn't have these. See
 which files that is and why. The Box page fills in as you win wild battles
 and catch what you beat.
 
-**Sound** is the original hardware's own square-wave tones, re-synthesised
-in software rather than re-recorded — see [How the port
+**Sound** is re-synthesised in software rather than re-recorded, the same
+chip-tune waveforms (square/triangle/soft/noise, with slides and per-effect
+volume) the fork's own audio.cpp generates — see [How the port
 works](#how-the-port-works).
 
 **One deliberate difference:** the settings screen has no manual clock. The
@@ -117,10 +119,11 @@ Arduino/ESP32-specific pieces (timers, random, key/value storage). A thin
 bridge layer exposes that C++ object to the Swift UI — nothing about the
 simulation, stat decay, evolution rules, or egg odds is reimplemented.
 
-Sound is the same story: the firmware generates Game Boy–style square waves
-on its own audio chip. There's no such chip here, so the same waveform
-(same note tables, same sample rate, same envelope) is synthesised in
-software instead of using a new sound.
+Sound is the same story: the firmware generates chip-tune waveforms (square,
+triangle, a softer wave, and noise, with slides and per-effect volume — the
+Expanded fork's own audio.cpp) on its own audio chip. There's no such chip
+here, so the same waveforms (same note tables, same sample rate, same
+envelope) are synthesised in software instead of using a new sound.
 
 ---
 

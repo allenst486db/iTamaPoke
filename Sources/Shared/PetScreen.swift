@@ -111,7 +111,9 @@ struct PetScreen: View {
                             holdFired = false
                             return
                         }
-                        onGesture(from: from, to: toScreenSpace(v.location, in: geo.size))
+                        onGesture(from: from,
+                                  to: toScreenSpace(v.location, in: geo.size),
+                                  predicted: toScreenSpace(v.predictedEndLocation, in: geo.size))
                     }
             )
         }
@@ -131,6 +133,21 @@ struct PetScreen: View {
             }
             if screen == .game, gameMode == 1, model.catchGame.overUntil != 0,
                model.millis > model.catchGame.overUntil {
+                screen = .idle
+                model.endGames()
+            }
+            if screen == .game, gameMode == 2, model.memoGame.overUntil != 0,
+               model.millis > model.memoGame.overUntil {
+                screen = .idle
+                model.endGames()
+            }
+            if screen == .game, gameMode == 3, model.cleanGame.overUntil != 0,
+               model.millis > model.cleanGame.overUntil {
+                screen = .idle
+                model.endGames()
+            }
+            if screen == .game, gameMode == 4, model.typeGame.overUntil != 0,
+               model.millis > model.typeGame.overUntil {
                 screen = .idle
                 model.endGames()
             }
@@ -325,20 +342,28 @@ struct PetScreen: View {
         ctx.gfxText(pet.expeditionHudLabel, r.minX + 31, r.minY + 13, 1, UI.ink)
     }
 
+    /// Port of `drawGameMenu`: five tiles now, not two -- Memo/Clean/Type are
+    /// ported from ShadowEnemyx/TamaPoke ("Expanded") -- see
+    /// upstream-expanded/README.md -- alongside the original Ball and this
+    /// port's earlier Catch port. Tile 1 (Catch) keeps ink-on-fill text like
+    /// upstream's `i == 1` special case; every other tile is bgDay-on-fill.
     private func drawGameMenu(_ ctx: GraphicsContext) {
         let pet = model.pet
-        ctx.fillRoundRect(78, 112, 310, 118, 18, UI.white)
-        ctx.drawRoundRect(78, 112, 310, 118, 18, UI.ink)
+        ctx.fillRoundRect(78, 112, 310, 266, 18, UI.white)
+        ctx.drawRoundRect(78, 112, 310, 266, 18, UI.ink)
         ctx.gfxTextCentered(pet.playTitleText, 124, 3, UI.ink)
 
-        let ball = Self.ballTile, cat = Self.catchTile
-        ctx.fillRoundRect(ball.minX, ball.minY, ball.width, ball.height, 14, UI.barBad)
-        ctx.drawRoundRect(ball.minX, ball.minY, ball.width, ball.height, 14, UI.ink)
-        ctx.gfxTextCentered2(pet.ballRecordLabel, ball.minX, ball.width, ball.midY - 8, 2, UI.bgDay)
-
-        ctx.fillRoundRect(cat.minX, cat.minY, cat.width, cat.height, 14, UI.barWarn)
-        ctx.drawRoundRect(cat.minX, cat.minY, cat.width, cat.height, 14, UI.ink)
-        ctx.gfxTextCentered2(pet.catchRecordLabel, cat.minX, cat.width, cat.midY - 8, 2, UI.ink)
+        let tiles = Self.gameMenuTiles
+        let labels = [pet.ballRecordLabel, pet.catchRecordLabel, pet.memoRecordLabel,
+                      pet.cleanRecordLabel, pet.typeRecordLabel]
+        let cols: [UInt16] = [UI.barBad, UI.barWarn, 0x4C98, UI.barOK, 0xF3B7]
+        for i in 0..<5 {
+            let t = tiles[i]
+            ctx.fillRoundRect(t.minX, t.minY, t.width, t.height, 14, cols[i])
+            ctx.drawRoundRect(t.minX, t.minY, t.width, t.height, 14, UI.ink)
+            ctx.gfxTextCentered2(labels[i], t.minX, t.width, t.midY - 8, 2,
+                                 i == 1 ? UI.ink : UI.bgDay)
+        }
     }
 
     private func drawWildPrompt(_ ctx: GraphicsContext) {
@@ -753,11 +778,14 @@ struct PetScreen: View {
         ctx.gfxText(clock, TP.cx - 105, 120, 7, UI.ink)
         ctx.gfxTextCentered(TimeZone.current.identifier, 210, 2, UI.track)
 
+        // Four levels now (OFF/LOW/MED/FULL), not a switch -- the fork's own
+        // sound modes, which gate which effects still play at LOW. See
+        // upstream-expanded/README.md.
         let snd = model.soundEnabled
         let s = Self.sndPill
         ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
         ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
-        let sl = snd ? model.pet.soundOnText : model.pet.soundOffText
+        let sl = model.pet.soundModeLabel(model.soundMode.rawValue)
         ctx.gfxText(sl, s.minX + (s.width - CGFloat(sl.count) * 12) / 2, s.minY + 8, 2,
                     snd ? UI.bgDay : UI.ink)
 
@@ -772,7 +800,7 @@ struct PetScreen: View {
 
     private func settingsTap(_ p: CGPoint) {
         if Self.sndPill.contains(p) {
-            model.setSound(!model.soundEnabled)
+            model.cycleSound()
             return
         }
         if Self.langPill.contains(p) {
@@ -850,7 +878,13 @@ struct PetScreen: View {
     }
 
     private func renderGame(_ ctx: GraphicsContext, now: UInt64) {
-        if gameMode == 1 { renderCatchGame(ctx, now: now); return }
+        switch gameMode {
+        case 1: renderCatchGame(ctx, now: now); return
+        case 2: renderMemoGame(ctx, now: now); return
+        case 3: renderCleanGame(ctx, now: now); return
+        case 4: renderTypeGame(ctx, now: now); return
+        default: break
+        }
         renderBallGame(ctx, now: now)
     }
 
@@ -956,6 +990,160 @@ struct PetScreen: View {
         }
     }
 
+    /// Memo minigame: a Simon-style pad sequence. Ported from
+    /// ShadowEnemyx/TamaPoke ("Expanded") -- see upstream-expanded/README.md.
+    /// Mirrors renderMemoGame in that fork's TamaPoke.ino.
+    private func renderMemoGame(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let ink = drawGameScene(ctx, now: now)
+        let g = model.memoGame
+
+        if g.overUntil != 0 {
+            let score = pet.scoreLine(g.rounds)
+            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            let gain = pet.defGainLine(g.gain)
+            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, 0x4C98)
+            if g.newHigh, g.rounds > 0 {
+                ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
+            } else {
+                ctx.gfxTextCentered(pet.recordLine(pet.memoHigh), 256, 2, ink)
+            }
+            return
+        }
+
+        ctx.gfxTextCentered(pet.memoRecordLabel, 34, 3, ink)
+        ctx.gfxText(pet.roundLine(Int(g.rounds) + 1), 60, 82, 2, ink)
+        ctx.gfxText(pet.shortRecordLine(pet.memoHigh), 310, 82, 2, ink)
+
+        let cols: [UInt16] = [UI.barBad, UI.barWarn, 0x4C98, UI.barOK]
+        let active = g.showing ? g.activePad : (g.failUntil != 0 ? g.hintPad : -1)
+        for i in 0..<4 {
+            let px = TPMemoGame.padX[i], py = TPMemoGame.padY[i]
+            let fill = i == active ? lerp565(cols[i], UI.white, 5, 8) : cols[i]
+            ctx.fillCircle(px, py, 48, fill)
+            ctx.strokeCircle(px, py, 52, ink)
+            if i == active {
+                let pulse = 56 + CGFloat((now / 70) % 5)
+                ctx.strokeCircle(px, py, pulse, cols[i])
+            }
+            if i == g.flashPad, now < g.flashUntil {
+                let ringColor: UInt16 = g.flashGood ? UI.barOK : UI.barBad
+                ctx.strokeCircle(px, py, 60, ringColor)
+                ctx.strokeCircle(px, py, 64, ringColor)
+            }
+        }
+
+        let phase = g.failUntil != 0 ? pet.memoWrongText
+                  : g.showing ? pet.memoWatchText
+                  : pet.memoTurnLine(g.input + 1, of: g.seq.count)
+        ctx.fillRoundRect(78, 230, 310, 24, 7, UI.bgDay)
+        ctx.drawRoundRect(78, 230, 310, 24, 7, ink)
+        let phaseColor: UInt16 = g.failUntil != 0 ? UI.barBad : (g.showing ? UI.barWarn : UI.barOK)
+        ctx.gfxTextCentered(phase, 234, 2, phaseColor)
+    }
+
+    /// Clean minigame: scrub dirt spots before three slip past. Ported from
+    /// ShadowEnemyx//TamaPoke ("Expanded") -- see upstream-expanded/README.md.
+    /// Mirrors renderCleanGame in that fork's TamaPoke.ino.
+    private func renderCleanGame(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let ink = drawGameScene(ctx, now: now)
+        let g = model.cleanGame
+
+        if g.overUntil != 0 {
+            let score = pet.scoreLine(g.score)
+            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            let gain = pet.hygGainLine(g.gain)
+            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, UI.barOK)
+            if g.newHigh, g.score > 0 {
+                ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
+            } else {
+                ctx.gfxTextCentered(pet.recordLine(pet.cleanHigh), 256, 2, ink)
+            }
+            return
+        }
+
+        ctx.gfxTextCentered(pet.cleanTitleText, 32, 3, ink)
+        ctx.gfxText(pet.scoreLine(g.score), 50, 78, 2, ink)
+        ctx.gfxText(pet.shortRecordLine(pet.cleanHigh), 294, 78, 2, ink)
+        for i in 0..<3 {
+            let cx: CGFloat = 180 + CGFloat(i) * 28
+            if i < 3 - g.misses { ctx.fillCircle(cx, 104, 6, UI.barBad) }
+            else { ctx.strokeCircle(cx, 104, 6, UI.track) }
+        }
+
+        for i in 0..<4 where g.alive[i] {
+            ctx.fillCircle(g.x[i], g.y[i], 26, rgb565(0x8a, 0x66, 0x45))
+            ctx.strokeCircle(g.x[i], g.y[i], 28, UI.ink)
+            ctx.fillCircle(g.x[i] - 8, g.y[i] - 8, 5, rgb565(0x62, 0x45, 0x2e))
+            ctx.fillCircle(g.x[i] + 10, g.y[i] + 4, 6, rgb565(0x62, 0x45, 0x2e))
+        }
+
+        let bw: CGFloat = 280
+        let left = g.until > now ? g.until - now : 0
+        let fw = bw * CGFloat(min(left, 18000)) / 18000
+        ctx.fillRoundRect(TP.cx - bw / 2, 362, bw, 16, 5, UI.track)
+        if fw > 2 { ctx.fillRoundRect(TP.cx - bw / 2, 362, fw, 16, 5, UI.barOK) }
+
+        let since = now &- g.hitAt
+        if g.hitAt != 0, since < 220 {
+            ctx.strokeCircle(g.hitX, g.hitY, 42 + CGFloat(since) / 8, UI.barOK)
+        }
+    }
+
+    /// Type minigame: a type-effectiveness quiz. Ported from
+    /// ShadowEnemyx/TamaPoke ("Expanded") -- see upstream-expanded/README.md.
+    /// Mirrors renderTypeGame in that fork's TamaPoke.ino.
+    private func renderTypeGame(_ ctx: GraphicsContext, now: UInt64) {
+        let pet = model.pet
+        let ink = drawGameScene(ctx, now: now)
+        let g = model.typeGame
+
+        if g.overUntil != 0 {
+            let score = pet.scoreLine(g.score)
+            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            let gain = pet.atkGainLine(g.gain)
+            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, UI.barBad)
+            if g.newHigh, g.score > 0 {
+                ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
+            } else {
+                ctx.gfxTextCentered(pet.recordLine(pet.typeHigh), 256, 2, ink)
+            }
+            return
+        }
+
+        ctx.gfxTextCentered(pet.typeTitleText, 32, 3, ink)
+        ctx.gfxText(pet.scoreLine(g.score), 50, 78, 2, ink)
+        ctx.gfxText(pet.shortRecordLine(pet.typeHigh), 294, 78, 2, ink)
+        for i in 0..<3 {
+            let cx: CGFloat = 180 + CGFloat(i) * 28
+            if i < 3 - g.misses { ctx.fillCircle(cx, 104, 6, UI.barBad) }
+            else { ctx.strokeCircle(cx, 104, 6, UI.track) }
+        }
+
+        let enemyName = pet.typeName(forType: g.enemy)
+        let enemyColor = pet.typeColor(forType: g.enemy)
+        ctx.fillRoundRect(118, 126, 230, 54, 14, lerp565(enemyColor, UI.white, 4, 8))
+        ctx.drawRoundRect(118, 126, 230, 54, 14, ink)
+        ctx.gfxTextCentered(enemyName, 143, 3, UI.ink)
+
+        for i in 0..<3 {
+            let bx: CGFloat = 88
+            let by: CGFloat = 210 + CGFloat(i) * 60
+            let label = pet.typeName(forType: g.choices[i])
+            let col = pet.typeColor(forType: g.choices[i])
+            ctx.fillRoundRect(bx, by, 290, 48, 12, lerp565(col, UI.white, 5, 8))
+            ctx.drawRoundRect(bx, by, 290, 48, 12, ink)
+            ctx.gfxTextCentered2(label, bx, 290, by + 17, 2, UI.ink)
+        }
+
+        let bw: CGFloat = 280
+        let left = g.until > now ? g.until - now : 0
+        let fw = bw * CGFloat(min(left, 4200)) / 4200
+        ctx.fillRoundRect(TP.cx - bw / 2, 392, bw, 14, 5, UI.track)
+        if fw > 2 { ctx.fillRoundRect(TP.cx - bw / 2, 392, fw, 14, 5, UI.barOK) }
+    }
+
     private func renderSack(_ ctx: GraphicsContext, now: UInt64) {
         let pet = model.pet
         let ink = drawGameScene(ctx, now: now)
@@ -996,7 +1184,13 @@ struct PetScreen: View {
     }
 
     private func gameTap(_ p: CGPoint) {
-        if gameMode == 1 { catchGameTap(p); return }
+        switch gameMode {
+        case 1: catchGameTap(p); return
+        case 2: memoGameTap(p); return
+        case 3: cleanGameTap(p); return
+        case 4: typeGameTap(p); return
+        default: break
+        }
         if model.ball.overUntil != 0 { return }
         if p.y < 72 {                       // header leaves without a reward
             screen = .idle
@@ -1016,6 +1210,51 @@ struct PetScreen: View {
         switch model.tapCatch(p) {
         case .hit:  model.playSfx(.play)
         case .miss: model.playSfx(.deny)
+        case .ignored: break
+        }
+    }
+
+    private func memoGameTap(_ p: CGPoint) {
+        if model.memoGame.overUntil != 0 { return }
+        if p.y < 72 {
+            screen = .idle
+            model.endGames()
+            model.playSfx(.tap)
+            return
+        }
+        switch model.tapMemo(p) {
+        case .pad(let pad): model.playSfx(TPSfx(rawValue: TPSfx.memoPad0.rawValue + UInt8(pad)) ?? .memoPad0)
+        case .wrong: model.playSfx(.minigameBad)
+        case .roundUp, .finished, .ignored: break
+        }
+    }
+
+    private func cleanGameTap(_ p: CGPoint) {
+        if model.cleanGame.overUntil != 0 { return }
+        if p.y < 72 {
+            screen = .idle
+            model.endGames()
+            model.playSfx(.tap)
+            return
+        }
+        switch model.tapClean(p) {
+        case .hit:  model.playSfx(.minigameOK)
+        case .miss: model.playSfx(.minigameBad)
+        case .ignored: break
+        }
+    }
+
+    private func typeGameTap(_ p: CGPoint) {
+        if model.typeGame.overUntil != 0 { return }
+        if p.y < 72 {
+            screen = .idle
+            model.endGames()
+            model.playSfx(.tap)
+            return
+        }
+        switch model.tapType(p) {
+        case .hit:  model.playSfx(.minigameOK)
+        case .miss: model.playSfx(.minigameBad)
         case .ignored: break
         }
     }
@@ -1048,13 +1287,17 @@ struct PetScreen: View {
         default: renderCardExpedition(ctx)
         }
 
+        // The dot row sits at 382, not upstream's 374: with eight pages the
+        // bottom-most box on several pages (Personality's record boxes, the
+        // battle page's train button) ends at 368, and the system font's
+        // taller boxes already pushed those as low as they can go.
         let dotsX = TP.cx - CGFloat(cardPageCount - 1) * 13
         for i in 0..<cardPageCount {
             let cx = dotsX + CGFloat(i) * 26
-            if i == cardPage { ctx.fillCircle(cx, 374, 5, UI.ink) }
-            else { ctx.strokeCircle(cx, 374, 4, UI.ink) }
+            if i == cardPage { ctx.fillCircle(cx, 382, 5, UI.ink) }
+            else { ctx.strokeCircle(cx, 382, 4, UI.ink) }
         }
-        ctx.gfxTextCentered(model.pet.backHint, 398, 2, UI.track)
+        ctx.gfxTextCentered(model.pet.backHint, 400, 2, UI.track)
     }
 
     private func renderCardProfile(_ ctx: GraphicsContext, now: UInt64) {
@@ -1107,11 +1350,14 @@ struct PetScreen: View {
         let col = personalityColor(pet.personalityKind)
         ctx.gfxTextCentered(pet.personalityTitle, 44, 3, UI.ink)
 
+        // Both lines sit higher in the box than upstream's y values: gfxText's
+        // y is the top of a line box that is much taller here than the bitmap
+        // font's, so the original offsets pushed the hint out the bottom edge.
         ctx.fillRoundRect(62, 86, 342, 70, 16, col)
         let name = pet.personalityName
         let nameSize = name.count <= 10 ? 3 : 2
-        ctx.gfxTextCentered(name, nameSize == 3 ? 104 : 111, nameSize, UI.bgDay)
-        ctx.gfxTextCentered(pet.personalityHint, 136, 2, UI.bgDay)
+        ctx.gfxTextCentered(name, nameSize == 3 ? 92 : 98, nameSize, UI.bgDay)
+        ctx.gfxTextCentered(pet.personalityHint, 126, 2, UI.bgDay)
 
         drawCardStat(ctx, y: 182, label: pet.bondLabel, value: UInt16(pet.bond),
                      maxBar: 100, color: rgb565(0xd4, 0x52, 0x7e))
@@ -1230,19 +1476,29 @@ struct PetScreen: View {
             ctx.drawRoundRect(58, y, 350, 34, 9, TPDexAccent(dex))
             let name = String(format: "#%03d %@", dex, TPDexName(dex))
             ctx.gfxText(name, 72, y + (name.count <= 16 ? 7 : 5), name.count <= 16 ? 2 : 1, UI.ink)
-            ctx.gfxText(pet.typeText(forDex: dex), 72, y + 24, 1, pet.typeColor(forDex: dex))
+            // Type sits right-aligned in the row rather than under the name
+            // (the fork stacks them, but the row reads cleaner split
+            // left/right); RAISED stacks under the type when both apply.
+            let type = pet.typeText(forDex: dex)
+            let tx = 394 - CGFloat(type.count) * 6
             if raised {
-                ctx.gfxText(pet.raisedMarkText, 330, y + 15, 1, UI.barOK)
+                ctx.gfxText(type, tx, y + 6, 1, pet.typeColor(forDex: dex))
+                let rm = pet.raisedMarkText
+                ctx.gfxText(rm, 394 - CGFloat(rm.count) * 6, y + 19, 1, UI.barOK)
+            } else {
+                ctx.gfxText(type, tx, y + 11, 1, pet.typeColor(forDex: dex))
             }
         }
 
+        // Pagination sits at 330, not upstream's 348: at 348 the 38-tall
+        // buttons ran under the card's page-dot row.
         let prevOn = boxPage > 0
         let nextOn = boxPage + 1 < pages
-        ctx.fillRoundRect(76, 348, 94, 38, 11, prevOn ? UI.track : 0xE71C)
-        ctx.fillRoundRect(296, 348, 94, 38, 11, nextOn ? UI.track : 0xE71C)
-        ctx.gfxText("<", 111, 357, 3, UI.bgDay)
-        ctx.gfxText(">", 331, 357, 3, UI.bgDay)
-        ctx.gfxTextCentered(pet.pageLine(forPage: boxPage + 1, count: pages), 360, 2, UI.track)
+        ctx.fillRoundRect(76, 330, 94, 38, 11, prevOn ? UI.track : 0xE71C)
+        ctx.fillRoundRect(296, 330, 94, 38, 11, nextOn ? UI.track : 0xE71C)
+        ctx.gfxText("<", 111, 339, 3, UI.bgDay)
+        ctx.gfxText(">", 331, 339, 3, UI.bgDay)
+        ctx.gfxTextCentered(pet.pageLine(forPage: boxPage + 1, count: pages), 342, 2, UI.track)
     }
 
     private func renderCardStats(_ ctx: GraphicsContext) {
@@ -1787,15 +2043,25 @@ struct PetScreen: View {
     /// to swipe, 40px to still count as a tap — meaning the same thing on a
     /// phone as on the round panel.
     ///
+    /// Two departures from upstream's absolute-pixel classification, both for
+    /// the watch, where the panel is small enough that a quick flick travels
+    /// only a handful of physical points before the touch ends:
+    /// swipes are measured on the drag's *predicted* end point (which extends
+    /// a fast flick along its release velocity), and the off-axis limit is a
+    /// ratio of the swipe's own length rather than upstream's flat 70px, so a
+    /// slightly diagonal thumb-flick still counts. Taps stay on the actual
+    /// end point — a tap has no velocity to speak of, so predicted == actual.
+    ///
     /// The duration limits upstream also applies (800ms to swipe, 1500ms to tap)
     /// are dropped: they exist to stop a resting finger on a capacitive panel
     /// from registering, which is not a failure mode here.
-    private func onGesture(from: CGPoint, to: CGPoint) {
+    private func onGesture(from: CGPoint, to: CGPoint, predicted: CGPoint) {
         let dx = to.x - from.x, dy = to.y - from.y
-        if abs(dx) > 80, abs(dy) < 70 {
-            onSwipe(dx > 0 ? 1 : -1)
-        } else if abs(dy) > 80, abs(dx) < 70 {
-            onSwipeV(dy > 0 ? 1 : -1)
+        let pdx = predicted.x - from.x, pdy = predicted.y - from.y
+        if abs(pdx) > 80, abs(pdx) > abs(pdy) * 1.4 {
+            onSwipe(pdx > 0 ? 1 : -1)
+        } else if abs(pdy) > 80, abs(pdy) > abs(pdx) * 1.4 {
+            onSwipeV(pdy > 0 ? 1 : -1)
         } else if abs(dx) < 40, abs(dy) < 40 {
             onTap(from)
         }
@@ -1895,11 +2161,11 @@ struct PetScreen: View {
                 return
             }
             let pages = pet.boxPageCount(withRowsPerPage: 5)
-            if p.x >= 76, p.x <= 170, p.y >= 348, p.y <= 386, boxPage > 0 {
+            if p.x >= 76, p.x <= 170, p.y >= 330, p.y <= 368, boxPage > 0 {
                 boxPage -= 1
                 return
             }
-            if p.x >= 296, p.x <= 390, p.y >= 348, p.y <= 386, boxPage + 1 < pages {
+            if p.x >= 296, p.x <= 390, p.y >= 330, p.y <= 368, boxPage + 1 < pages {
                 boxPage += 1
                 return
             }
@@ -1949,11 +2215,15 @@ struct PetScreen: View {
         galleryDetail = dex
     }
 
-    /// Ball/Catch tiles, matching the fork's first two `GAME_MENU_TILES`
-    /// (it has five, for Ball/Catch/Memo/Clean/Type; only the first two of
-    /// those minigames are ported here -- see upstream-expanded/README.md).
-    private static let ballTile = CGRect(x: 88, y: 156, width: 138, height: 58)
-    private static let catchTile = CGRect(x: 240, y: 156, width: 138, height: 58)
+    /// The fork's `GAME_MENU_TILES[5]`: Ball/Catch on row one, Memo/Clean on
+    /// row two, Type spanning the full width on row three.
+    private static let gameMenuTiles: [CGRect] = [
+        CGRect(x: 88, y: 156, width: 138, height: 58),
+        CGRect(x: 240, y: 156, width: 138, height: 58),
+        CGRect(x: 88, y: 226, width: 138, height: 58),
+        CGRect(x: 240, y: 226, width: 138, height: 58),
+        CGRect(x: 94, y: 296, width: 278, height: 62),
+    ]
 
     private func onIdleTap(_ p: CGPoint) {
         let pet = model.pet
@@ -1963,16 +2233,18 @@ struct PetScreen: View {
         // same way the fork's onTap does (gameMenuOpen, then the wild prompt,
         // then the expedition HUD chip, all before the normal idle buttons).
         if gameMenuOpen {
-            if Self.ballTile.contains(p) {
+            let tiles = Self.gameMenuTiles
+            if let i = tiles.firstIndex(where: { $0.contains(p) }) {
                 gameMenuOpen = false
-                gameMode = 0
+                gameMode = i
                 screen = .game
-                model.startBallGame()
-            } else if Self.catchTile.contains(p) {
-                gameMenuOpen = false
-                gameMode = 1
-                screen = .game
-                model.startCatchGame()
+                switch i {
+                case 0: model.startBallGame()
+                case 1: model.startCatchGame()
+                case 2: model.startMemoGame()
+                case 3: model.startCleanGame()
+                default: model.startTypeGame()
+                }
             } else {
                 gameMenuOpen = false
             }

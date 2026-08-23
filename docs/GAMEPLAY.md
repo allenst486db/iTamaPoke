@@ -5,6 +5,13 @@ This is the same game as [socquique/TamaPoke](https://github.com/socquique/TamaP
 screen. Everything below is upstream's own design; this page just explains it
 for the iPhone/Watch build.
 
+**Personality, Daily goals, Box, the Pokédex filter, the wild-battle system,
+the Catch/Memo/Clean/Type minigames, and expeditions** come from a second
+source, [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)
+("TamaPoke — Expanded") — a separate community fork, not from socquique's own
+repository. Sections below say so where it matters; see the main
+[README](../README.md#status) for the attribution.
+
 [한국어](GAMEPLAY.ko.md)
 
 ---
@@ -23,9 +30,9 @@ The creature wanders your home screen on its own, following a day/night sky
 that tracks the real time on your device. Nothing about it needs your
 attention constantly — this is designed to be checked in on, not stared at.
 
-- **Swipe up** — the four-page stat card (see below).
+- **Swipe up** — the eight-page stat card (see below).
 - **Swipe left** — the Pokédex: every species you've raised or seen, as a
-  thumbnail grid.
+  thumbnail grid, filterable to All/Raised/Caught.
 - **Swipe down** — settings (language, sound).
 - **Tap** the creature — a short reaction.
 - **Hold** the creature for a few seconds — asks whether you want to let it
@@ -33,6 +40,11 @@ attention constantly — this is designed to be checked in on, not stared at.
   have to mean it.
 - **Tap the feed icon** — opens the feed menu (berries and candy — see
   "Feeding").
+- **A chip near the top** appears once an expedition is running or has a
+  reward waiting — tap it to jump straight to the Expedition page (see
+  below).
+- **A "wild battle?" prompt** occasionally appears on its own while the
+  creature is awake and otherwise idle — fight or dismiss it (see "Battle").
 
 ## Feeding
 
@@ -56,28 +68,86 @@ hardware draws, not a generic wash effect.
 
 ## Training and play
 
-Two activities raise different things:
+The feed-row play icon opens a menu of five minigames — tap a tile to start:
 
-- **Ball minigame** — catch/bounce timing game, raises happiness and bond.
-- **Training sack** — a hit-the-target timing game, raises the battle stats
-  used in the stat card's "battle" page.
+- **Ball** — catch/bounce timing game, raises happiness and bond.
+- **Catch** — tap a moving target before it (or your patience) runs out;
+  missing counts against you the same as letting it expire. *Expanded fork.*
+- **Memo** — a Simon-style pad sequence that grows one step every round you
+  get right. *Expanded fork.*
+- **Clean** — scrub dirt spots that keep popping up before three slip past.
+  *Expanded fork.*
+- **Type** — a quick type-effectiveness quiz: pick which of three types beats
+  the one shown before the clock runs out. *Expanded fork.*
 
-Both are short, repeatable sessions rather than long minigames — meant to be
-played in a spare minute, the same way you'd actually check on a real
-tamagotchi.
+Separately, the **training sack** (reached from the stat card's Battle page,
+not the play menu) is a hit-the-target timing game that raises the battle
+stats used there and in wild battles.
 
-## The stat card (4 pages)
+All of these are short, repeatable sessions rather than long minigames —
+meant to be played in a spare minute, the same way you'd actually check on a
+real tamagotchi.
+
+## Battle
+
+*Ported from the Expanded fork.* While the creature is awake, idle, and not
+mid-ceremony, a "wild battle?" prompt occasionally appears on its own — fight
+it, or tap later to dismiss for now. You can also start one any time from the
+stat card's Battle page (see below).
+
+Each round you choose one action:
+
+- **Attack** — opens a Quick/Heavy choice: quick attacks hit lighter but let
+  you shrug off more of the enemy's next hit; heavy attacks hit harder but
+  leave you more exposed.
+- **Dodge** — a chance to avoid the enemy's attack entirely and land a
+  counter-bonus on your next move.
+- **Rest** — heals a chunk of your HP, guards against some damage that round,
+  and can only be used twice per battle.
+
+Type matchups (the same 18 types as the main series) swing damage up or down.
+Win, and you're offered a chance to catch what you just beat — added to your
+Box and Pokédex either way as "caught." Lose, and a badly-hurt wild creature
+sometimes offers you a consolation catch chance instead. Wins, losses, and
+your best win streak show on the Battle stat-card page.
+
+## Expedition
+
+*Ported from the Expanded fork.* Sends the creature off on a timed tour —
+15, 30, or 60 minutes, each costing energy up front and paying out a bigger
+chance of a good reward the longer it runs. A chip appears near the top of
+the idle screen once a tour is running (tap it to jump to the page) and again
+once it's back with a reward to claim.
+
+Rewards are one of four items, held in a small inventory on the Expedition
+page: a snack (restores food), a tonic (restores energy), a care kit (clears
+a slip-up), or a train token (opens a stat-choice menu that boosts one battle
+stat). Tap an item to use it; the inventory caps out, so it's worth spending
+what you're holding before sending the creature out again.
+
+## The stat card (8 pages)
 
 Swipe up from idle, then swipe left/right between pages:
 
 1. **Profile** — name, level, hunger/happiness/hygiene bars.
-2. **Battle** — the gen-1-style stats (attack/defense/speed/etc.) built from
-   genes rolled at hatching, training, and level.
-3. **Medals** — badges earned for milestones (streaks, bond thresholds,
+2. **Personality** *(Expanded fork)* — a trait (Balanced/Playful/Brave/
+   Calm/Lazy) derived from how you've raised this creature, plus its age and
+   a grid of every minigame's personal-best record.
+3. **Daily goals** *(Expanded fork)* — three goals that reroll once a real
+   day passes; clearing all three pays out a bonus.
+4. **Box** *(Expanded fork)* — every wild creature you've caught in battle,
+   sortable, each row showing its type.
+5. **Battle** — the gen-1-style stats (attack/defense/speed/weight) built
+   from genes rolled at hatching, training, and level, plus your battle
+   win/loss record and buttons to start a wild battle or open the training
+   sack.
+6. **Medals** — badges earned for milestones (streaks, bond thresholds,
    training goals). A medal you just earned plays its own short celebration.
-4. **Progress** — streak (consecutive days cared for), best streak, bond
+7. **Progress** — streak (consecutive days cared for), best streak, bond
    level, and total medals across every creature you've raised, not just
    this one.
+8. **Expedition** *(Expanded fork)* — start a tour, claim a reward, and
+   manage the item inventory described above.
 
 Tap the creature's name on page 1 to open the rename keyboard. Tap anywhere
 else, or swipe down past the last page, to close the card.
@@ -111,11 +181,14 @@ reopening it works the same way leaving the original toy on a shelf does.
 
 ## Sound
 
-Every effect (tap, eat, evolve, medal, deny, farewell, etc.) is the original
-hardware's own square-wave tone, not a new sound — see the main
-[README](../README.md#status) if you're curious how. A haptic plays alongside
-sound, and either can be turned off from settings without turning off the
-other.
+Every effect (tap, eat, evolve, medal, deny, farewell, battle hits, minigame
+feedback, and more) is a chip-tune synthesized the same way the original
+hardware and the Expanded fork generate theirs, not a recording — see the
+main [README](../README.md#status) if you're curious how. The settings
+screen's sound pill cycles through four levels — **ALL** (everything),
+**MID**, **LOW** (only the important events — records, evolution, farewell,
+battle results), and **OFF** — rather than a plain on/off switch. A haptic
+plays alongside whatever sound is enabled.
 
 ---
 

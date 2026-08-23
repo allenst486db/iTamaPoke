@@ -73,6 +73,12 @@ static BattleStats TPBattlePlayerStats() {
   return s;
 }
 
++ (uint8_t)typeEffectPct:(uint8_t)attackType
+               defender1:(uint8_t)defendType1
+               defender2:(uint8_t)defendType2 {
+  return battleTypeEffectPct(attackType, defendType1, defendType2);
+}
+
 // Upstream's WILD_COOLDOWN_MS/WILD_PROMPT_MS/WILD_CHECK_MS, in the same
 // millis() units TPPet's -update runs on.
 static const uint32_t kWildCooldownMs = 20UL * 60UL * 1000UL;

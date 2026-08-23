@@ -78,16 +78,25 @@ final class GameModel: ObservableObject {
     /// fire exactly once.
     private var bathPending = false
 
-    /// Ball minigame and training sack. Both live here rather than in the view
+    /// Minigames and the training sack. All live here rather than in the view
     /// because they advance on the tick, and a Canvas draw must not step physics.
     private(set) var ball = TPBallGame()
     private(set) var sack = TPSackGame()
     private(set) var catchGame = TPCatchGame()
+    private(set) var memoGame = TPMemoGame()
+    private(set) var cleanGame = TPCleanGame()
+    private(set) var typeGame = TPTypeGame()
     /// Which one is running. Gating on the games' own fields instead would leave
     /// a finished sack's deadline pinned, and that stale value froze the ball.
-    private enum ActiveGame { case none, ball, sack, catchGame }
+    private enum ActiveGame { case none, ball, sack, catchGame, memo, clean, typeQuiz }
     private var activeGame: ActiveGame = .none
     private var lastGameMs: UInt64 = 0
+
+    /// battleTypeEffectPct with a fixed single defender type, for the Type
+    /// quiz's distractor filter (see TPTypeGame.nextQuestion).
+    private let typeEffect: (UInt8, UInt8) -> Int = { atk, def in
+        Int(TPBattle.typeEffectPct(atk, defender1: def, defender2: 0))
+    }
 
     private var started = false
     private let epoch = Date()
@@ -112,6 +121,7 @@ final class GameModel: ObservableObject {
         TPSaveFile.writeExport()
         #endif
         refreshSprite()
+        TPAudio.shared.mode = soundMode
         if soundEnabled { TPAudio.shared.start() }
         // Upstream's ES8311 square-wave effects are reproduced by TPAudio; the
         // haptic goes alongside, since a phone can answer a tap both ways and a
@@ -230,6 +240,25 @@ final class GameModel: ObservableObject {
         lastGameMs = millis
     }
 
+    func startMemoGame() {
+        memoGame.start(now: millis)
+        activeGame = .memo
+        lastGameMs = millis
+    }
+
+    func startCleanGame() {
+        cleanGame.start(now: millis)
+        activeGame = .clean
+        lastGameMs = millis
+    }
+
+    func startTypeGame() {
+        typeGame.start(now: millis)
+        typeGame.nextQuestion(now: millis, effectPct: typeEffect)
+        activeGame = .typeQuiz
+        lastGameMs = millis
+    }
+
     /// Clears the deadlines as well as stopping the clock, so a later run cannot
     /// inherit a finished one's state.
     func endGames() {
@@ -238,6 +267,9 @@ final class GameModel: ObservableObject {
         sack.until = 0
         sack.overUntil = 0
         catchGame.overUntil = 0
+        memoGame.overUntil = 0
+        cleanGame.overUntil = 0
+        typeGame.overUntil = 0
     }
 
     /// True when the tap connected, so the caller can fire haptics.
@@ -254,6 +286,48 @@ final class GameModel: ObservableObject {
             self.playSfx(beatIt && score > 0 ? .medal : .level)
             return beatIt
         }
+    }
+
+    func tapMemo(_ p: CGPoint) -> TPMemoGame.TapResult {
+        memoGame.tap(p, now: millis) { rounds in self.finishMemo(rounds) }
+    }
+
+    func tapClean(_ p: CGPoint) -> TPCatchTapResult {
+        cleanGame.tap(p, now: millis) { score in self.finishClean(score) }
+    }
+
+    func tapType(_ p: CGPoint) -> TPCatchTapResult {
+        guard let choice = TPTypeGame.choiceAt(p) else { return .ignored }
+        return typeGame.tap(choice: choice, now: millis, effectPct: typeEffect) { score in
+            self.finishType(score)
+        }
+    }
+
+    // Each returns (newHigh, gain) rather than writing straight to the game
+    // struct's own fields -- see TPMemoGame.step's doc comment for why: the
+    // struct these results belong on (self.memoGame etc.) is the very one
+    // whose mutating step/tap call is still in progress when this closure
+    // runs, and self.memoGame.gain = ... from in here would be a same-
+    // instance exclusivity violation (a runtime crash, not just a lint).
+    private func finishMemo(_ rounds: UInt16) -> (newHigh: Bool, gain: UInt8) {
+        let beatIt = rounds > pet.memoHigh
+        let gain = pet.applyMemoResult(UInt8(min(rounds, 255)))
+        playSfx(beatIt && rounds > 0 ? .medal : .level)
+        return (beatIt, gain)
+    }
+
+    private func finishClean(_ score: UInt16) -> (newHigh: Bool, gain: UInt8) {
+        let beatIt = score > pet.cleanHigh
+        let gain = pet.applyCleanResult(UInt8(min(score, 255)))
+        playSfx(beatIt && score > 0 ? .medal : .level)
+        return (beatIt, gain)
+    }
+
+    private func finishType(_ score: UInt16) -> (newHigh: Bool, gain: UInt8) {
+        let beatIt = score > pet.typeHigh
+        let gain = pet.applyTypeResult(UInt8(min(score, 255)))
+        playSfx(beatIt && score > 0 ? .medal : .level)
+        return (beatIt, gain)
     }
 
     private func stepGames(now: UInt64) {
@@ -287,6 +361,17 @@ final class GameModel: ObservableObject {
                 self.playSfx(beatIt && score > 0 ? .medal : .level)
                 return beatIt
             }
+        case .memo:
+            memoGame.step(now: now, playPad: { pad in
+                self.playSfx(TPSfx(rawValue: TPSfx.memoPad0.rawValue + UInt8(pad)) ?? .memoPad0)
+            }, onGameOver: { rounds in self.finishMemo(rounds) })
+        case .clean:
+            cleanGame.step(now: now) { score in self.finishClean(score) }
+        case .typeQuiz:
+            let timedOut = typeGame.step(now: now, effectPct: typeEffect) { score in
+                self.finishType(score)
+            }
+            if timedOut { playSfx(.minigameBad) }
         case .none:
             break
         }
@@ -428,16 +513,39 @@ final class GameModel: ObservableObject {
     }
     #endif
 
-    /// Upstream's sound switch, driving both the tones and the haptic. Kept
-    /// under the old key so an existing save's preference carries over.
-    private(set) var soundEnabled = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
+    /// The fork's four-level sound mode (OFF/LOW/MED/FULL), replacing the
+    /// original on/off switch. An existing save's boolean preference (the old
+    /// "tamapoke/haptics" key) migrates to FULL or OFF on first read.
+    private(set) var soundMode: TPSoundMode = {
+        if let stored = UserDefaults.standard.object(forKey: "tamapoke/soundmode") as? Int,
+           let mode = TPSoundMode(rawValue: stored) {
+            return mode
+        }
+        let legacy = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
+        return legacy ? .full : .off
+    }()
 
-    func setSound(_ on: Bool) {
-        soundEnabled = on
-        UserDefaults.standard.set(on, forKey: "tamapoke/haptics")
-        if on {
+    var soundEnabled: Bool { soundMode != .off }
+
+    /// The settings pill cycles FULL -> MED -> LOW -> OFF, like the fork's.
+    func cycleSound() {
+        let next: TPSoundMode
+        switch soundMode {
+        case .full: next = .med
+        case .med: next = .low
+        case .low: next = .off
+        case .off: next = .full
+        }
+        setSound(next)
+    }
+
+    func setSound(_ mode: TPSoundMode) {
+        soundMode = mode
+        UserDefaults.standard.set(mode.rawValue, forKey: "tamapoke/soundmode")
+        TPAudio.shared.mode = mode
+        if mode != .off {
             TPAudio.shared.start()
-            TPAudio.shared.play(TPSfx.tap.rawValue)   // confirm when switching on
+            TPAudio.shared.play(TPSfx.menu.rawValue)   // confirm at the new level
             Self.playFeedback()
         } else {
             TPAudio.shared.stop()

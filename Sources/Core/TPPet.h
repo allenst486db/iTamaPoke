@@ -107,6 +107,39 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly) uint16_t typeHigh;
 @property (nonatomic, readonly) uint16_t bestBattleStreak;
 
+// The fork's memo/clean/type minigame results -- each banks the score into a
+// stat the same way applyCatchResult does, and returns the gain for the card.
+- (uint8_t)applyMemoResult:(uint8_t)rounds;   ///< pays out DEF
+- (uint8_t)applyCleanResult:(uint8_t)score;   ///< pays out hygiene
+- (uint8_t)applyTypeResult:(uint8_t)score;    ///< pays out ATK
+// Minigame screen strings (fork's renderMemoGame/renderCleanGame/renderTypeGame).
+@property (nonatomic, readonly, copy) NSString *memoWatchText;   ///< "Watch..."
+@property (nonatomic, readonly, copy) NSString *memoWrongText;   ///< "Wrong!"
+- (NSString *)memoTurnLine:(NSInteger)input of:(NSInteger)len;   ///< "Your turn 2/5"
+- (NSString *)roundLine:(NSInteger)round;                        ///< "ROUND 3"
+@property (nonatomic, readonly, copy) NSString *cleanTitleText;  ///< "CLEAN!"
+@property (nonatomic, readonly, copy) NSString *typeTitleText;   ///< "TYPE!"
+- (NSString *)defGainLine:(uint8_t)gain;                         ///< "DEF +2"
+- (NSString *)hygGainLine:(uint8_t)gain;                         ///< "HYG +4"
+- (NSString *)atkGainLine:(uint8_t)gain;                         ///< "ATK +2"
+// Battle-type names/colours by TYPE_* id (1 NORMAL .. 18 FAIRY), for the
+// Type quiz's cards. Same English-only table typeTextForDex draws from.
+- (NSString *)typeNameForType:(uint8_t)type;
+- (uint16_t)typeColorForType:(uint8_t)type;
+
+// The fork's collection frames: decorative portrait frames unlocked by dex
+// milestones, plus the collector rank shown under the profile portrait.
+@property (nonatomic, readonly) uint8_t collectionFrame;
+@property (nonatomic, readonly) uint8_t unlockedCollectionFrameCount;
+- (BOOL)setCollectionFrame:(uint8_t)frame;
+@property (nonatomic, readonly, copy) NSString *collectionTitle; ///< "COLLECTION"
+@property (nonatomic, readonly, copy) NSString *collectionRankName;
+@property (nonatomic, readonly, copy) NSString *knownLine;       ///< "Known 12"
+@property (nonatomic, readonly, copy) NSString *frameLine;       ///< "Frame 1/3"
+
+/// The fork's sound-mode labels by TPSoundMode raw value (0 OFF .. 3 FULL).
+- (NSString *)soundModeLabel:(NSInteger)mode;
+
 @property (nonatomic, readonly, copy) NSString *dailyTitle;
 @property (nonatomic, readonly, copy) NSString *dayPhaseLabel;   ///< Morning/Day/Evening/Night
 @property (nonatomic, readonly) NSInteger dailyGoalCount;        ///< always 3
@@ -270,8 +303,6 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *noText;
 @property (nonatomic, readonly, copy) NSString *nameLabel;   ///< rename screen title
 @property (nonatomic, readonly, copy) NSString *settingsTitle;
-@property (nonatomic, readonly, copy) NSString *soundOnText;
-@property (nonatomic, readonly, copy) NSString *soundOffText;
 
 // --- decision gates (a button appears; the player taps it) -------------
 @property (nonatomic, readonly) BOOL wantsEvolveButton;
