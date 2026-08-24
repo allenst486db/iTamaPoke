@@ -36,6 +36,9 @@ struct PetScreen: View {
     private enum Screen { case idle, gallery, card, sack, keyboard, settings, game, battle }
     @State private var screen: Screen = .idle
     @State private var galleryPage = 0
+    /// Which page of the starter picker is showing. Thirteen starters do not
+    /// fit on one screen; see renderStarterSelect.
+    @State private var starterPage = 0
     /// Dex number of the species in the detail view, 0 for the grid.
     @State private var galleryDetail: Int16 = 0
     /// Which of the detail view's two pages is showing: 0 the portrait (types,
@@ -2163,24 +2166,63 @@ struct PetScreen: View {
                             width: w, height: h))
     }
 
+    // Upstream picks between three starters on one screen. This build offers
+    // thirteen, which do not fit: the rows are shorter and paged, five at a
+    // time, swiped like the stat card. Rows stay inside y 96..386 because the
+    // round panel's corners are cut -- at y 440 only ~107px of width is left.
+    private static let starterRowsPerPage = 5
+    private static let starterRowH: CGFloat = 52
+    private static let starterRowGap: CGFloat = 6
+    private static func starterRowY(_ row: Int) -> CGFloat {
+        96 + CGFloat(row) * (starterRowH + starterRowGap)
+    }
+    private static var starterPageCount: Int {
+        max(1, (Int(TPStarterCount()) + starterRowsPerPage - 1) / starterRowsPerPage)
+    }
+
     private func renderStarterSelect(_ ctx: GraphicsContext) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
-        ctx.gfxTextCentered(TPChooseStarterTitle(), 68, 2, UI.ink)
-        for i in 0..<3 {
-            let dex = TPStarterDex(i)
-            let accent = TPDexAccent(dex)
-            let ry = CGFloat(110 + i * 78)
-            ctx.fillRoundRect(70, ry, 326, 70, 14, lerp565(accent, UI.white, 6, 8))
-            ctx.drawRoundRect(70, ry, 326, 70, 14, accent)
-            // Upstream shows each starter's thumbnail beside its name; the
-            // name is offset to x=178 precisely to leave room for it. Absent
-            // (no atlas bundled) the row is still just a labelled button.
+        ctx.gfxTextCentered(TPChooseStarterTitle(), 56, 2, UI.ink)
+
+        let first = starterPage * Self.starterRowsPerPage
+        let last = min(first + Self.starterRowsPerPage, Int(TPStarterCount()))
+        // Rows first, contents second: a thumbnail is taller than the shorter
+        // row and overhangs it slightly, and drawing each row complete in turn
+        // let the next row's fill clip the previous one's sprite.
+        for slot in first..<last {
+            let accent = TPDexAccent(TPStarterDex(slot))
+            let ry = Self.starterRowY(slot - first)
+            ctx.fillRoundRect(70, ry, 326, Self.starterRowH, 12, lerp565(accent, UI.white, 6, 8))
+            ctx.drawRoundRect(70, ry, 326, Self.starterRowH, 12, accent)
+        }
+        for slot in first..<last {
+            let dex = TPStarterDex(slot)
+            let ry = Self.starterRowY(slot - first)
+            // Upstream shows each starter's thumbnail beside its name, which is
+            // why the name is offset rather than centred. Absent (no atlas
+            // bundled) the row is still just a labelled button.
             if let img = TPThumbs.shared.image(dex: dex, silhouette: false),
                let sz = TPThumbs.shared.size(dex: dex) {
-                drawThumb(ctx, img, size: sz, cellX: 76, cellY: ry - 5, scale: 3)
+                // drawThumb centres inside a galCell-tall box, so offsetting by
+                // half the difference centres the sprite on the row.
+                drawThumb(ctx, img, size: sz, cellX: 74,
+                          cellY: ry + (Self.starterRowH - TP.galCell) / 2, scale: 2)
             }
-            ctx.gfxText(TPDexName(dex), 178, ry + 24, 3, UI.ink)
+            let name = TPDexName(dex)
+            // Size 3 is 18px per character; the widest of these names still
+            // clears the row's right edge, but shrink anyway if a longer one
+            // is ever added to the table.
+            let size = CGFloat(name.count) * 18 <= 240 ? 3 : 2
+            ctx.gfxText(name, 150, ry + (size == 3 ? 12 : 16), size, UI.ink)
+        }
+
+        guard Self.starterPageCount > 1 else { return }
+        let dotsX = TP.cx - CGFloat(Self.starterPageCount - 1) * 13
+        for i in 0..<Self.starterPageCount {
+            let cx = dotsX + CGFloat(i) * 26
+            if i == starterPage { ctx.fillCircle(cx, 400, 5, UI.ink) }
+            else { ctx.strokeCircle(cx, 400, 4, UI.ink) }
         }
     }
 
@@ -2228,7 +2270,12 @@ struct PetScreen: View {
     /// Horizontal swipe: pages the stat card, or opens and pages the Pokedex.
     private func onSwipe(_ dir: Int) {
         let pet = model.pet
-        if pet.awaitingStarter { return }
+        if pet.awaitingStarter {
+            // The picker is the one pre-game screen with pages to turn.
+            starterPage = min(max(starterPage + (dir > 0 ? -1 : 1), 0),
+                              Self.starterPageCount - 1)
+            return
+        }
         guard swipeAllowed else { return }
 
         if screen == .card {           // left advances, matching upstream
@@ -2445,10 +2492,12 @@ struct PetScreen: View {
         }
 
         if pet.awaitingStarter {
-            for i in 0..<3 {
-                let ry = CGFloat(110 + i * 78)
-                if p.x >= 70, p.x <= 396, p.y >= ry, p.y <= ry + 70 {
-                    pet.chooseStarter(TPStarterDex(i))
+            let first = starterPage * Self.starterRowsPerPage
+            let last = min(first + Self.starterRowsPerPage, Int(TPStarterCount()))
+            for slot in first..<last {
+                let ry = Self.starterRowY(slot - first)
+                if p.x >= 70, p.x <= 396, p.y >= ry, p.y <= ry + Self.starterRowH {
+                    pet.chooseStarter(TPStarterDex(slot))
                     model.playSfx(.tap)
                     return
                 }

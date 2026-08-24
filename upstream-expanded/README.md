@@ -21,12 +21,16 @@ like the others.
 
 Only the species list grew. Specifically:
 
-- **Rows 1-151 are untouched** -- byte for byte the fork's own. DylanPDao's
-  table differs from it on 19 gen-1 species (Pikachu/Clefairy/Jigglypuff
-  become `R_EVO` because gen 2 gave them babies; Golbat, Onix, Chansey,
-  Scyther, Seadra, Porygon and others gain cross-gen evolutions). None of
-  that was taken: adopting it would change how gen-1 species hatch and
-  evolve, which is a gameplay change, not a longer list.
+- **Rows 1-151 keep the fork's own stats, types, rarity and biome.** The one
+  thing taken from DylanPDao's gen-1 rows is the six cross-gen evolutions
+  whose targets exist here: Golbat to Crobat, Onix to Steelix, Chansey to
+  Blissey, Seadra to Kingdra, Scyther to Scizor, Porygon to Porygon2. Its
+  other gen-1 differences were not: it also makes Pikachu, Clefairy and
+  Jigglypuff `R_EVO` so they stop hatching from eggs once their gen-2 babies
+  exist, and that changes how those species are obtained rather than what
+  they can become. Six more of its gen-1 evolutions point at gen 4
+  (Magneton, Lickitung, Rhydon, Tangela, Electabuzz, Magmar) and are left
+  as final forms here for the same reason as the gen 2-3 ones below.
 - Rows 152-386 are converted into *this* table's column order and its
   narrower `DexEntry` (the fork has no special-attack/defence columns, and
   the battle engine here does not use them, so they are dropped).

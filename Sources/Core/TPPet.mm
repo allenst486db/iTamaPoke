@@ -16,8 +16,27 @@
 // and every subsystem reaches for it; mirroring that keeps the port honest.
 static Pet gPet;
 
-// Upstream defines the starter trio in the .ino, not in a header.
-static const int16_t kStarterDex[3] = { 1, 4, 7 };  // Bulbasaur / Charmander / Squirtle
+// Upstream defines its starters in the .ino, not in a header, and offers the
+// three gen-1 ones. With the dex extended to gen 1-3
+// this build offers each generation's trio plus the electric pairs, in the
+// order they are shown: Pichu/Pikachu, Plusle/Minun, then the gen 1, 2 and 3
+// starters. Every one of them is a first-stage form that still evolves.
+static const int16_t kStarterDex[] = {
+  172,  // Pichu
+   25,  // Pikachu
+  311,  // Plusle
+  312,  // Minun
+    1,  // Bulbasaur
+    4,  // Charmander
+    7,  // Squirtle
+  152,  // Chikorita
+  155,  // Cyndaquil
+  158,  // Totodile
+  252,  // Treecko
+  255,  // Torchic
+  258,  // Mudkip
+};
+static const NSInteger kStarterCount = sizeof(kStarterDex) / sizeof(kStarterDex[0]);
 
 extern "C" void TPSetSfxHook(void (*hook)(uint8_t));
 static void (^gSfxBlock)(uint8_t) = nil;
@@ -864,8 +883,10 @@ NSString *TPDexName(int16_t dex) {
 uint16_t TPDexAccent(int16_t dex) { return TPDexEntry(dex)->accent; }
 uint8_t  TPDexBiome(int16_t dex)  { return TPDexEntry(dex)->biome; }
 
+NSInteger TPStarterCount(void) { return kStarterCount; }
+
 int16_t TPStarterDex(NSInteger slot) {
-  return (slot >= 0 && slot < 3) ? kStarterDex[slot] : kStarterDex[0];
+  return (slot >= 0 && slot < kStarterCount) ? kStarterDex[slot] : kStarterDex[0];
 }
 
 NSString *TPString(uint8_t strId) {

@@ -367,7 +367,9 @@ FOUNDATION_EXPORT int16_t TPDexCount(void);
 FOUNDATION_EXPORT NSString *TPDexName(int16_t dex);
 FOUNDATION_EXPORT uint16_t TPDexAccent(int16_t dex);
 FOUNDATION_EXPORT uint8_t TPDexBiome(int16_t dex);
-FOUNDATION_EXPORT int16_t TPStarterDex(NSInteger slot);   ///< slot 0..2
+/// How many starters the picker offers, and the species in each slot.
+FOUNDATION_EXPORT NSInteger TPStarterCount(void);
+FOUNDATION_EXPORT int16_t TPStarterDex(NSInteger slot);   ///< slot 0..TPStarterCount()-1
 
 /// Localized UI string by upstream `StrId`. Kept as a raw id so the Swift side
 /// stays in lockstep with i18n.h without duplicating the table.
