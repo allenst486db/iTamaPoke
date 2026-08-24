@@ -56,6 +56,14 @@ which pins socquique/TamaPoke and doesn't have these. See
 which files that is and why. The Box page fills in as you win wild battles
 and catch what you beat.
 
+**The dex holds 386 species (gen 1-3), not 151.** Only the list grew: the
+gen-1 rows are byte-for-byte the ones this port already shipped, and no
+rarity, evolution, stat or battle rule changed with them. The extra rows are
+transcribed from a third fork,
+[DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke) —
+see [`upstream-expanded/README.md`](upstream-expanded/README.md) for exactly
+what was and wasn't taken. An existing save keeps every species it had.
+
 **Sound** is re-synthesised in software rather than re-recorded, the same
 chip-tune waveforms (square/triangle/soft/noise, with slides and per-effect
 volume) the fork's own audio.cpp generates — see [How the port
@@ -186,7 +194,7 @@ iPhone → iTamaPoke), then the app bundle.
 battle stats in `dex.h`:
 
 ```bash
-Scripts/fetch_dex_entries.sh              # all 151, in English
+Scripts/fetch_dex_entries.sh              # every species, in English
 Scripts/fetch_dex_entries.sh --lang es    # in Spanish
 Scripts/fetch_dex_entries.sh 1 4 7        # just these three
 ```

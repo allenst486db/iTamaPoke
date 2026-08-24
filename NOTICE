@@ -58,6 +58,14 @@ this repository as a whole (see LICENSE Section 1) — MIT permits a derivative
 to carry additional terms as long as this notice ships with it, which is
 exactly what this section does.
 
+The species table's gen 2-3 rows (dex 152-386) are transcribed from a third
+source: DylanPDao/TamaPoke (https://github.com/DylanPDao/TamaPoke), another
+community fork of the same project, MIT licensed like the others. Only that
+table's rows were taken, converted into this build's own column layout; see
+`upstream-expanded/README.md`. The species names, designs and Pokédex text
+those rows describe remain (c) Nintendo / Game Freak / The Pokémon Company
+and are covered by the "NOT COVERED" section below.
+
 The Personality, Daily goals, Box, and Pokédex-filter features, the
 wild-battle system, the Catch/Memo/Clean/Type minigames, expeditions, and the
 sound-effect synthesizer (note tables, waveforms, and the four-level sound

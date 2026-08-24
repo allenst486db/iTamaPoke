@@ -158,7 +158,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *boxTitle;
 @property (nonatomic, readonly) uint16_t caughtCount;   ///< wild pokemon caught (separate from raised)
 @property (nonatomic, readonly) uint16_t knownDexCount; ///< raised OR caught
-@property (nonatomic, readonly) uint8_t nextDexGoal;
+@property (nonatomic, readonly) uint16_t nextDexGoal;
 @property (nonatomic, readonly, copy) NSString *caughtCountLine;
 @property (nonatomic, readonly, copy) NSString *knownCountLine;
 @property (nonatomic, readonly, copy) NSString *dexGoalLine;
@@ -245,7 +245,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *statusMessage;    ///< upstream statusMsg()
 @property (nonatomic, readonly, copy) NSString *eggMessage;       ///< upstream eggMsg()
 @property (nonatomic, readonly, copy) NSString *headerName;       ///< "*PIKACHU Lv.7"
-@property (nonatomic, readonly, copy) NSString *pokedexLine;      ///< "POKEDEX 12/151"
+@property (nonatomic, readonly, copy) NSString *pokedexLine;      ///< "POKEDEX 12/386"
 @property (nonatomic, readonly, copy, nullable) NSString *eggRarityLabel;  ///< nil when common
 @property (nonatomic, readonly, copy) NSString *ceremonyMessage;
 
@@ -361,6 +361,9 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 
 // --- static tables -----------------------------------------------------
 /// Species name, UI accent (RGB565) and background biome from the generated dex.
+/// How many species this build's dex holds (DEX_COUNT). Swift pages the
+/// gallery off it rather than repeating the number.
+FOUNDATION_EXPORT int16_t TPDexCount(void);
 FOUNDATION_EXPORT NSString *TPDexName(int16_t dex);
 FOUNDATION_EXPORT uint16_t TPDexAccent(int16_t dex);
 FOUNDATION_EXPORT uint8_t TPDexBiome(int16_t dex);

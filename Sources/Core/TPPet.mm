@@ -542,7 +542,7 @@ static uint8_t TPCurrentDayPhase() {
 - (NSString *)boxTitle { return [NSString stringWithUTF8String:T(S_BOX)]; }
 - (uint16_t)caughtCount    { return gPet.caughtCount(); }
 - (uint16_t)knownDexCount  { return gPet.knownDexCount(); }
-- (uint8_t)nextDexGoal     { return gPet.nextDexGoal(); }
+- (uint16_t)nextDexGoal    { return gPet.nextDexGoal(); }
 - (NSString *)caughtCountLine {
   char out[24];
   snprintf(out, sizeof(out), T(S_CAUGHT_COUNT_FMT), gPet.caughtCount());
@@ -589,7 +589,7 @@ static bool TPBoxComesBefore(int16_t a, int16_t b) {
   return a < b;
 }
 
-// Rebuilt on every call rather than cached: the box is small (<=151 entries)
+// Rebuilt on every call rather than cached: the box is small (<=DEX_COUNT entries)
 // and this only runs while the Box page is on screen.
 static uint16_t TPBoxBuildList(int16_t *out) {
   uint16_t n = 0;
@@ -854,6 +854,8 @@ static const DexEntry *TPDexEntry(int16_t dex) {
   if (dex < 0 || dex > DEX_COUNT) dex = 0;
   return &DEX_TBL[dex];
 }
+
+int16_t TPDexCount(void) { return DEX_COUNT; }
 
 NSString *TPDexName(int16_t dex) {
   return [NSString stringWithUTF8String:TPDexEntry(dex)->name];

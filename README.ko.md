@@ -53,6 +53,14 @@
 [`upstream-expanded/README.md`](upstream-expanded/README.md) 참고. 박스
 화면은 야생 배틀에서 이기고 잡은 개체만큼 채워집니다.
 
+**도감이 151종이 아니라 386종(1~3세대)입니다.** 늘어난 건 목록뿐입니다:
+1세대 항목은 기존과 바이트 단위로 동일하고, 희귀도·진화·스탯·배틀 규칙은
+아무것도 바뀌지 않았습니다. 추가된 항목은 세 번째 포크인
+[DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke)에서 옮겨온
+것이며, 무엇을 가져오고 무엇을 가져오지 않았는지는
+[`upstream-expanded/README.md`](upstream-expanded/README.md)에 정리해뒀습니다.
+기존 세이브는 등록해둔 종을 그대로 유지합니다.
+
 **사운드**는 녹음이 아니라 소프트웨어로 재합성한 것으로, 포크 자체의
 audio.cpp가 만들어내는 것과 동일한 칩튠 파형(사각파/삼각파/소프트파/노이즈,
 슬라이드와 효과별 볼륨 포함)입니다 — 자세한 방법은 [포팅 방식](#포팅-방식)
@@ -177,7 +185,7 @@ Game Freak의 저작물이라, 위의 스프라이트와 똑같이 **저장소�
 만들어줍니다 — 원작이 `dex.h`의 전투 스탯을 가져오는 것과 같은 출처입니다:
 
 ```bash
-Scripts/fetch_dex_entries.sh              # 151종 전부, 영어
+Scripts/fetch_dex_entries.sh              # 전체 종, 영어
 Scripts/fetch_dex_entries.sh --lang es    # 스페인어
 Scripts/fetch_dex_entries.sh 1 4 7        # 이 셋만
 ```

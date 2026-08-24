@@ -7,7 +7,7 @@
 # Game Freak's writing: fine to fetch onto your own device, not fine to commit
 # or redistribute. Same rule as the sprites. See README "Pokedex entries".
 #
-#   Scripts/fetch_dex_entries.sh              # all 151, in English
+#   Scripts/fetch_dex_entries.sh              # every species, in English
 #   Scripts/fetch_dex_entries.sh --lang es    # in Spanish
 #   Scripts/fetch_dex_entries.sh 1 4 7        # just these three
 #
@@ -42,7 +42,9 @@ if [ "${1-}" = "--lang" ]; then
 fi
 
 if [ $# -eq 0 ]; then
-  set -- $(seq 1 151)
+  # Default to whatever this build's dex holds, read from dex.h rather
+  # than repeated here, so extending the dex extends the fetch with it.
+  set -- $(seq 1 "$(sed -n 's/^#define DEX_COUNT \([0-9]*\).*/\1/p' upstream-expanded/dex.h)")
 fi
 
 mkdir -p "$DST"

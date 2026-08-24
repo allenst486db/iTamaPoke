@@ -1455,7 +1455,7 @@ struct PetScreen: View {
         if boxPage >= pages { boxPage = max(0, pages - 1) }
 
         // Left-aligned rather than upstream's centred title: centring it
-        // collides with "CAUGHT x/151" below, which is also left-aligned at
+        // collides with "CAUGHT x/N" below, which is also left-aligned at
         // x=72 -- upstream can afford both centred (title) and left-aligned
         // (count) this close together because its bitmap font is far more
         // compact than the system font this draws with.
@@ -1902,7 +1902,7 @@ struct PetScreen: View {
     /// `galleryDexVisible` from ShadowEnemyx/TamaPoke's fork -- see
     /// upstream-expanded/README.md.
     private func galleryDexVisible(_ dex: Int16) -> Bool {
-        guard dex >= 1, dex <= 151 else { return false }
+        guard dex >= 1, dex <= TPDexCount() else { return false }
         switch galleryFilter {
         case 1:  return model.pet.isRegistered(dex)
         case 2:  return model.pet.isCaught(dex)
@@ -1911,9 +1911,9 @@ struct PetScreen: View {
     }
 
     private func galleryFilteredCount() -> Int {
-        if galleryFilter == 0 { return 151 }
+        if galleryFilter == 0 { return Int(TPDexCount()) }
         var n = 0
-        for dex in Int16(1)...151 where galleryDexVisible(dex) { n += 1 }
+        for dex in Int16(1)...TPDexCount() where galleryDexVisible(dex) { n += 1 }
         return n
     }
 
@@ -1921,7 +1921,7 @@ struct PetScreen: View {
     /// the end of the filtered list.
     private func galleryDexAt(_ index: Int) -> Int16 {
         var i = index
-        for dex in Int16(1)...151 {
+        for dex in Int16(1)...TPDexCount() {
             guard galleryDexVisible(dex) else { continue }
             if i == 0 { return dex }
             i -= 1

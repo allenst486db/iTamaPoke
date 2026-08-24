@@ -2,6 +2,7 @@
 #include <Arduino.h>
 #include <Preferences.h>
 #include "time_utils.h"
+#include "dex.h"   // DEX_COUNT: the dex bitmaps below are sized from it
 
 // 1 tick = 1 minuto de juego. Baja este valor para probar mas rapido
 // (p. ej. 5000UL = las estadisticas caen 12x mas rapido).
@@ -104,16 +105,21 @@ public:
   bool berryKnown = false;  // ya descubrio su baya favorita
   bool shiny = false;       // variante de color rara (se sortea en el huevo)
   uint32_t ageMinutes = 0;
-  int16_t speciesId = -1;      // numero de Pokedex (1-151), -1 = huevo
+  int16_t speciesId = -1;      // numero de Pokedex (1-DEX_COUNT), -1 = huevo
   int16_t prevSpeciesId = -1;  // para la animacion de evolucion
   uint8_t careMistakes = 0;   // descuidos: cada uno retrasa la evolucion 1 nivel
   bool sleeping = false;
   uint32_t lastSeenEpoch = 0;   // ultima hora RTC vista (para progresion offline)
   uint8_t ceremony = CER_NONE;  // despedida/escapada/liberacion en curso
   uint8_t lastEnd = CER_NONE;   // como acabo la anterior (afecta al huevo)
-  uint8_t dexReg[19] = { 0 };       // pokedex de criados (bitmap 151 bits)
-  uint8_t dexShinyReg[19] = { 0 };  // criados en version shiny
-  uint8_t dexCaught[19] = { 0 };    // pokedex de salvajes capturados
+  // Sized from DEX_COUNT rather than a literal, so extending the dex widens
+  // these with it. A save written at the old width loads into the front of
+  // the wider array and the rest stays zero -- Preferences::getBytes copies
+  // min(stored, sizeof), so old saves keep every species they had.
+  static const int DEX_BITMAP_BYTES = (DEX_COUNT + 7) / 8;
+  uint8_t dexReg[DEX_BITMAP_BYTES] = { 0 };       // pokedex de criados
+  uint8_t dexShinyReg[DEX_BITMAP_BYTES] = { 0 };  // criados en version shiny
+  uint8_t dexCaught[DEX_BITMAP_BYTES] = { 0 };    // pokedex de salvajes capturados
   // racha de cuidado diario (del jugador: persiste entre crianzas)
   uint16_t streak = 0, bestStreak = 0;
   uint32_t lastCareDay = 0;
@@ -233,13 +239,13 @@ public:
     return raw > 100UL ? 100 : (uint8_t)raw;
   }
   bool isRegistered(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= DEX_COUNT && (dexReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   bool isCaught(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexCaught[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= DEX_COUNT && (dexCaught[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   bool isShinyRegistered(int16_t dex) const {
-    return dex >= 1 && dex <= 151 && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
+    return dex >= 1 && dex <= DEX_COUNT && (dexShinyReg[(dex - 1) >> 3] & (1 << ((dex - 1) & 7)));
   }
   uint16_t registeredCount() const;
   uint16_t caughtCount() const;
@@ -248,8 +254,8 @@ public:
   uint8_t unlockedCollectionFrameCount() const;
   bool setCollectionFrame(uint8_t frame);
   void registerCaught(int16_t dex);
-  uint8_t nextDexGoal() const;
-  uint8_t applyDexRewards();
+  uint16_t nextDexGoal() const;
+  uint16_t applyDexRewards();
   uint8_t catchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin) const;
   uint8_t respectCatchChanceForWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel) const;
   bool tryCatchWild(int16_t wildDex, uint8_t wildLevel, uint8_t petLevel, bool closeWin, uint8_t luckRoll);
@@ -273,7 +279,7 @@ public:
   bool showMedal() const { return deadlineActive(millis(), medalUntil); }
   bool showMilestone() const { return deadlineActive(millis(), milestoneUntil); }
   bool showDexReward() const { return deadlineActive(millis(), dexRewardUntil); }
-  uint8_t lastDexRewardGoal() const { return lastDexReward; }
+  uint16_t lastDexRewardGoal() const { return lastDexReward; }
   int careBonus() const;  // mejora del huevo por racha + vinculo
 
   // guardado periodico diferido: tick() marca pendiente y el loop lo vuelca
@@ -305,7 +311,7 @@ private:
   uint32_t medalUntil = 0;     // celebracion de medalla en pantalla
   uint32_t milestoneUntil = 0; // celebracion de hito de racha
   uint32_t dexRewardUntil = 0;
-  uint8_t lastDexReward = 0;
+  uint16_t lastDexReward = 0;
   uint32_t lastMorningDay = 0;
   uint32_t shakeReadyAt = 0;
   uint32_t shakeDay = 0;
