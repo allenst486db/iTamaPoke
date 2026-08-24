@@ -99,14 +99,19 @@ SPEED; the training sack trains STRENGTH; bath clears mess; petting is a
 small JOY/bond bump; sleep slows every drain roughly 4× and disables
 slip-ups and running away.
 
-**Eggs:** your very first creature is a starter you pick. Every egg after
+**Eggs:** your very first creature is a starter you pick from thirteen —
+Pichu, Pikachu, Plusle, Minun, and each generation's trio — shown five to a
+page over three swipeable pages. Every egg after
 that rolls a rarity (Common/Rare/Legendary — Legendary only unlocks after
 you've registered 25+ species), biased toward evolution lines you haven't
 finished, improved by streak/bond, and shiny odds run from a base **1-in-48**
 up to **1-in-8** with a strong streak and bond.
 
 **Evolution:** needs level ≥ the species' threshold *and* every stat ≥ 40 at
-that moment. Never automatic — you tap a button to trigger it.
+that moment. Never automatic — you tap a button to trigger it. Six gen-1
+species evolve across generations (Golbat, Onix, Chansey, Seadra, Scyther,
+Porygon); anything whose evolution only exists in gen 4+ is a final form
+here.
 
 **Endings:** Farewell (final form, 3 days old, your choice — blesses the
 next egg), Runaway (all four stats at 0 for a full hour — curses the next
