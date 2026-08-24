@@ -1033,9 +1033,13 @@ struct PetScreen: View {
             }
         }
 
+        // Presses landed, not the press about to be made: upstream shows
+        // `input + 1`, which starts at 1 and never reaches the sequence
+        // length, so the number gives no confirmation that a press
+        // registered. Counting from 0 up to the length does.
         let phase = g.failUntil != 0 ? pet.memoWrongText
                   : g.showing ? pet.memoWatchText
-                  : pet.memoTurnLine(g.input + 1, of: g.seq.count)
+                  : pet.memoTurnLine(g.input, of: g.seq.count)
         ctx.fillRoundRect(78, 230, 310, 24, 7, UI.bgDay)
         ctx.drawRoundRect(78, 230, 310, 24, 7, ink)
         let phaseColor: UInt16 = g.failUntil != 0 ? UI.barBad : (g.showing ? UI.barWarn : UI.barOK)
@@ -1386,8 +1390,12 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, 118, 34, 8, UI.white)
         ctx.drawRoundRect(x, y, 118, 34, 8, color)
         ctx.gfxText(label, x + 10, y + 6, 1, color)
+        // Upstream puts the number at y+14, where its 16px-tall bitmap glyphs
+        // still clear the 34px box. The system font's size-2 line box is ~24px,
+        // so the same offset hangs it out the bottom; y+6 centres the digits in
+        // the box instead. The label is left of it, so sharing a top is fine.
         let num = "\(value)"
-        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12, y + 14, 2, UI.ink)
+        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12, y + 6, 2, UI.ink)
     }
 
     private func dailyGoalColor(_ kind: Int) -> UInt16 {
