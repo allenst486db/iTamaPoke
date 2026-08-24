@@ -77,6 +77,10 @@ CREDITS
 
 Battle stats compiled into upstream's `dex.h` (attack/defense/speed etc.) come
 from PokéAPI (https://pokeapi.co), per upstream's own `tools/dex_stats.py`.
+`Scripts/fetch_dex_entries.sh` uses the same API to fetch Pokedex entry text
+for the dex detail view. That text is Nintendo's, not PokéAPI's, and the
+script writes it to a gitignored path: it is fetched per user, never
+committed or redistributed here.
 
 
 NOT COVERED by any license granted here

@@ -179,14 +179,28 @@ with its type chips on the first page, its dex entry on the second. That entry
 text is Nintendo / Game Freak's writing, so, exactly like the sprites above,
 **none of it is committed here**. The page reads `mons/dex_entries.txt`,
 resolved the same way sprites are: `Documents/mons/` first (Files → On My
-iPhone → iTamaPoke), then the app bundle. One entry per line:
+iPhone → iTamaPoke), then the app bundle.
+
+`Scripts/fetch_dex_entries.sh` builds that file from
+[PokéAPI](https://pokeapi.co) — the same source upstream already uses for the
+battle stats in `dex.h`:
+
+```bash
+Scripts/fetch_dex_entries.sh              # all 151, in English
+Scripts/fetch_dex_entries.sh --lang es    # in Spanish
+Scripts/fetch_dex_entries.sh 1 4 7        # just these three
+```
+
+The format is one entry per line, `<dex number>|<text>`; blank lines and `#`
+comments are ignored, so you can also write it by hand:
 
 ```
 122|It uses its hands to create invisible walls.
 ```
 
-Blank lines and `#` comments are ignored. With no file installed the page just
-says `NO DEX ENTRY`; nothing else about the screen changes.
+It holds one language at a time — re-run with a different `--lang` to switch.
+With no file installed the page just says `NO DEX ENTRY`; nothing else about
+the screen changes.
 
 ---
 
