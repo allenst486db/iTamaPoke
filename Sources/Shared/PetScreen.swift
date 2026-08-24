@@ -2030,11 +2030,15 @@ struct PetScreen: View {
             drawDexEntry(ctx, dex: dex, known: known)
         }
 
+        // The entry page's panel is deep enough to push the dots down, which
+        // is what the hardware does too -- they sit lower there than under
+        // the portrait.
         let dotsX = TP.cx - 13
+        let dotsY: CGFloat = galleryDetailPage == 0 ? 342 : 396
         for i in 0..<2 {
             let cx = dotsX + CGFloat(i) * 26
-            if i == galleryDetailPage { ctx.fillCircle(cx, 342, 5, UI.ink) }
-            else { ctx.strokeCircle(cx, 342, 4, UI.ink) }
+            if i == galleryDetailPage { ctx.fillCircle(cx, dotsY, 5, UI.ink) }
+            else { ctx.strokeCircle(cx, dotsY, 4, UI.ink) }
         }
         ctx.gfxTextCentered(pet.galleryBackText, 424, 2, UI.ink)
     }
@@ -2097,7 +2101,10 @@ struct PetScreen: View {
 
     /// Page two: the species' dex entry, wrapped inside a bordered panel.
     private func drawDexEntry(_ ctx: GraphicsContext, dex: Int16, known: Bool) {
-        let x: CGFloat = 54, y: CGFloat = 150, w: CGFloat = 358, h: CGFloat = 176
+        // Sized so every dex entry fits at size 2 without shrinking: the panel
+        // runs from just under the name down to just above the dots, which sit
+        // lower on this page than on the portrait one to make room.
+        let x: CGFloat = 50, y: CGFloat = 146, w: CGFloat = 366, h: CGFloat = 236
         ctx.fillRoundRect(x, y, w, h, 12, UI.white)
         ctx.drawRoundRect(x, y, w, h, 12, UI.ink)
 
@@ -2108,12 +2115,40 @@ struct PetScreen: View {
             ctx.gfxTextCentered(msg, y + h / 2 - 10, 2, UI.track)
             return
         }
-        // 12px per character at size 2, minus the panel's inner padding.
-        let lines = TPDexEntryText.wrap(text, columns: Int((w - 28) / 12))
-        let lineH: CGFloat = 26
-        var ty = y + max(14, (h - CGFloat(lines.count) * lineH) / 2)
+
+        let pad: CGFloat = 14
+        let usableW = w - 2 * pad, usableH = h - 2 * pad
+        // Real dex entries run anywhere from one short line to several dozen
+        // words (Gen 2-3's are noticeably longer than Gen 1's), and the box
+        // is a fixed size -- so, same shrink-to-fit the header name and title
+        // already do elsewhere on this screen, size 2 is tried first and only
+        // dropped to size 1 if it would actually overflow, rather than always
+        // picking one size and letting long entries run past the border.
+        // Character width is `size * 6` (gfxText's own metric, see
+        // gfxTextCentered2) and a size's line box is `size * 13` tall -- close
+        // to its `size * 10`pt font with a little breathing room, matched
+        // against this file's other size-1/size-2 line strips.
+        func layout(size: Int) -> (lines: [String], lineH: CGFloat) {
+            let columns = max(1, Int(usableW / CGFloat(size * 6)))
+            return (TPDexEntryText.wrap(text, columns: columns), CGFloat(size * 13))
+        }
+
+        var size = 2
+        var (lines, lineH) = layout(size: size)
+        if CGFloat(lines.count) * lineH > usableH {
+            size = 1
+            (lines, lineH) = layout(size: size)
+        }
+        // Longer than even size 1 fits (a handful of the wordiest Gen 2-3
+        // entries): clip rather than spill out of the box, same call this
+        // port already makes for a gallery name too long to show in full.
+        if CGFloat(lines.count) * lineH > usableH {
+            lines = Array(lines.prefix(max(1, Int(usableH / lineH))))
+        }
+
+        var ty = y + max(pad, (usableH - CGFloat(lines.count) * lineH) / 2 + pad)
         for line in lines {
-            ctx.gfxTextCentered(line, ty, 2, UI.ink)
+            ctx.gfxTextCentered(line, ty, size, UI.ink)
             ty += lineH
         }
     }
