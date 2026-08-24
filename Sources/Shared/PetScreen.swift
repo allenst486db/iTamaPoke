@@ -38,6 +38,10 @@ struct PetScreen: View {
     @State private var galleryPage = 0
     /// Dex number of the species in the detail view, 0 for the grid.
     @State private var galleryDetail: Int16 = 0
+    /// Which of the detail view's two pages is showing: 0 the portrait (types,
+    /// sprite, how it was obtained), 1 the dex entry text. Swipe between them,
+    /// tap to leave -- the same split the hardware's own dex detail uses.
+    @State private var galleryDetailPage = 0
     /// Stat card page: 0 profile, 1 personality, 2 daily, 3 box, 4 battle,
     /// 5 medals, 6 progress, 7 expedition. Pages 1-3 and 7 are ported from
     /// ShadowEnemyx/TamaPoke ("Expanded") -- see upstream-expanded/README.md.
@@ -1985,6 +1989,12 @@ struct PetScreen: View {
         }
     }
 
+    /// The dex detail view: a red POKeDEX masthead, the number and name on
+    /// their own lines, and two pages -- the portrait with its type chips and
+    /// how the species was obtained, then its dex entry. Swipe pages, tap to
+    /// leave. This is a screen design rather than a port: the published
+    /// firmware (socquique, and ShadowEnemyx on either branch) draws a single
+    /// page with the number and name on one line and the types as plain text.
     private func renderGalleryDetail(_ ctx: GraphicsContext, dex: Int16, now: UInt64) {
         let pet = model.pet
         let registered = pet.isRegistered(dex)
@@ -1994,27 +2004,84 @@ struct PetScreen: View {
         // Box already lists.
         let known = registered || caught
         let shiny = pet.isShinyRegistered(dex)
-        let head = String(format: "N.%03d %@%@", dex, shiny ? "*" : "",
-                          known ? TPDexName(dex) : "???")
-        // Upstream shrinks the title rather than letting a long name overflow.
-        let size = head.count <= 13 ? 3 : 2
-        ctx.gfxTextCentered(head, size == 3 ? 56 : 60, size,
-                            known ? TPDexAccent(dex) : UI.ink)
-        if known {
-            ctx.gfxTextCentered(pet.typeText(forDex: dex), 94, 2, pet.typeColor(forDex: dex))
+
+        ctx.fillRect(0, 0, TP.screen, 64, Self.dexRed)
+        ctx.gfxTextCentered("POKeDEX", 13, 3, UI.white)
+
+        ctx.gfxTextCentered(String(format: "#%03d", dex), 78, 2, UI.track)
+        let name = (known ? TPDexName(dex) : "???") + (known && shiny ? " *" : "")
+        // Shrink rather than let a long name run off the narrow round panel,
+        // the same rule the profile card's header uses.
+        let nameSize = name.count <= 12 ? 3 : 2
+        ctx.gfxTextCentered(name, nameSize == 3 ? 104 : 110, nameSize, UI.ink)
+
+        if galleryDetailPage == 0 {
+            if known { drawTypeChips(ctx, dex: dex, y: 150) }
+            drawDetailPortrait(ctx, dex: dex, known: known, shiny: shiny, now: now)
+            // How this one was obtained: raised, caught, or both -- they stack
+            // when both apply, hence each line's y depending on the other.
+            if registered {
+                ctx.gfxTextCentered(pet.raisedMarkText, caught ? 366 : 378, 2, UI.barOK)
+            }
+            if caught {
+                ctx.gfxTextCentered(pet.caughtMarkText, registered ? 388 : 378, 2, UI.barWarn)
+            }
+        } else {
+            drawDexEntry(ctx, dex: dex, known: known)
         }
 
-        // The full sprite when its TPK2 file is bundled: animated and in colour
-        // once known, a frozen silhouette when not.
+        let dotsX = TP.cx - 13
+        for i in 0..<2 {
+            let cx = dotsX + CGFloat(i) * 26
+            if i == galleryDetailPage { ctx.fillCircle(cx, 342, 5, UI.ink) }
+            else { ctx.strokeCircle(cx, 342, 4, UI.ink) }
+        }
+        ctx.gfxTextCentered(pet.galleryBackText, 424, 2, UI.ink)
+    }
+
+    /// The masthead red. A new colour for a new element -- it has no upstream
+    /// constant to match, so it is written out in components like the scene
+    /// palette rather than as a bare 565 literal.
+    private static let dexRed = rgb565(0xD8, 0x1F, 0x26)
+
+    /// One small outlined pill per type, sized to its label and centred as a
+    /// group -- the detail view's only splash of the species' own colour.
+    private func drawTypeChips(_ ctx: GraphicsContext, dex: Int16, y: CGFloat) {
+        let pet = model.pet
+        // typeText(forDex:) is "FIRE" or "FIRE FLY"; the chips want them apart.
+        let names = pet.typeText(forDex: dex).split(separator: " ").map(String.init)
+        guard !names.isEmpty else { return }
+        let gap: CGFloat = 10, h: CGFloat = 24
+        let widths = names.map { CGFloat($0.count) * 6 + 22 }
+        let total = widths.reduce(0, +) + gap * CGFloat(names.count - 1)
+        var x = TP.cx - total / 2
+        for (i, label) in names.enumerated() {
+            // Both chips take the primary type's colour: the port has no
+            // per-type lookup for a secondary name, only typeColor(forDex:).
+            let col = pet.typeColor(forDex: dex)
+            ctx.fillRoundRect(x, y, widths[i], h, 7, UI.white)
+            ctx.drawRoundRect(x, y, widths[i], h, 7, col)
+            ctx.gfxTextCentered2(label, x, widths[i], y + 6, 1, col)
+            x += widths[i] + gap
+        }
+    }
+
+    /// The animated sprite when its TPK2 file is present, else the thumbnail
+    /// atlas, else nothing -- in colour once known, a silhouette until then.
+    private func drawDetailPortrait(_ ctx: GraphicsContext, dex: Int16,
+                                    known: Bool, shiny: Bool, now: UInt64) {
         if let sprite = TPSprite.load(dex: dex, shiny: shiny),
            let a = sprite[.idle],
            let img = sprite.image(.idle, frame: TPSprite.frameIndex(
                a, elapsedMs: known ? now : 0, loop: true)) {
-            let s = sprite.scale(for: a, max: 6)
+            // max 4, not the profile card's 6: the masthead and the chips above
+            // leave a shorter band here than the old single-page layout had.
+            let s = sprite.scale(for: a, max: 4)
             let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
-            let rect = CGRect(x: TP.cx - w / 2,
-                              y: 300 - CGFloat((a.base > 0 ? a.base : a.h) * s),
-                              width: w, height: h)
+            let baseline: CGFloat = 318
+            let top = min(baseline - CGFloat((a.base > 0 ? a.base : a.h) * s),
+                          baseline - h)
+            let rect = CGRect(x: TP.cx - w / 2, y: max(top, 186), width: w, height: h)
             if known {
                 ctx.draw(Image(decorative: img, scale: 1).interpolation(.none), in: rect)
             } else {
@@ -2023,19 +2090,31 @@ struct PetScreen: View {
             }
         } else if let img = TPThumbs.shared.image(dex: dex, silhouette: !known),
                   let sz = TPThumbs.shared.size(dex: dex) {
-            drawThumb(ctx, img, size: sz, cellX: TP.cx - TP.galCell, cellY: 135, scale: 4)
+            drawThumb(ctx, img, size: sz, cellX: TP.cx - TP.galCell, cellY: 196, scale: 4)
         }
+    }
 
-        // How this one was obtained: raised, caught, or both -- they stack
-        // when both apply, hence each line's y depending on the other.
-        if registered {
-            ctx.gfxTextCentered(pet.raisedMarkText, caught ? 354 : 366, 2, UI.barOK)
-        }
-        if caught {
-            ctx.gfxTextCentered(pet.caughtMarkText, registered ? 376 : 366, 2, UI.barWarn)
-        }
+    /// Page two: the species' dex entry, wrapped inside a bordered panel.
+    private func drawDexEntry(_ ctx: GraphicsContext, dex: Int16, known: Bool) {
+        let x: CGFloat = 54, y: CGFloat = 150, w: CGFloat = 358, h: CGFloat = 176
+        ctx.fillRoundRect(x, y, w, h, 12, UI.white)
+        ctx.drawRoundRect(x, y, w, h, 12, UI.ink)
 
-        ctx.gfxTextCentered(pet.galleryBackText, 408, 2, UI.ink)
+        guard known, let text = TPDexEntryText.shared.entry(dex: dex) else {
+            // Nothing to show: not discovered yet, or no entry text installed.
+            // See TPDexEntryText for where the text is expected to come from.
+            let msg = known ? TPDexEntryText.shared.missingText : "???"
+            ctx.gfxTextCentered(msg, y + h / 2 - 10, 2, UI.track)
+            return
+        }
+        // 12px per character at size 2, minus the panel's inner padding.
+        let lines = TPDexEntryText.wrap(text, columns: Int((w - 28) / 12))
+        let lineH: CGFloat = 26
+        var ty = y + max(14, (h - CGFloat(lines.count) * lineH) / 2)
+        for line in lines {
+            ctx.gfxTextCentered(line, ty, 2, UI.ink)
+            ty += lineH
+        }
     }
 
     /// Upstream's `drawThumb`: centre the thumbnail inside a grid cell.
@@ -2129,8 +2208,8 @@ struct PetScreen: View {
             galleryFilter = 0
             return
         }
-        if galleryDetail != 0 {          // in detail: back to the grid
-            galleryDetail = 0
+        if galleryDetail != 0 {          // in detail: page between portrait and entry
+            galleryDetailPage = min(max(galleryDetailPage + (dir > 0 ? -1 : 1), 0), 1)
             return
         }
         // Swiping left advances a page; backing off page 0 leaves the gallery.
@@ -2274,6 +2353,7 @@ struct PetScreen: View {
         let dex = galleryDexAt(galleryPage * 16 + r * 4 + c)
         guard dex > 0 else { return }
         galleryDetail = dex
+        galleryDetailPage = 0
     }
 
     /// The fork's `GAME_MENU_TILES[5]`: Ball/Catch on row one, Memo/Clean on

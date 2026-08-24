@@ -83,7 +83,9 @@ NOT COVERED by any license granted here
 
   * Pokemon names, designs and species data — (c) Nintendo / Game Freak /
     The Pokemon Company. NOT distributed in this repository; no license to
-    them is granted or implied.
+    them is granted or implied. This includes Pokedex entry text: the dex
+    detail view reads it at runtime from a `mons/dex_entries.txt` the user
+    supplies, exactly as it reads sprites, and ships none of it.
 
   * Sprites from PMD SpriteCollab — CC BY-NC 4.0. NOT distributed here.
     https://github.com/PMDCollab/SpriteCollab

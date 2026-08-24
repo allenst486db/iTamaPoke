@@ -172,6 +172,24 @@ screen, so partial sets are fine.
 
 ---
 
+## Pokédex entries
+
+Tapping a species in the Pokédex opens a two-page detail view — the portrait
+with its type chips on the first page, its dex entry on the second. That entry
+text is Nintendo / Game Freak's writing, so, exactly like the sprites above,
+**none of it is committed here**. The page reads `mons/dex_entries.txt`,
+resolved the same way sprites are: `Documents/mons/` first (Files → On My
+iPhone → iTamaPoke), then the app bundle. One entry per line:
+
+```
+122|It uses its hands to create invisible walls.
+```
+
+Blank lines and `#` comments are ignored. With no file installed the page just
+says `NO DEX ENTRY`; nothing else about the screen changes.
+
+---
+
 ## Saves and the Files app
 
 The iPhone app keeps its save in **Files → On My iPhone → iTamaPoke** as
