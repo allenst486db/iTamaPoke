@@ -656,6 +656,14 @@ static uint16_t TPTypeColor(uint8_t type) {
   const DexEntry *d = TPDexEntry(dex);
   return TPTypeColor(d->type1);
 }
+- (uint8_t)type1ForDex:(int16_t)dex {
+  const DexEntry *d = TPDexEntry(dex);
+  return d->type1 < 19 ? d->type1 : (uint8_t)TYPE_NONE;
+}
+- (uint8_t)type2ForDex:(int16_t)dex {
+  const DexEntry *d = TPDexEntry(dex);
+  return d->type2 < 19 ? d->type2 : (uint8_t)TYPE_NONE;
+}
 - (NSString *)typeNameForType:(uint8_t)type {
   return [NSString stringWithUTF8String:type < 19 ? kTypeNames[type] : ""];
 }

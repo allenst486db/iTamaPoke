@@ -2048,20 +2048,21 @@ struct PetScreen: View {
     /// group -- the detail view's only splash of the species' own colour.
     private func drawTypeChips(_ ctx: GraphicsContext, dex: Int16, y: CGFloat) {
         let pet = model.pet
-        // typeText(forDex:) is "FIRE" or "FIRE FLY"; the chips want them apart.
-        let names = pet.typeText(forDex: dex).split(separator: " ").map(String.init)
-        guard !names.isEmpty else { return }
+        // Built from the type ids, not by splitting typeText(forDex:)'s joined
+        // string: each chip then carries its own type's colour, and a dual type
+        // like Mr. Mime's PSY/FAIRY reads as two differently-coloured chips
+        // rather than two in the primary's colour.
+        let ids = [pet.type1(forDex: dex), pet.type2(forDex: dex)].filter { $0 != 0 }
+        guard !ids.isEmpty else { return }
+        let chips = ids.map { (label: pet.typeName(forType: $0), color: pet.typeColor(forType: $0)) }
         let gap: CGFloat = 10, h: CGFloat = 24
-        let widths = names.map { CGFloat($0.count) * 6 + 22 }
-        let total = widths.reduce(0, +) + gap * CGFloat(names.count - 1)
+        let widths = chips.map { CGFloat($0.label.count) * 6 + 22 }
+        let total = widths.reduce(0, +) + gap * CGFloat(chips.count - 1)
         var x = TP.cx - total / 2
-        for (i, label) in names.enumerated() {
-            // Both chips take the primary type's colour: the port has no
-            // per-type lookup for a secondary name, only typeColor(forDex:).
-            let col = pet.typeColor(forDex: dex)
+        for (i, chip) in chips.enumerated() {
             ctx.fillRoundRect(x, y, widths[i], h, 7, UI.white)
-            ctx.drawRoundRect(x, y, widths[i], h, 7, col)
-            ctx.gfxTextCentered2(label, x, widths[i], y + 6, 1, col)
+            ctx.drawRoundRect(x, y, widths[i], h, 7, chip.color)
+            ctx.gfxTextCentered2(chip.label, x, widths[i], y + 6, 1, chip.color)
             x += widths[i] + gap
         }
     }

@@ -180,6 +180,11 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 // --- type (Box rows + Pokedex detail) ------------------------------------
 - (NSString *)typeTextForDex:(int16_t)dex;   ///< "FIRE" or "FIRE FLY"
 - (uint16_t)typeColorForDex:(int16_t)dex;    ///< RGB565, primary type
+/// The species' battle types as TYPE_* ids, so a caller that draws them
+/// separately can colour each one itself rather than splitting the joined
+/// string above. type2 is TYPE_NONE (0) for a single-type species.
+- (uint8_t)type1ForDex:(int16_t)dex;
+- (uint8_t)type2ForDex:(int16_t)dex;
 
 // --- expedition (ShadowEnemyx fork; see upstream-expanded/README.md) ----
 @property (nonatomic, readonly, copy) NSString *expeditionTitle;
