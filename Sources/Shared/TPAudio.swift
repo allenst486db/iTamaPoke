@@ -89,10 +89,19 @@ final class TPAudio {
         [SL(820, 42, 520, 72, .square)],                                        // ballBounce
         [NS(55, 56), SL(360, 110, 210, 68, .soft)],                             // ballMiss
         [SQ(1047, 54, 68)],                                                     // memoStep
-        [SOFT(349, 82, 76)],                                                    // memoPad0
-        [TRI(523, 82, 76)],                                                     // memoPad1
-        [TRI(784, 82, 76)],                                                     // memoPad2
-        [SQ(1047, 82, 76)],                                                     // memoPad3
+        // The four Memo pads are the one place the fork's note table is not
+        // copied verbatim. Its pads sit at 349/523/784/1047 Hz, which a
+        // dedicated speaker + amp reproduces evenly but a phone's tiny sealed
+        // driver does not: measured through a 500Hz-rolloff model of one, the
+        // 349Hz soft wave lands 14dB under the 1047Hz square, i.e. the low
+        // pads are inaudible while the top one is loud -- the pads stop being
+        // distinguishable by ear, which is the whole game. Transposed up an
+        // octave (same F-C-G-C intervals, same four waveforms, so each pad
+        // still has its own timbre) and level-matched, that spread is ~4dB.
+        [SOFT(698, 82, 135)],                                                   // memoPad0
+        [TRI(1047, 82, 105)],                                                   // memoPad1
+        [TRI(1568, 82, 96)],                                                    // memoPad2
+        [SQ(2093, 82, 72)],                                                     // memoPad3
         [SL(980, 42, 1320, 90, .tri), SQ(1760, 38, 82)],                        // attackQuick
         [NS(36, 46), SL(330, 74, 700, 92, .square), SQ(880, 52, 86)],           // attackHeavy
         [SL(300, 70, 190, 82, .square), NS(38, 44)],                            // enemyHit

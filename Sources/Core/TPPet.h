@@ -175,7 +175,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 // --- Pokedex All/Raised/Caught filter ------------------------------------
 @property (nonatomic, readonly, copy) NSString *raisedCaughtLine;  ///< "R:1 C:0"
 @property (nonatomic, readonly, copy) NSString *filterAllText;
-@property (nonatomic, readonly, copy) NSString *filterCaughtText;
+@property (nonatomic, readonly, copy) NSString *caughtMarkText;
 
 // --- type (Box rows + Pokedex detail) ------------------------------------
 - (NSString *)typeTextForDex:(int16_t)dex;   ///< "FIRE" or "FIRE FLY"

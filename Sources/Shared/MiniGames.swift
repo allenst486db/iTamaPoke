@@ -173,6 +173,13 @@ struct TPCatchGame {
         if misses >= 3 {
             newHigh = onGameOver(score)
             overUntil = now + 4000
+        } else {
+            // Respawning here is a deliberate divergence from upstream, which
+            // leaves the target up: there a bad tap costs a life AND leaves
+            // you the sliver of the target's <1s life to still hit it, so in
+            // practice the same target times out too and one miss reads as
+            // two lives gone at once. One bad tap, one life.
+            respawn(now: now)
         }
         return .miss
     }
@@ -280,7 +287,11 @@ struct TPMemoGame {
         return -1
     }
 
-    enum TapResult { case pad(Int), wrong, roundUp, finished, ignored }
+    /// Every accepted tap carries the pad it landed on, including the one that
+    /// completes a round -- the caller plays that pad's tone, and without the
+    /// index on `roundUp`/`finished` the last press of every round was silent
+    /// (and so read as "that press didn't register").
+    enum TapResult { case pad(Int), wrong, roundUp(Int), finished(Int), ignored }
 
     /// One tap during the player's turn. A wrong pad starts the fail flash (the
     /// game ends when it runs out, via step); completing the sequence starts
@@ -307,10 +318,10 @@ struct TPMemoGame {
             if seq.count >= 14 {
                 (newHigh, gain) = onGameOver(rounds)
                 overUntil = now + 4000
-                return .finished
+                return .finished(pad)
             }
             startRound(now: now)
-            return .roundUp
+            return .roundUp(pad)
         }
         return .pad(pad)
     }

@@ -620,7 +620,7 @@ static uint16_t TPBoxBuildList(int16_t *out) {
   return [NSString stringWithUTF8String:out];
 }
 - (NSString *)filterAllText    { return [NSString stringWithUTF8String:T(S_FILTER_ALL)]; }
-- (NSString *)filterCaughtText { return [NSString stringWithUTF8String:T(S_CAUGHT_MARK)]; }
+- (NSString *)caughtMarkText { return [NSString stringWithUTF8String:T(S_CAUGHT_MARK)]; }
 
 // Type names/colours aren't in the string table (upstream keeps them as a
 // raw per-language array inside TamaPoke.ino, which isn't vendored) --

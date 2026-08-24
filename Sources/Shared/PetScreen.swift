@@ -1223,9 +1223,10 @@ struct PetScreen: View {
             return
         }
         switch model.tapMemo(p) {
-        case .pad(let pad): model.playSfx(TPSfx(rawValue: TPSfx.memoPad0.rawValue + UInt8(pad)) ?? .memoPad0)
+        case .pad(let pad), .roundUp(let pad), .finished(let pad):
+            model.playSfx(TPSfx(rawValue: TPSfx.memoPad0.rawValue + UInt8(pad)) ?? .memoPad0)
         case .wrong: model.playSfx(.minigameBad)
-        case .roundUp, .finished, .ignored: break
+        case .ignored: break
         }
     }
 
@@ -1927,7 +1928,7 @@ struct PetScreen: View {
         ctx.gfxTextCentered("POKEDEX", 22, 3, UI.ink)
         ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
 
-        let filters = [pet.filterAllText, pet.raisedMarkText, pet.filterCaughtText]
+        let filters = [pet.filterAllText, pet.raisedMarkText, pet.caughtMarkText]
         for i in 0..<3 {
             let fx = 74 + CGFloat(i) * 106
             let selected = i == galleryFilter
@@ -1979,34 +1980,51 @@ struct PetScreen: View {
     private func renderGalleryDetail(_ ctx: GraphicsContext, dex: Int16, now: UInt64) {
         let pet = model.pet
         let registered = pet.isRegistered(dex)
+        let caught = pet.isCaught(dex)
+        // Catching a wild one reveals it just as raising it does -- keying the
+        // reveal on `registered` alone hid the name and type of everything the
+        // Box already lists.
+        let known = registered || caught
         let shiny = pet.isShinyRegistered(dex)
         let head = String(format: "N.%03d %@%@", dex, shiny ? "*" : "",
-                          registered ? TPDexName(dex) : "???")
+                          known ? TPDexName(dex) : "???")
         // Upstream shrinks the title rather than letting a long name overflow.
         let size = head.count <= 13 ? 3 : 2
         ctx.gfxTextCentered(head, size == 3 ? 56 : 60, size,
-                            registered ? TPDexAccent(dex) : UI.ink)
+                            known ? TPDexAccent(dex) : UI.ink)
+        if known {
+            ctx.gfxTextCentered(pet.typeText(forDex: dex), 94, 2, pet.typeColor(forDex: dex))
+        }
 
         // The full sprite when its TPK2 file is bundled: animated and in colour
-        // once registered, a frozen silhouette when not.
+        // once known, a frozen silhouette when not.
         if let sprite = TPSprite.load(dex: dex, shiny: shiny),
            let a = sprite[.idle],
            let img = sprite.image(.idle, frame: TPSprite.frameIndex(
-               a, elapsedMs: registered ? now : 0, loop: true)) {
+               a, elapsedMs: known ? now : 0, loop: true)) {
             let s = sprite.scale(for: a, max: 6)
             let w = CGFloat(a.w * s), h = CGFloat(a.h * s)
             let rect = CGRect(x: TP.cx - w / 2,
                               y: 300 - CGFloat((a.base > 0 ? a.base : a.h) * s),
                               width: w, height: h)
-            if registered {
+            if known {
                 ctx.draw(Image(decorative: img, scale: 1).interpolation(.none), in: rect)
             } else {
                 // Silhouette: stencil the sprite's shape in ink.
                 ctx.drawSilhouette(img, in: rect, UI.ink)
             }
-        } else if let img = TPThumbs.shared.image(dex: dex, silhouette: !registered),
+        } else if let img = TPThumbs.shared.image(dex: dex, silhouette: !known),
                   let sz = TPThumbs.shared.size(dex: dex) {
             drawThumb(ctx, img, size: sz, cellX: TP.cx - TP.galCell, cellY: 135, scale: 4)
+        }
+
+        // How this one was obtained: raised, caught, or both -- they stack
+        // when both apply, hence each line's y depending on the other.
+        if registered {
+            ctx.gfxTextCentered(pet.raisedMarkText, caught ? 354 : 366, 2, UI.barOK)
+        }
+        if caught {
+            ctx.gfxTextCentered(pet.caughtMarkText, registered ? 376 : 366, 2, UI.barWarn)
         }
 
         ctx.gfxTextCentered(pet.galleryBackText, 408, 2, UI.ink)
@@ -2032,6 +2050,13 @@ struct PetScreen: View {
             let ry = CGFloat(110 + i * 78)
             ctx.fillRoundRect(70, ry, 326, 70, 14, lerp565(accent, UI.white, 6, 8))
             ctx.drawRoundRect(70, ry, 326, 70, 14, accent)
+            // Upstream shows each starter's thumbnail beside its name; the
+            // name is offset to x=178 precisely to leave room for it. Absent
+            // (no atlas bundled) the row is still just a labelled button.
+            if let img = TPThumbs.shared.image(dex: dex, silhouette: false),
+               let sz = TPThumbs.shared.size(dex: dex) {
+                drawThumb(ctx, img, size: sz, cellX: 76, cellY: ry - 5, scale: 3)
+            }
             ctx.gfxText(TPDexName(dex), 178, ry + 24, 3, UI.ink)
         }
     }
@@ -2057,6 +2082,16 @@ struct PetScreen: View {
     /// from registering, which is not a failure mode here.
     private func onGesture(from: CGPoint, to: CGPoint, predicted: CGPoint) {
         let dx = to.x - from.x, dy = to.y - from.y
+        // On a tap-only screen every gesture is the tap it started as, however
+        // far SwiftUI thinks the finger travelled. A second finger landing
+        // mid-drag relocates the gesture and reports a jump of hundreds of
+        // points, which the thresholds below would read as a deliberate swipe;
+        // in a minigame that is a two-finger tap, not a swipe, and the tap it
+        // started as is the one the player meant.
+        guard swipeAllowed else {
+            onTap(from)
+            return
+        }
         let pdx = predicted.x - from.x, pdy = predicted.y - from.y
         if abs(pdx) > 80, abs(pdx) > abs(pdy) * 1.4 {
             onSwipe(pdx > 0 ? 1 : -1)
@@ -2071,6 +2106,7 @@ struct PetScreen: View {
     private func onSwipe(_ dir: Int) {
         let pet = model.pet
         if pet.awaitingStarter { return }
+        guard swipeAllowed else { return }
 
         if screen == .card {           // left advances, matching upstream
             cardPage = min(max(cardPage + (dir > 0 ? -1 : 1), 0), cardPageCount - 1)
@@ -2098,11 +2134,28 @@ struct PetScreen: View {
         galleryPage = min(next, galleryPageCount() - 1)
     }
 
+    /// Screens that are tap-only: a swipe here must do nothing rather than
+    /// fall through to the gallery/card/settings navigation below. Upstream
+    /// gates its own onSwipe/onSwipeV the same way (`if (gameOpen || sackOpen
+    /// || battleOpen || gameMenuOpen) return`). Without this a stray swipe --
+    /// and SwiftUI reports a wild translation the moment a second finger
+    /// lands, so two-finger tapping in a minigame produces them constantly --
+    /// kicked the player straight out of whatever they were playing.
+    private var swipeAllowed: Bool {
+        switch screen {
+        case .game, .sack, .battle:
+            return false
+        default:
+            return !gameMenuOpen && !TPBattle.shared.wildPromptActive
+        }
+    }
+
     /// Vertical swipe: up opens the stat card and closes it again, down opens
     /// settings — upstream's clock screen, minus the clock.
     private func onSwipeV(_ dir: Int) {
         let pet = model.pet
         if pet.awaitingStarter { return }
+        guard swipeAllowed else { return }
         if screen == .gallery {
             galleryDetail = 0
             screen = .idle
