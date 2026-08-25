@@ -2167,14 +2167,16 @@ struct PetScreen: View {
     }
 
     // Upstream picks between three starters on one screen. This build offers
-    // thirteen, which do not fit: the rows are shorter and paged, five at a
-    // time, swiped like the stat card. Rows stay inside y 96..386 because the
-    // round panel's corners are cut -- at y 440 only ~107px of width is left.
-    private static let starterRowsPerPage = 5
-    private static let starterRowH: CGFloat = 52
-    private static let starterRowGap: CGFloat = 6
+    // three generations' worth, so it keeps upstream's three-at-a-time screen
+    // and pages it: one trio per page, swiped like the stat card, headed by
+    // which generation you are looking at. Rows stay inside y 96..386 because
+    // the round panel's corners are cut -- at y 440 only ~107px of width is
+    // left. kStarterDex is in dex order, which is why page N is simply gen N+1.
+    private static let starterRowsPerPage = 3
+    private static let starterRowH: CGFloat = 72
+    private static let starterRowGap: CGFloat = 14
     private static func starterRowY(_ row: Int) -> CGFloat {
-        96 + CGFloat(row) * (starterRowH + starterRowGap)
+        120 + CGFloat(row) * (starterRowH + starterRowGap)
     }
     private static var starterPageCount: Int {
         max(1, (Int(TPStarterCount()) + starterRowsPerPage - 1) / starterRowsPerPage)
@@ -2184,6 +2186,7 @@ struct PetScreen: View {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(TPChooseStarterTitle(), 56, 2, UI.ink)
+        ctx.gfxTextCentered("GEN \(starterPage + 1)", 92, 2, UI.track)
 
         let first = starterPage * Self.starterRowsPerPage
         let last = min(first + Self.starterRowsPerPage, Int(TPStarterCount()))
@@ -2214,7 +2217,10 @@ struct PetScreen: View {
             // clears the row's right edge, but shrink anyway if a longer one
             // is ever added to the table.
             let size = CGFloat(name.count) * 18 <= 240 ? 3 : 2
-            ctx.gfxText(name, 150, ry + (size == 3 ? 12 : 16), size, UI.ink)
+            // gfxText's y is the top of the glyph box, and the box is ~13px per
+            // size step, so this is what centres the name in the taller row.
+            ctx.gfxText(name, 150, ry + (Self.starterRowH - CGFloat(size) * 13) / 2,
+                        size, UI.ink)
         }
 
         guard Self.starterPageCount > 1 else { return }

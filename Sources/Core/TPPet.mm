@@ -17,15 +17,11 @@
 static Pet gPet;
 
 // Upstream defines its starters in the .ino, not in a header, and offers the
-// three gen-1 ones. With the dex extended to gen 1-3
-// this build offers each generation's trio plus the electric pairs, in the
-// order they are shown: Pichu/Pikachu, Plusle/Minun, then the gen 1, 2 and 3
-// starters. Every one of them is a first-stage form that still evolves.
+// three gen-1 ones. With the dex extended to gen 1-3 this build offers each
+// generation's trio, in dex order. The picker shows exactly one trio per page
+// (see PetScreen's starterRowsPerPage), so this order is also the page order:
+// gen 1, gen 2, gen 3. Keep it a multiple of three, or a page ends up short.
 static const int16_t kStarterDex[] = {
-  172,  // Pichu
-   25,  // Pikachu
-  311,  // Plusle
-  312,  // Minun
     1,  // Bulbasaur
     4,  // Charmander
     7,  // Squirtle

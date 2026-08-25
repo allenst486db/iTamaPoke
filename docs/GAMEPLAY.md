@@ -19,11 +19,10 @@ repository. Sections below say so where it matters; see the main
 ## Getting a creature
 
 The app starts with no creature: tap the screen and pick a starter, or if
-you're mid-game already, hatch an egg. There are thirteen starters — Pichu,
-Pikachu, Plusle and Minun, plus each generation's trio (Bulbasaur/Charmander/
-Squirtle, Chikorita/Cyndaquil/Totodile, Treecko/Torchic/Mudkip) — laid out
-five to a page across three pages. Swipe up or down to change page; the dots
-under the list show where you are. An egg's rarity (never its species) is
+you're mid-game already, hatch an egg. The starters are each generation's
+trio — Bulbasaur/Charmander/Squirtle, Chikorita/Cyndaquil/Totodile,
+Treecko/Torchic/Mudkip — one trio per page, headed GEN 1/2/3. Swipe left or
+right to change generation; the dots under the list show where you are. An egg's rarity (never its species) is
 visible before it hatches — a rarer egg is worth waiting for if you want a
 better starting roll on stats, but any egg eventually hatches into a normal
 creature that grows the same way.
@@ -233,9 +232,8 @@ minigame trains SPEED and burns weight; training sack trains STRENGTH
 petting +5 JOY and bond; sleep cuts drains to roughly a quarter speed and
 disables slip-ups/running away entirely.
 
-**Eggs:** first creature is a starter you pick from thirteen (Pichu,
-Pikachu, Plusle, Minun and all three generations' trios), paged five at a
-time. Every egg after rolls a rarity tier — Common/Rare/Legendary
+**Eggs:** first creature is a starter you pick — one of the nine, a
+generation per page. Every egg after rolls a rarity tier — Common/Rare/Legendary
 (Legendary only unlocks after 25+ registered species) — biased toward
 evolution lines you haven't completed, and shiny odds run from a base
 1-in-48 up to about 1-in-8 with strong streak and bond, doubling briefly
