@@ -93,6 +93,14 @@ enum UI {
     static func inkColor(night: Bool) -> UInt16 { night ? inkNight : ink }
 }
 
+/// Backing store for `gfxTextWidth`'s cache. A plain global rather than a
+/// stored property because `GraphicsContext` is a value type re-created every
+/// frame, so per-instance caching would cache nothing.
+private enum TPTextWidthCache {
+    struct Key: Hashable { let size: Int; let string: String }
+    static var storage: [Key: CGFloat] = [:]
+}
+
 // MARK: - Arduino_GFX primitives on GraphicsContext
 
 extension GraphicsContext {
@@ -155,8 +163,15 @@ extension GraphicsContext {
     // MARK: Text
     //
     // Arduino_GFX's built-in font advances 6*size px per glyph from a top-left
-    // cursor. A monospaced face at 10*size pt advances 6*size, which keeps every
-    // `CX - strlen(s) * 6` centring expression in the firmware correct as written.
+    // cursor, which is why the firmware's own centring idiom is
+    // `CX - strlen(s) * (3*size)`. The monospaced system font this port draws
+    // with matches that closely enough for ASCII (~3% off), but has no glyphs
+    // at all for Hangul -- Korean falls back to Apple SD Gothic Neo, which
+    // isn't monospaced and measures ~1.44x wider per character. Mixed strings
+    // (Korean + a space, say) even split into runs in different fonts. See
+    // kor_patch/FEASIBILITY.ko.md. `gfxTextWidth` below measures the actual
+    // resolved glyphs instead of assuming a fixed advance, so every centring/
+    // right-align/fit call site is correct in every language, not just ASCII.
 
     /// Draws like `setCursor(x, y); print(s)` — `y` is the top of the glyph box.
     func gfxText(_ s: String, _ x: CGFloat, _ y: CGFloat, _ size: Int, _ c: UInt16) {
@@ -166,16 +181,30 @@ extension GraphicsContext {
         draw(t, at: CGPoint(x: x, y: y), anchor: .topLeading)
     }
 
+    /// The real rendered width of `s` at `size`, replacing the firmware's
+    /// `strlen(s) * 6 * size` assumption. Cached by (size, string): this runs
+    /// every frame for on-screen labels, and `resolve(_:).measure(in:)` is not
+    /// free.
+    func gfxTextWidth(_ s: String, _ size: Int) -> CGFloat {
+        let key = TPTextWidthCache.Key(size: size, string: s)
+        if let cached = TPTextWidthCache.storage[key] { return cached }
+        let t = Text(s)
+            .font(.system(size: CGFloat(size) * 10, weight: .semibold, design: .monospaced))
+        let w = resolve(t).measure(in: CGSize(width: .infinity, height: .infinity)).width
+        TPTextWidthCache.storage[key] = w
+        return w
+    }
+
     /// Centred on `TP.cx`, matching the firmware's `CX - strlen(s) * (3*size)` idiom.
     func gfxTextCentered(_ s: String, _ y: CGFloat, _ size: Int, _ c: UInt16) {
-        gfxText(s, TP.cx - CGFloat(s.count) * CGFloat(size) * 3, y, size, c)
+        gfxText(s, TP.cx - gfxTextWidth(s, size) / 2, y, size, c)
     }
 
     /// Centred within a `w`-wide box starting at `x` (a button label, say),
     /// rather than on the whole panel like `gfxTextCentered`.
     func gfxTextCentered2(_ s: String, _ x: CGFloat, _ w: CGFloat, _ y: CGFloat,
                           _ size: Int, _ c: UInt16) {
-        gfxText(s, x + (w - CGFloat(s.count) * CGFloat(size) * 6) / 2, y, size, c)
+        gfxText(s, x + (w - gfxTextWidth(s, size)) / 2, y, size, c)
     }
 
     /// An SF Symbol where the firmware drew a 16x16 pixel-map icon. Deliberate

@@ -1,9 +1,12 @@
 #pragma once
 #include <Arduino.h>
 
-// Idiomas soportados. La fuente del firmware no tiene acentos: ambos textos van
-// sin tildes ni enes (igual que ya iba el espanol).
-enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT, LANG_COUNT };
+// Idiomas soportados. La fuente del firmware no tenia acentos (por eso el
+// espanol ya iba sin tildes ni enes), pero este port dibuja con la fuente del
+// sistema, que si reproduce UTF-8 de verdad -- LANG_KO es el primer idioma no
+// ASCII de la tabla. Anadido al final a proposito: el indice de idioma
+// guardado en cada partida sigue siendo valido para quien ya tenia una.
+enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT, LANG_KO, LANG_COUNT };
 #define LANG_DEFAULT LANG_EN  // idioma por defecto: ingles
 
 extern Lang gLang;  // idioma activo (definido en i18n.cpp)

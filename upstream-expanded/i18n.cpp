@@ -5,8 +5,12 @@
 
 Lang gLang = LANG_DEFAULT;
 
-// Tabla de cadenas [idioma][id]. Sin acentos ni enes: la fuente bitmap del
-// firmware no los tiene (por eso el espanol ya iba "Esta", "bano", etc.).
+// Tabla de cadenas [idioma][id]. Los primeros seis idiomas van sin acentos
+// ni enes porque la fuente bitmap del firmware no los tiene (por eso el
+// espanol ya iba "Esta", "bano", etc.) -- pero este port dibuja con la fuente
+// del sistema, que si reproduce UTF-8, y KO es la primera fila con texto no
+// ASCII (const char* sigue siendo UTF-8 de todas formas; ver
+// kor_patch/FEASIBILITY.ko.md).
 static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
   // ---------------- ES ----------------
   {
@@ -362,6 +366,71 @@ static const char *const STRINGS[LANG_COUNT][STR_COUNT] = {
     "JOGAR", "Niv.%u", "R%u", "C:%u A:%u", "NOVO", "FLASH/NAO",
     "BOM DIA",
   },
+  // ---------------- KO ----------------
+  // Format specifiers are kept in the SAME ORDER as the English row even
+  // where natural Korean word order would put them differently (e.g.
+  // S_NEXT_LVL_FMT), because T(id) is filled with printf-style varargs at a
+  // fixed call-site order -- reordering %u/%s here without reordering the
+  // caller would silently swap which value lands in which blank. See
+  // kor_patch/FEASIBILITY.ko.md.
+  {
+    "진화 중!", "냠냠!", "마음에 들어해요!", "배고파요!", "목욕이 필요해요!",
+    "지쳤어요...", "슬퍼해요...", "조금 통통해요...", "이로치예요!!", "행복해요",
+    "고마워요! 안녕", "가출했어요...", "잘 가! 손을 흔들며...",
+    "알", "전설의 알!?", "희귀한 알!", "알을 톡톡...", "움직여요!", "거의 다 됐어요!",
+    "도감 %u/386",
+    "%s%s Lv.%u",
+    "%s 놓아줄까요?", "예", "아니오",
+    "%u회 명중", "힘 +%u", "신기록!", "최고: %u", "빠르게!",
+    "점수: %u", "정말 즐거워요!", "+행복",
+    "시간 설정", "시", "분", "위로 스와이프: 취소", "언어",
+    "메달!", "최고예요!", "%u일 연속!",
+    "연속 %u  최고 %u", "유대감", "열매 ???", "빨간 열매", "파란 열매", "초록 열매",
+    "%s   나이 %lud", "이름 탭: 이름변경",
+    "배틀", "공격", "방어", "속도", "무게", "힘 훈련",
+    "메달 %d/%d", "탭: 뒤로",
+    "이름:", "탭하면 뒤로",
+    "포만", "기분", "기력", "청결",
+    "최고 %u",
+    "진행도", "Lv.%u", "%u분 후 Lv.%u", "진화", "최종 형태",
+    "진화 준비 완료!", "진화하려면 전부 40 이상",
+    "%u레벨에 진화", "실수: %u",
+    "소리 전체", "소리 중간", "소리 최소", "소리 끔", "절전 켬", "절전 끔",
+    "진화!", "%s가 할 말이 있대요...", "%s가 버려진 기분이래요...",
+    "진화할까요?", "형태 유지", "작별할까요?", "작별", "계속 함께",
+    "스타터를 선택하세요",
+    "스프라이트 없음", "SD 카드에 넣어주세요",
+    "야생 배틀", "싸우기", "도망", "승리!", "패배", "%u라운드", "데미지 %u/%u", "확인",
+    "공격", "회피", "휴식", "%u 명중", "빗나감!", "회피!", "휴식 +%u", "도망침",
+    "승/패 %u/%u", "연승 %u", "최고 %u", "공격 +%u", "방어 +%u", "속도 +%u", "청결 +%u",
+    "반격 준비", "휴식 횟수 소진", "야생 배틀?", "나중에",
+    "약공격", "강공격",
+    "상대가 회피함", "방어",
+    "공놀이", "캐치", "메모", "청소", "타입", "캐치!", "청소!", "타입!", "라운드 %u",
+    "발견!", "쓰담!", "행운!",
+    "성격", "균형형", "장난꾸러기", "용감형", "차분형", "느긋형",
+    "안정적", "놀이를 좋아함", "배틀 준비됨", "여유로움", "편안함",
+    "기록", "나이 %lud",
+    "일일목표", "완료", "보너스", "돌보기", "놀기", "승리", "포획 5회", "메모 3회",
+    "포획", "포기", "포획!", "놓침", "포획됨", "육성함",
+    "전체",
+    "효과적", "약함",
+    "박스", "포획 기록 없음", "포획 %u/386",
+    "행복!", "유대감 +1", "대기중",
+    "아침", "낮", "저녁", "밤",
+    "도감 목표 %u", "도감 보상", "발견 %u/386",
+    "도감", "타입", "육성함", "%u/%u",
+    "아깝다!",
+    "원정", "15분", "30분", "60분", "%u분 후 귀환", "도착!", "탐방", "가방",
+    "수령", "가방", "가방이 꽉 참", "기력 %u 필요",
+    "간식", "기력 드링크", "케어 키트", "훈련권", "발견: %s",
+    "공격", "방어", "속도", "최대치",
+    "컬렉션", "프레임 %u/%u", "새 프레임!",
+    "트레이너", "스카우트", "컬렉터", "연구자", "마스터", "올클리어",
+    "순서를 잘 보세요", "당신 차례 %u/%u", "이거예요!",
+    "놀기", "Lv.%u", "R%u", "R:%u C:%u", "신규", "FLASH/NO",
+    "좋은 아침",
+  },
 };
 
 // Nombres de medalla en sus tres longitudes [idioma][medalla].
@@ -372,6 +441,7 @@ static const char *const MED_NAME[LANG_COUNT][MED_COUNT] = {
   { "Lv.10", "Lv.25", "Lv.50", "BEERE", "7 SERIE", "BINDUNG", "ENDFORM", "FIT" },
   { "Lv.10", "Lv.25", "Lv.50", "BACCA", "SERIE 7", "LEGAME", "FORMA MAX", "IN FORMA" },
   { "Niv.10", "Niv.25", "Niv.50", "BAGA", "SEQ 7", "LACO", "FORMA MAX", "EM FORMA" },
+  { "Lv.10", "Lv.25", "Lv.50", "열매", "연속 7일", "유대", "최고 컨디션", "건강함" },
 };
 static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Nv10", "Nv25", "Nv50", "BAYA", "7DIAS", "VINC", "TOPE", "SANO" },
@@ -380,6 +450,7 @@ static const char *const MED_LBL[LANG_COUNT][MED_COUNT] = {
   { "Lv10", "Lv25", "Lv50", "BEERE", "7TAGE", "BND", "END", "FIT" },
   { "Lv10", "Lv25", "Lv50", "BACCA", "7GG", "LEG", "MAX", "FIT" },
   { "Niv10", "Niv25", "Niv50", "BAGA", "7DIAS", "LACO", "MAX", "FIT" },
+  { "Lv10", "Lv25", "Lv50", "열매", "7일", "유대", "최고", "건강" },
 };
 static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAYA HALLADA",
@@ -394,6 +465,8 @@ static const char *const MED_DSC[LANG_COUNT][MED_COUNT] = {
     "SERIE 7 GIORNI", "LEGAME MAX", "FORMA FINALE", "IN FORMA" },
   { "NIVEL 10", "NIVEL 25", "NIVEL 50", "BAGA ACHADA",
     "SEQ 7 DIAS", "LACO MAX", "FORMA FINAL", "EM FORMA" },
+  { "레벨 10", "레벨 25", "레벨 50", "열매 발견",
+    "연속 7일", "유대감 최대", "최종 진화", "건강함" },
 };
 
 const char *T(StrId id) { return STRINGS[gLang][id]; }
