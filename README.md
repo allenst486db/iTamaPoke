@@ -99,9 +99,8 @@ SPEED; the training sack trains STRENGTH; bath clears mess; petting is a
 small JOY/bond bump; sleep slows every drain roughly 4× and disables
 slip-ups and running away.
 
-**Eggs:** your very first creature is a starter you pick from thirteen —
-Pichu, Pikachu, Plusle, Minun, and each generation's trio — shown five to a
-page over three swipeable pages. Every egg after
+**Eggs:** your very first creature is a starter you pick from nine — each
+generation's trio, one generation per swipeable page. Every egg after
 that rolls a rarity (Common/Rare/Legendary — Legendary only unlocks after
 you've registered 25+ species), biased toward evolution lines you haven't
 finished, improved by streak/bond, and shiny odds run from a base **1-in-48**
@@ -179,6 +178,12 @@ the watch app afterward tends to make that happen immediately.
 copies sprites from the `upstream/` submodule straight into the build, so
 they're baked into the app the moment you build. See
 [docs/INSTALL.md](docs/INSTALL.md) ("Path C") for the exact commands.
+
+`upstream/` carries the gen-1 151 only. Gen 2-3 sprites, and the shiny
+variants of everything, are built from PMD SpriteCollab with
+`Scripts/pack_shiny_sprites.py` (shiny) into the same folder. Shiny is a rare
+recolour a creature can hatch with — a species without a shiny file simply
+hatches looking normal, still marked with a `*`.
 
 A species with no sprite file just shows a placeholder instead of a broken
 screen, so partial sets are fine.

@@ -9,8 +9,12 @@
 #
 #   Scripts/fetch_sprites.sh 7           # one species (Squirtle)
 #   Scripts/fetch_sprites.sh 1 4 7       # several
-#   Scripts/fetch_sprites.sh all         # all 151, about 20 MB
+#   Scripts/fetch_sprites.sh all         # every species upstream ships
 #   Scripts/fetch_sprites.sh --shiny 7   # include the shiny variant
+#
+# upstream/ carries the gen-1 151 only. Gen 2-3, and the shiny variants for
+# them, are built with Scripts/pack_shiny_sprites.py, which writes into the
+# same Resources/mons/ this script fills.
 #
 # A species with no file here simply falls back to the firmware's own
 # "No sprites" notice, so copying a subset is a supported state, not a broken one.
@@ -65,7 +69,7 @@ else
   done
 fi
 
-# The Pokedex grid reads this one atlas rather than 151 sprite files, so it is
+# The Pokedex grid reads this one atlas rather than the per-species files, so it is
 # worth having even when only a few species were copied.
 if [ -f "$SRC/thumbs.bin" ]; then
   cp "$SRC/thumbs.bin" "$DST/thumbs.bin"
