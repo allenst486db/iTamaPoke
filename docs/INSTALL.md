@@ -43,10 +43,19 @@ the App Store — no paid account needed).
 2. Click **Build (unsigned)** in the left sidebar.
 3. Click the most recent run at the top of the list — it should have a green
    checkmark ✅ next to it.
-4. Scroll down to **Artifacts** and click **TamaPoke-unsigned-ipa** to
-   download it. It downloads as a `.zip` — unzip it, and you'll have a file
-   called `TamaPoke-unsigned.ipa`. That's the app, just not yet signed for
+4. Scroll down to **Artifacts** — there are two files. Download
+   **`TamaPoke-unsigned-nowatch-ipa`** (iPhone only). It downloads as a
+   `.zip` — unzip it, and you'll have a file called
+   `TamaPoke-unsigned-nowatch.ipa`. That's the app, just not yet signed for
    your phone (see below for what that means).
+
+   > Ignore `TamaPoke-unsigned-withwatch-ipa`. It's the same app with the
+   > Apple Watch companion app built in, kept around for reference — but a
+   > free Apple ID can't provision a second, embedded watch app, so AltStore
+   > refuses to install that file at all, and Sideloadly installs the phone
+   > app but silently drops the watch half. If you want this on your watch
+   > without a paid developer account, use **Path C** below (Xcode, connected
+   > directly to your paired watch) instead of sideloading.
 
 ### 2. Install a sideloading tool
 
@@ -68,7 +77,7 @@ this purpose — install whichever from its own website.
 **With Sideloadly:**
 1. Connect your iPhone to your computer with a USB cable, and open
    Sideloadly.
-2. Drag `TamaPoke-unsigned.ipa` into the Sideloadly window.
+2. Drag `TamaPoke-unsigned-nowatch.ipa` into the Sideloadly window.
 3. Enter your Apple ID email in the box provided.
 4. Click **Start**. It'll ask for your Apple ID password at some point —
    this goes directly to Apple to sign the app, not to us or anyone else.
@@ -80,7 +89,7 @@ this purpose — install whichever from its own website.
    first time, which needs the phone connected once.
 2. Make sure your phone and computer are on the **same Wi-Fi network**.
 3. On your iPhone, open the **AltStore** app → **My Apps** → tap the **+**
-   button → choose `TamaPoke-unsigned.ipa`.
+   button → choose `TamaPoke-unsigned-nowatch.ipa`.
 4. Enter your Apple ID if asked. Wait for the install.
 
 ### 4. Trust the app on your iPhone
@@ -117,13 +126,10 @@ README](../README.md#sprites). Add them like this:
 7. Fully close the iTamaPoke app (swipe it away in the app switcher) and
    reopen it. The creature should now appear instead of a placeholder.
 
-If you also have an Apple Watch paired with this iPhone and installed the
-watch app too, opening the phone app for a bit will try to send the same
-files over automatically. Opening the watch app afterward usually makes
-that arrive right away — see [the main README](../README.md#sprites) for
-more on this, and note that watch installs over sideloading are the least
-reliable part of this whole setup (Path C below is the reliable one for the
-watch specifically).
+This `.ipa` doesn't include the Apple Watch app — see the note in step 1. If
+you want the game on a paired Apple Watch without a paid developer account,
+use Path C below (build with Xcode, connected directly to your watch)
+instead; there's no sideloading route to it on a free account.
 
 ### 6. Keep it working (every 7 days)
 

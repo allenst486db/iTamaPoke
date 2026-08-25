@@ -148,9 +148,19 @@ The short version — three ways to get this running, easiest first:
 
 | | Needs | Works on | Apple Watch | Notes |
 |---|---|---|---|---|
-| **Unsigned `.ipa` + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | often not carried over — see note below | Easiest path; re-sign every 7 days. **Still being verified — see the warning above.** |
+| **Unsigned `.ipa` (no-watch) + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | not included in this build — see note below | Easiest path; iPhone only; re-sign every 7 days |
 | **Signed `.ipa` from GitHub Actions** | paid Apple Developer account ($99/yr) | Mac or Windows | installs correctly | No sideloading tool needed at all |
 | **Build with Xcode yourself** | a Mac | Mac only | most reliable path | For anyone comfortable with Xcode already |
+
+**A free Apple ID cannot sideload the watch app, full stop** — a free
+provisioning profile can't cover a second, embedded watchOS app. The
+"Build (unsigned)" CI job produces two `.ipa` files for exactly this reason:
+`TamaPoke-unsigned-nowatch.ipa` (iPhone only — download this one) and
+`TamaPoke-unsigned-withwatch.ipa` (kept for reference; AltStore refuses to
+install it and Sideloadly drops the watch app while installing the phone app,
+so don't sideload it). If you want the game on your watch without a paid
+account, use Path C (build with Xcode, connected directly to your paired
+watch) instead of sideloading.
 
 Whichever path you take, the app installs with **no creature art built in**
 — see [Sprites](#sprites) for how that gets added, which now works the same

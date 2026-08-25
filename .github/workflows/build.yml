@@ -1,14 +1,24 @@
 name: Build (unsigned)
 
-# Produces an UNSIGNED .ipa, for people WITHOUT a paid Apple Developer account.
-# It is not installable as-is: sign it with your own free Apple ID via
-# AltStore/SideStore (see README "Installing"). CI cannot do free personal
+# Produces TWO unsigned .ipa files, for people WITHOUT a paid Apple Developer
+# account. Neither is installable as-is: sign one with your own free Apple ID
+# via a resigning tool (see README "Installing"). CI cannot do free personal
 # provisioning -- that flow requires an interactive Apple ID sign-in and has no
 # API-key equivalent.
 #
+#   TamaPoke-unsigned-nowatch.ipa  -- iPhone only. Use this one. Resigning
+#     tools re-sign the whole bundle with a free provisioning profile, and a
+#     free profile cannot cover a second, embedded watchOS app: AltStore
+#     refuses the install outright, and Sideloadly installs the phone app but
+#     silently drops the watch app.
+#   TamaPoke-unsigned-withwatch.ipa -- iPhone + Watch, same known-broken
+#     resigning problem as above. Kept only so the watch app is buildable and
+#     inspectable without a paid account; do not install it via a resigning
+#     tool.
+#
 # If you DO have a paid Apple Developer Program membership, use
-# "Build (signed)" (build-signed.yml) instead: it emits a ready-to-install .ipa
-# and is the only path that installs the watch app reliably.
+# "Build (signed)" (build-signed.yml) instead: it emits a ready-to-install
+# .ipa and is the only path that installs the watch app reliably.
 
 on:
   push:
@@ -74,9 +84,12 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             | xcbeautify --renderer github-actions
 
-      # An .ipa is just a zip with the .app under Payload/. Signing tools
+      # An .ipa is just a zip with the .app under Payload/. Resigning tools
       # (AltStore, SideStore, Sideloadly) re-sign this on the way to the device.
-      - name: Package unsigned .ipa
+      # xcodegen's `embed: true` dependency always bakes the watch app into the
+      # archived .app, so the no-watch variant is made by stripping it back out
+      # of a copy of Payload/ before zipping -- there is no watch-free scheme.
+      - name: Package unsigned .ipa (with watch)
         run: |
           set -euo pipefail
           APP="build/TamaPoke.xcarchive/Products/Applications/TamaPoke.app"
@@ -84,26 +97,60 @@ jobs:
           rm -rf build/Payload
           mkdir -p build/Payload
           cp -R "$APP" build/Payload/
-          # A missing watch app is a build regression, not a footnote: the whole
-          # point of embedding it is that one sideloaded .ipa carries both apps.
+          # A missing watch app here is a build regression, not a footnote:
+          # the whole point of embedding it is that this variant carries both
+          # apps in one bundle for people willing to try installing it anyway.
           WATCH="build/Payload/TamaPoke.app/Watch/TamaPokeWatch.app"
           test -d "$WATCH" || { echo "::error::watch app was not embedded at $WATCH"; exit 1; }
-          ( cd build && zip -qry TamaPoke-unsigned.ipa Payload )
+          ( cd build && zip -qry TamaPoke-unsigned-withwatch.ipa Payload )
           {
-            echo "### Built \`TamaPoke-unsigned.ipa\`"
+            echo "### Built \`TamaPoke-unsigned-withwatch.ipa\`"
             echo
             echo "| | |"
             echo "|---|---|"
-            echo "| Size | $(du -h build/TamaPoke-unsigned.ipa | cut -f1) |"
+            echo "| Size | $(du -h build/TamaPoke-unsigned-withwatch.ipa | cut -f1) |"
             echo "| iOS binary | $(lipo -info build/Payload/TamaPoke.app/TamaPoke | sed 's/.*: //') |"
             echo "| Watch app | embedded ($(lipo -info "$WATCH/TamaPokeWatch" | sed 's/.*: //')) |"
             echo
-            echo "Unsigned. Sign it with your own Apple ID before installing -- see README \"Installing\"."
+            echo "Unsigned. A free-account resigning tool cannot provision the embedded"
+            echo "watch app -- AltStore refuses this file outright, Sideloadly drops the"
+            echo "watch app silently. Prefer \`TamaPoke-unsigned-nowatch.ipa\` unless you"
+            echo "are specifically testing the watch build."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Package unsigned .ipa (no watch, for free-account sideloading)
+        run: |
+          set -euo pipefail
+          rm -rf build/PayloadNoWatch
+          mkdir -p build/PayloadNoWatch
+          cp -R build/Payload/TamaPoke.app build/PayloadNoWatch/
+          rm -rf build/PayloadNoWatch/TamaPoke.app/Watch
+          rm -rf build/Payload
+          mv build/PayloadNoWatch build/Payload
+          ( cd build && zip -qry TamaPoke-unsigned-nowatch.ipa Payload )
+          {
+            echo "### Built \`TamaPoke-unsigned-nowatch.ipa\`"
+            echo
+            echo "| | |"
+            echo "|---|---|"
+            echo "| Size | $(du -h build/TamaPoke-unsigned-nowatch.ipa | cut -f1) |"
+            echo "| Watch app | not included (by design -- see README \"Installing\") |"
+            echo
+            echo "Unsigned. This is the file free-account users should sideload with"
+            echo "AltStore/SideStore/Sideloadly. Apple Watch install for a free account"
+            echo "requires building from source in Xcode directly, not an .ipa."
           } >> "$GITHUB_STEP_SUMMARY"
 
       - uses: actions/upload-artifact@v4
         with:
-          name: TamaPoke-unsigned-ipa
-          path: build/TamaPoke-unsigned.ipa
+          name: TamaPoke-unsigned-nowatch-ipa
+          path: build/TamaPoke-unsigned-nowatch.ipa
+          if-no-files-found: error
+          retention-days: 30
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TamaPoke-unsigned-withwatch-ipa
+          path: build/TamaPoke-unsigned-withwatch.ipa
           if-no-files-found: error
           retention-days: 30

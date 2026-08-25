@@ -140,9 +140,18 @@ C++에서 **한 줄 한 줄 그대로** 포팅됩니다.
 
 | | 필요한 것 | 지원 OS | 애플워치 | 비고 |
 |---|---|---|---|---|
-| **서명 안 된 `.ipa` + Sideloadly/AltStore** | 무료 Apple ID, Mac 불필요 | Mac 또는 **Windows** | 잘 안 옮겨질 수 있음(아래 참고) | 가장 쉬움; 7일마다 재서명. **위 경고처럼 아직 검증 중.** |
+| **서명 안 된 `.ipa`(워치 제외) + Sideloadly/AltStore** | 무료 Apple ID, Mac 불필요 | Mac 또는 **Windows** | 이 빌드엔 없음(아래 참고) | 가장 쉬움; 아이폰 전용; 7일마다 재서명 |
 | **GitHub Actions로 서명된 `.ipa`** | 유료 Apple Developer 계정($99/년) | Mac 또는 Windows | 정상 설치 | 사이드로딩 도구 아예 불필요 |
 | **Xcode로 직접 빌드** | Mac | Mac만 | 가장 안정적 | 이미 Xcode에 익숙한 분들에게 |
+
+**무료 Apple ID로는 워치 앱을 사이드로드할 방법이 아예 없습니다** — 무료
+프로비저닝 프로파일 하나로는 임베드된 두 번째 watchOS 앱까지 커버할 수
+없기 때문입니다. 그래서 "Build (unsigned)" CI 작업은 IPA를 두 개
+만듭니다: `TamaPoke-unsigned-nowatch.ipa`(아이폰 전용 — 이걸 받으세요)와
+`TamaPoke-unsigned-withwatch.ipa`(참고용으로만 남겨둠 — AltStore는 이
+파일 자체를 설치 거부하고, Sideloadly는 아이폰 앱만 설치하고 워치 부분은
+빠뜨립니다). 유료 계정 없이 워치에도 넣고 싶다면 사이드로딩 대신 경로
+C(Xcode로 워치와 직접 연결해 빌드)를 이용하세요.
 
 어느 경로로 설치하든 **캐릭터 아트 없이** 설치됩니다 — [스프라이트](#스프라이트)
 참고, 설치 방법과 무관하게 이제 동일한 방식으로 추가할 수 있습니다.
