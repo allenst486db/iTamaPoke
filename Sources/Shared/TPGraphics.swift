@@ -190,7 +190,7 @@ extension GraphicsContext {
         if let cached = TPTextWidthCache.storage[key] { return cached }
         let t = Text(s)
             .font(.system(size: CGFloat(size) * 10, weight: .semibold, design: .monospaced))
-        let w = resolve(t).measure(in: CGSize(width: .infinity, height: .infinity)).width
+        let w = resolve(t).measure(in: CGSize(width: CGFloat.infinity, height: CGFloat.infinity)).width
         TPTextWidthCache.storage[key] = w
         return w
     }
