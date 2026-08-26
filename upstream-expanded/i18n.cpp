@@ -4,6 +4,7 @@
 #include <Preferences.h>
 
 Lang gLang = LANG_DEFAULT;
+bool gDexNamesKorean = false;
 
 // Tabla de cadenas [idioma][id]. Los primeros seis idiomas van sin acentos
 // ni enes porque la fuente bitmap del firmware no los tiene (por eso el
@@ -473,7 +474,8 @@ const char *T(StrId id) { return STRINGS[gLang][id]; }
 
 const char *dexName(int16_t dex) {
   if (dex < 1 || dex > DEX_COUNT) return "?";
-  uint8_t lang = (gLang < LANG_COUNT) ? (uint8_t)gLang : LANG_DEFAULT;
+  uint8_t lang = gDexNamesKorean ? (uint8_t)LANG_KO
+                                 : ((gLang < LANG_COUNT) ? (uint8_t)gLang : LANG_DEFAULT);
   if (lang >= DEX_LANG_COUNT) lang = LANG_DEFAULT;
   return DEX_NAMES[lang][dex];
 }
@@ -485,6 +487,7 @@ void loadLang() {
   Preferences p;
   p.begin("tamapoke", true);  // solo lectura
   uint8_t v = p.getUChar("lang", LANG_DEFAULT);
+  gDexNamesKorean = p.getUChar("dexkr", 0) != 0;
   p.end();
   gLang = (v < LANG_COUNT) ? (Lang)v : LANG_DEFAULT;
 }
@@ -495,5 +498,13 @@ void setLang(Lang l) {
   Preferences p;
   p.begin("tamapoke", false);
   p.putUChar("lang", (uint8_t)l);
+  p.end();
+}
+
+void setDexNamesKorean(bool on) {
+  gDexNamesKorean = on;
+  Preferences p;
+  p.begin("tamapoke", false);
+  p.putUChar("dexkr", on ? 1 : 0);
   p.end();
 }

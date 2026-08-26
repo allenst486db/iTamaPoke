@@ -777,7 +777,24 @@ struct PetScreen: View {
     // language-code-standard ones (there is no "FR"/"DE" vs "France"/German"
     // distinction to make, but "KR" is the more immediately recognizable
     // 2-letter label for Korean to a Korean-reading user).
-    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT", "KR"]
+    //
+    // "kr" (lowercase, 8th slot) is a second, partial Korean mode: only
+    // species names and the dex screen's own chrome switch to Korean (see
+    // isDexKorean below); every other string stays in English. TPLanguage/
+    // TPSetLanguage map this 8-value index to (gLang, gDexNamesKorean) --
+    // see TPPet.mm.
+    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT", "KR", "kr"]
+
+    /// True for both Korean UI modes ("KR" full, "kr" partial) -- gates the
+    /// dex screen's own labels (which are tied to showing Korean species
+    /// names, not to the rest of the UI's language). Dex *entry* text
+    /// wrapping is intentionally not gated by this: that text comes from an
+    /// unlocalized external file (see TPDexEntryText), so only full "KR"
+    /// mode assumes it might actually be Korean.
+    private static func isDexKorean(_ idx: Int) -> Bool {
+        let code = langCodes[idx]
+        return code == "KR" || code == "kr"
+    }
     private static let langPill = CGRect(x: 336, y: 296, width: 96, height: 30)
     private static let sndPill = CGRect(x: 34, y: 296, width: 96, height: 30)
 
@@ -1981,7 +1998,7 @@ struct PetScreen: View {
         // languages show this in English too, an existing gap rather than
         // something new to Korean, so only Korean is special-cased here
         // rather than adding a StrId for all six just to fix this one word.
-        ctx.gfxTextCentered(Self.langCodes[Int(TPLanguage())] == "KR" ? "도감" : "POKEDEX", 22, 3, UI.ink)
+        ctx.gfxTextCentered(Self.isDexKorean(Int(TPLanguage())) ? "도감" : "POKEDEX", 22, 3, UI.ink)
         ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
 
         let filters = [pet.filterAllText, pet.raisedMarkText, pet.caughtMarkText]
@@ -2234,7 +2251,7 @@ struct PetScreen: View {
         // Same reasoning as the "POKEDEX" header above: Korean-only special
         // case rather than a new StrId, since the other languages already
         // show this in English and that gap is pre-existing, not new here.
-        let genLabel = Self.langCodes[Int(TPLanguage())] == "KR"
+        let genLabel = Self.isDexKorean(Int(TPLanguage()))
             ? "\(starterPage + 1)세대" : "GEN \(starterPage + 1)"
         ctx.gfxTextCentered(genLabel, 92, 2, UI.track)
 

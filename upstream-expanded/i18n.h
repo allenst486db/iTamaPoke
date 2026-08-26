@@ -100,3 +100,12 @@ const char *medalDesc(int i);  // descripcion larga de medalla
 
 void loadLang();             // lee el idioma de NVS (llamar en setup)
 void setLang(Lang l);        // cambia y persiste el idioma
+
+// Modo de nombres/dex en coreano sin traducir el resto de la UI ("kr"
+// parcial, frente a LANG_KO que traduce todo). Cuando esta activo, dexName()
+// devuelve DEX_NAMES[LANG_KO][...] sin importar gLang; T() no se ve afectado.
+// Vive aparte de gLang porque no es un idioma de UI real -- es una superposicion
+// sobre el idioma de UI elegido (ver TPSetLanguage/TPLanguage en TPPet.mm, que
+// mapean el indice de 8 posiciones del picker a (gLang, gDexNamesKorean)).
+extern bool gDexNamesKorean;
+void setDexNamesKorean(bool on);  // cambia y persiste el modo

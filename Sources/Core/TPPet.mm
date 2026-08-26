@@ -899,11 +899,29 @@ NSString *TPString(uint8_t strId) {
   return [NSString stringWithUTF8String:T((StrId)strId)];
 }
 
+// `lang` here is the settings picker's 8-slot UI index, not the raw `Lang`
+// enum: 0-5 are the plain languages, 6 is "KR" (full Korean: gLang=LANG_KO),
+// 7 is "kr" (species names + dex chrome only, in Korean, with everything
+// else staying in English -- see gDexNamesKorean in i18n.h/.cpp). Folding
+// the mapping in here keeps the Swift call sites unaware of the split.
 void TPSetLanguage(uint8_t lang) {
-  if (lang < LANG_COUNT) setLang((Lang)lang);
+  if (lang <= 5) {
+    setDexNamesKorean(false);
+    setLang((Lang)lang);
+  } else if (lang == 6) {
+    setDexNamesKorean(true);
+    setLang(LANG_KO);
+  } else if (lang == 7) {
+    setDexNamesKorean(true);
+    setLang(LANG_EN);
+  }
 }
 
-uint8_t TPLanguage(void) { return (uint8_t)gLang; }
+uint8_t TPLanguage(void) {
+  if (gLang == LANG_KO) return 6;
+  if (gDexNamesKorean) return 7;
+  return (uint8_t)gLang;
+}
 
 void TPSetSfxHandler(void (^handler)(uint8_t)) {
   gSfxBlock = [handler copy];
