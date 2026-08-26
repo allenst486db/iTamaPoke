@@ -48,6 +48,23 @@ enum TP {
     // "Let it go?" confirmation buttons.
     static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
     static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
+
+    /// Height of one `gfxText` line box at `size` — roughly `size * 13`, a
+    /// little more than its `size * 10`pt font. Upstream's bitmap font is
+    /// `size * 8`, which is why ports of its y values run low here.
+    static func lineHeight(_ size: Int) -> CGFloat { CGFloat(size) * 13 }
+
+    /// The `y` to hand `gfxText` so its line box centres on `centerY`.
+    ///
+    /// `gfxText`'s y is the TOP of the line box, not a baseline and not a
+    /// centre. Upstream can draw a label at a bar's own top edge and have it
+    /// look centred, because its bitmap glyphs are only `size * 8` tall
+    /// against a ~15px bar; here the same y puts the text's centre ~5px below
+    /// the bar's, which reads as every label sagging. Anything drawn beside a
+    /// bar, inside a box, or against a fixed-height row wants this.
+    static func textTop(centeredOn centerY: CGFloat, size: Int) -> CGFloat {
+        centerY - lineHeight(size) / 2
+    }
 }
 
 // MARK: - RGB565

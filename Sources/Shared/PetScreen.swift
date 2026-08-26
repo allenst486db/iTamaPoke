@@ -469,8 +469,11 @@ struct PetScreen: View {
             (78, 346, 2, pet.energy),   (244, 346, 3, pet.hygiene),
         ]
         for (x, y, label, value) in rows {
-            ctx.gfxText(TPBarLabel(label), x, y, 2, ink)
             let bx = x + 48, bw: CGFloat = 100, bh: CGFloat = 15
+            // Same sag as the stat card's rows (see drawCardStat): the label
+            // shares the bar's top y upstream, which only looks centred with
+            // its shorter bitmap glyphs.
+            ctx.gfxText(TPBarLabel(label), x, TP.textTop(centeredOn: y + bh / 2, size: 2), 2, ink)
             let fill: UInt16 = value >= 50 ? UI.barOK : (value >= 25 ? UI.barWarn : UI.barBad)
             ctx.fillRoundRect(bx, y, bw, bh, 4, UI.track)
             let fw = (bw - 4) * CGFloat(value) / 100
@@ -1408,13 +1411,14 @@ struct PetScreen: View {
         // kor_patch/FEASIBILITY.ko.md), though the mismatch was in the
         // original English layout too, just harder to notice there. Centring
         // each independently within the 34-tall box fixes both at once.
-        ctx.gfxText(label, x + 10, y + (34 - 13) / 2, 1, color)
+        ctx.gfxText(label, x + 10, TP.textTop(centeredOn: y + 17, size: 1), 1, color)
         // Upstream puts the number at y+14, where its 16px-tall bitmap glyphs
         // still clear the 34px box. The system font's size-2 line box is ~26px,
         // so the same offset hangs it out the bottom; centring it in the box
         // instead (below) fixes that the same way the label's centring does.
         let num = "\(value)"
-        ctx.gfxText(num, x + 118 - 12 - ctx.gfxTextWidth(num, 2), y + (34 - 26) / 2, 2, UI.ink)
+        ctx.gfxText(num, x + 118 - 12 - ctx.gfxTextWidth(num, 2),
+                    TP.textTop(centeredOn: y + 17, size: 2), 2, UI.ink)
     }
 
     private func dailyGoalColor(_ kind: Int) -> UInt16 {
@@ -1888,12 +1892,17 @@ struct PetScreen: View {
     /// Upstream's `drawCardStat`: label, value and a proportional bar.
     private func drawCardStat(_ ctx: GraphicsContext, y: CGFloat, label: String,
                               value: UInt16, maxBar: UInt16, color: UInt16) {
-        ctx.gfxText(label, 96, y, 2, UI.ink)
-        ctx.gfxText("\(value)", 330, y, 2, UI.ink)
-        let bw: CGFloat = 160
+        let bw: CGFloat = 160, barY = y + 2, barH: CGFloat = 11
+        // Upstream draws both labels at `y` and the bar at `y + 2`; with its
+        // 16px bitmap glyphs against an 11px bar that reads as centred. The
+        // system font's size-2 line box is 26px, so the same y put the text's
+        // centre 5.5px below the bar's -- every stat row looked like it sagged.
+        let textY = TP.textTop(centeredOn: barY + barH / 2, size: 2)
+        ctx.gfxText(label, 96, textY, 2, UI.ink)
+        ctx.gfxText("\(value)", 330, textY, 2, UI.ink)
         let fw = min(CGFloat(value) * bw / CGFloat(maxBar), bw)
-        ctx.fillRoundRect(150, y + 2, bw, 11, 3, UI.track)
-        if fw > 2 { ctx.fillRoundRect(150, y + 2, fw, 11, 3, color) }
+        ctx.fillRoundRect(150, barY, bw, barH, 3, UI.track)
+        if fw > 2 { ctx.fillRoundRect(150, barY, fw, barH, 3, color) }
     }
 
     /// The little streak flame, drawn as two stacked triangles.
