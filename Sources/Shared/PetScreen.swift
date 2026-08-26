@@ -1662,7 +1662,13 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, w, h, 9, count > 0 ? UI.white : 0xE4E7)
         ctx.drawRoundRect(x, y, w, h, 9, count > 0 ? col : UI.track)
         ctx.fillCircle(x + 22, y + 27, 12, count > 0 ? col : UI.track)
-        ctx.gfxText(pet.expeditionItemLabel(index), x + 42, y + 16, 1, count > 0 ? UI.ink : UI.track)
+        // Size 1 read as illegibly small (flagged directly: "글씨 너무 작아서
+        // 안 보임"). Size 2 first, dropping to size 1 only if it would run
+        // into the "x{count}" column -- a short label (간식) clears the 94px
+        // gap easily, but a longer one (기력 드링크) doesn't at size 2.
+        let label = pet.expeditionItemLabel(index)
+        let labelSize = ctx.gfxTextWidth(label, 2) <= 94 ? 2 : 1
+        ctx.gfxText(label, x + 42, y + 16, labelSize, count > 0 ? UI.ink : UI.track)
         ctx.gfxText("x\(count)", x + 136, y + 29, 2, count > 0 ? UI.ink : UI.track)
     }
 
