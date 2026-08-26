@@ -49,10 +49,12 @@ enum TP {
     static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
     static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
 
-    /// Height of one `gfxText` line box at `size` — roughly `size * 13`, a
-    /// little more than its `size * 10`pt font. Upstream's bitmap font is
+    /// Height of one `gfxText` line box at `size` — measured via
+    /// `resolve(_:).measure(in:)` (a fixed `Text("Hg8")` at each size,
+    /// screenshotted through a throwaway debug readout on the Settings
+    /// screen): exactly `size * 12` for this font. Upstream's bitmap font is
     /// `size * 8`, which is why ports of its y values run low here.
-    static func lineHeight(_ size: Int) -> CGFloat { CGFloat(size) * 13 }
+    static func lineHeight(_ size: Int) -> CGFloat { CGFloat(size) * 12 }
 
     /// The `y` to hand `gfxText` so its line box centres on `centerY`.
     ///
