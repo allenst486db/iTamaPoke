@@ -1401,13 +1401,20 @@ struct PetScreen: View {
                                        label: String, value: UInt16, color: UInt16) {
         ctx.fillRoundRect(x, y, 118, 34, 8, UI.white)
         ctx.drawRoundRect(x, y, 118, 34, 8, color)
-        ctx.gfxText(label, x + 10, y + 6, 1, color)
+        // The label (size 1) and the number (size 2) don't share a line box
+        // height, so the old shared `y+6` top looked centred for the number
+        // but left the label riding noticeably high above it -- visible as
+        // the two mismatched baselines the Korean screenshots surfaced (see
+        // kor_patch/FEASIBILITY.ko.md), though the mismatch was in the
+        // original English layout too, just harder to notice there. Centring
+        // each independently within the 34-tall box fixes both at once.
+        ctx.gfxText(label, x + 10, y + (34 - 13) / 2, 1, color)
         // Upstream puts the number at y+14, where its 16px-tall bitmap glyphs
-        // still clear the 34px box. The system font's size-2 line box is ~24px,
-        // so the same offset hangs it out the bottom; y+6 centres the digits in
-        // the box instead. The label is left of it, so sharing a top is fine.
+        // still clear the 34px box. The system font's size-2 line box is ~26px,
+        // so the same offset hangs it out the bottom; centring it in the box
+        // instead (below) fixes that the same way the label's centring does.
         let num = "\(value)"
-        ctx.gfxText(num, x + 118 - 12 - ctx.gfxTextWidth(num, 2), y + 6, 2, UI.ink)
+        ctx.gfxText(num, x + 118 - 12 - ctx.gfxTextWidth(num, 2), y + (34 - 26) / 2, 2, UI.ink)
     }
 
     private func dailyGoalColor(_ kind: Int) -> UInt16 {
