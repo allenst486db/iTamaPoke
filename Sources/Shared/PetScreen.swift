@@ -769,7 +769,12 @@ struct PetScreen: View {
     /// hand-set time instead of the system clock is precisely the bug that made
     /// the sky run nine hours early. What remains is the rest of that screen:
     /// the language picker and the sound toggle, which are real settings.
-    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT", "KO"]
+    // "KR" rather than the ISO 639-1 code "KO" -- matches how the other six
+    // codes here are already country/keyboard-style abbreviations, not
+    // language-code-standard ones (there is no "FR"/"DE" vs "France"/German"
+    // distinction to make, but "KR" is the more immediately recognizable
+    // 2-letter label for Korean to a Korean-reading user).
+    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT", "KR"]
     private static let langPill = CGRect(x: 336, y: 296, width: 96, height: 30)
     private static let sndPill = CGRect(x: 34, y: 296, width: 96, height: 30)
 
@@ -1950,7 +1955,7 @@ struct PetScreen: View {
         // languages show this in English too, an existing gap rather than
         // something new to Korean, so only Korean is special-cased here
         // rather than adding a StrId for all six just to fix this one word.
-        ctx.gfxTextCentered(Self.langCodes[Int(TPLanguage())] == "KO" ? "도감" : "POKEDEX", 22, 3, UI.ink)
+        ctx.gfxTextCentered(Self.langCodes[Int(TPLanguage())] == "KR" ? "도감" : "POKEDEX", 22, 3, UI.ink)
         ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
 
         let filters = [pet.filterAllText, pet.raisedMarkText, pet.caughtMarkText]
@@ -2143,7 +2148,7 @@ struct PetScreen: View {
         // (not assumed from a character count) so this wraps correctly in
         // every language, and Korean wraps character-by-character rather than
         // by word -- see TPDexEntryText.wrap.
-        let byCharacter = Self.langCodes[Int(TPLanguage())] == "KO"
+        let byCharacter = Self.langCodes[Int(TPLanguage())] == "KR"
         func layout(size: Int) -> (lines: [String], lineH: CGFloat) {
             (TPDexEntryText.wrap(text, maxWidth: usableW, byCharacter: byCharacter) {
                 ctx.gfxTextWidth($0, size)
@@ -2203,7 +2208,7 @@ struct PetScreen: View {
         // Same reasoning as the "POKEDEX" header above: Korean-only special
         // case rather than a new StrId, since the other languages already
         // show this in English and that gap is pre-existing, not new here.
-        let genLabel = Self.langCodes[Int(TPLanguage())] == "KO"
+        let genLabel = Self.langCodes[Int(TPLanguage())] == "KR"
             ? "\(starterPage + 1)세대" : "GEN \(starterPage + 1)"
         ctx.gfxTextCentered(genLabel, 92, 2, UI.track)
 
