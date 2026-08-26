@@ -48,6 +48,25 @@ enum TP {
     // "Let it go?" confirmation buttons.
     static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
     static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
+
+    /// Height of one `gfxText` line box at `size` — measured via
+    /// `resolve(_:).measure(in:)` (a fixed `Text("Hg8")` at each size,
+    /// screenshotted through a throwaway debug readout on the Settings
+    /// screen): exactly `size * 12` for this font.
+    static func lineHeight(_ size: Int) -> CGFloat { CGFloat(size) * 12 }
+
+    /// The `y` to hand `gfxText` so its line box centres on `centerY`.
+    ///
+    /// `gfxText`'s y is the TOP of the line box, not a baseline and not a
+    /// centre. A label drawn at a bar's/button's own top edge only looks
+    /// centred when the glyphs are shorter than the box is tall; against a
+    /// button sized to the system font's own line box, the same y puts the
+    /// text's centre several px below the button's, which reads as every
+    /// label sagging. Anything drawn beside a bar, inside a box, or against
+    /// a fixed-height row wants this instead of a hand-picked offset.
+    static func textTop(centeredOn centerY: CGFloat, size: Int) -> CGFloat {
+        centerY - lineHeight(size) / 2
+    }
 }
 
 // MARK: - RGB565

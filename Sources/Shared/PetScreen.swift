@@ -345,8 +345,9 @@ struct PetScreen: View {
         ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 8, color)
         ctx.fillCircle(r.minX + 17, r.minY + 17, 9, color)
         let mark = state == 2 ? "!" : (state == 3 ? "+" : ">")
-        ctx.gfxText(mark, r.minX + 14, r.minY + 12, 1, UI.white)
-        ctx.gfxText(pet.expeditionHudLabel, r.minX + 31, r.minY + 13, 1, UI.ink)
+        ctx.gfxText(mark, r.minX + 14, TP.textTop(centeredOn: r.minY + 17, size: 1), 1, UI.white)
+        ctx.gfxText(pet.expeditionHudLabel, r.minX + 31,
+                    TP.textTop(centeredOn: r.minY + r.height / 2, size: 1), 1, UI.ink)
     }
 
     /// Port of `drawGameMenu`: five tiles now, not two -- Memo/Clean/Type are
@@ -368,7 +369,7 @@ struct PetScreen: View {
             let t = tiles[i]
             ctx.fillRoundRect(t.minX, t.minY, t.width, t.height, 14, cols[i])
             ctx.drawRoundRect(t.minX, t.minY, t.width, t.height, 14, UI.ink)
-            ctx.gfxTextCentered2(labels[i], t.minX, t.width, t.midY - 8, 2,
+            ctx.gfxTextCentered2(labels[i], t.minX, t.width, TP.textTop(centeredOn: t.midY, size: 2), 2,
                                  i == 1 ? UI.ink : UI.bgDay)
         }
     }
@@ -382,8 +383,8 @@ struct PetScreen: View {
 
         ctx.fillRoundRect(93, 226, 280, 44, 12, UI.barBad)
         ctx.fillRoundRect(93, 278, 280, 44, 12, UI.track)
-        ctx.gfxTextCentered(b.fightText, 240, 2, UI.white)
-        ctx.gfxTextCentered(b.laterText, 292, 2, UI.bgDay)
+        ctx.gfxTextCentered(b.fightText, TP.textTop(centeredOn: 226 + 22, size: 2), 2, UI.white)
+        ctx.gfxTextCentered(b.laterText, TP.textTop(centeredOn: 278 + 22, size: 2), 2, UI.bgDay)
     }
 
     private func drawHeader(_ ctx: GraphicsContext, name: String,
@@ -469,8 +470,8 @@ struct PetScreen: View {
             (78, 346, 2, pet.energy),   (244, 346, 3, pet.hygiene),
         ]
         for (x, y, label, value) in rows {
-            ctx.gfxText(TPBarLabel(label), x, y, 2, ink)
             let bx = x + 48, bw: CGFloat = 100, bh: CGFloat = 15
+            ctx.gfxText(TPBarLabel(label), x, TP.textTop(centeredOn: y + bh / 2, size: 2), 2, ink)
             let fill: UInt16 = value >= 50 ? UI.barOK : (value >= 25 ? UI.barWarn : UI.barBad)
             ctx.fillRoundRect(bx, y, bw, bh, 4, UI.track)
             let fw = (bw - 4) * CGFloat(value) / 100
@@ -513,7 +514,7 @@ struct PetScreen: View {
         ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 18, UI.white)
         ctx.drawRoundRect(r.minX + 2, r.minY + 2, r.width - 4, r.height - 4, 16, UI.white)
         let t = model.pet.evolveButtonText
-        ctx.gfxText(t, TP.cx - CGFloat(t.count) * 9, r.midY - 11, 3, UI.white)
+        ctx.gfxText(t, TP.cx - CGFloat(t.count) * 9, TP.textTop(centeredOn: r.midY, size: 3), 3, UI.white)
     }
 
     /// The farewell and runaway calls to action share a rectangle and differ only
@@ -525,7 +526,7 @@ struct PetScreen: View {
         let r = TP.farBtn.insetBy(dx: -p, dy: -p)
         ctx.fillRoundRect(r.minX, r.minY, r.width, r.height, 16, fill)
         ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 16, border)
-        ctx.gfxText(text, TP.cx - CGFloat(text.count) * 6, r.midY - 8, 2, textColor)
+        ctx.gfxText(text, TP.cx - CGFloat(text.count) * 6, TP.textTop(centeredOn: r.midY, size: 2), 2, textColor)
     }
 
     /// Two stacked options over a white card: act, or keep things as they are.
@@ -547,9 +548,9 @@ struct PetScreen: View {
 
         let a = TP.choiceAction, k = TP.choiceKeep
         ctx.fillRoundRect(a.minX, a.minY, a.width, a.height, 12, actFill)
-        ctx.gfxTextCentered(act, 224, 2, actInk)
+        ctx.gfxTextCentered(act, TP.textTop(centeredOn: a.midY, size: 2), 2, actInk)
         ctx.fillRoundRect(k.minX, k.minY, k.width, k.height, 12, keepFill)
-        ctx.gfxTextCentered(keep, 286, 2, keepInk)
+        ctx.gfxTextCentered(keep, TP.textTop(centeredOn: k.midY, size: 2), 2, keepInk)
     }
 
     // MARK: - Evolution and ceremony animations
@@ -689,7 +690,7 @@ struct PetScreen: View {
     private func drawStreakBadge(_ ctx: GraphicsContext, ink: UInt16) {
         guard model.pet.streak >= 1 else { return }
         drawFlame(ctx, x: 26, y: 16, height: 17)
-        ctx.gfxText("\(model.pet.streak)", 48, 18, 2, ink)
+        ctx.gfxText("\(model.pet.streak)", 48, TP.textTop(centeredOn: 16 + 17.0 / 2, size: 2), 2, ink)
     }
 
     /// Temporary banner for a new medal or a streak milestone.
@@ -755,9 +756,11 @@ struct PetScreen: View {
         ctx.gfxTextCentered(pet.releaseQuestion, 196, 2, UI.ink)
         let yes = TP.releaseYes, no = TP.releaseNo
         ctx.fillRoundRect(yes.minX, yes.minY, yes.width, yes.height, 12, UI.barOK)
-        ctx.gfxText(pet.yesText, yes.midX - CGFloat(pet.yesText.count) * 6, 270, 2, UI.white)
+        ctx.gfxText(pet.yesText, yes.midX - CGFloat(pet.yesText.count) * 6,
+                    TP.textTop(centeredOn: yes.midY, size: 2), 2, UI.white)
         ctx.fillRoundRect(no.minX, no.minY, no.width, no.height, 12, UI.barBad)
-        ctx.gfxText(pet.noText, no.midX - CGFloat(pet.noText.count) * 6, 270, 2, UI.white)
+        ctx.gfxText(pet.noText, no.midX - CGFloat(pet.noText.count) * 6,
+                    TP.textTop(centeredOn: no.midY, size: 2), 2, UI.white)
     }
 
     // MARK: - Settings
@@ -793,14 +796,15 @@ struct PetScreen: View {
         ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
         ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
         let sl = model.pet.soundModeLabel(model.soundMode.rawValue)
-        ctx.gfxText(sl, s.minX + (s.width - CGFloat(sl.count) * 12) / 2, s.minY + 8, 2,
-                    snd ? UI.bgDay : UI.ink)
+        ctx.gfxText(sl, s.minX + (s.width - CGFloat(sl.count) * 12) / 2,
+                    TP.textTop(centeredOn: s.midY, size: 2), 2, snd ? UI.bgDay : UI.ink)
 
         let l = Self.langPill
         ctx.fillRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.white)
         ctx.drawRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.ink)
         let lp = "\(Self.langCodes[Int(TPLanguage())]) >"
-        ctx.gfxText(lp, l.minX + (l.width - CGFloat(lp.count) * 12) / 2, l.minY + 8, 2, UI.ink)
+        ctx.gfxText(lp, l.minX + (l.width - CGFloat(lp.count) * 12) / 2,
+                    TP.textTop(centeredOn: l.midY, size: 2), 2, UI.ink)
 
         ctx.gfxTextCentered(model.pet.backHint, 410, 2, UI.track)
     }
@@ -844,12 +848,11 @@ struct PetScreen: View {
             ctx.fillRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6,
                               special ? UI.barWarn : UI.white)
             ctx.drawRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6, UI.ink)
+            let keyTextY = TP.textTop(centeredOn: y + (Self.kbH - 6) / 2, size: 2)
             if i < 28 {
-                ctx.gfxText(String(Self.kbKeys[i]), x + Self.kbW / 2 - 9,
-                            y + Self.kbH / 2 - 10, 2, UI.ink)
+                ctx.gfxText(String(Self.kbKeys[i]), x + Self.kbW / 2 - 9, keyTextY, 2, UI.ink)
             } else {
-                ctx.gfxText(i == 28 ? "<-" : "OK", x + Self.kbW / 2 - 15,
-                            y + Self.kbH / 2 - 10, 2, UI.ink)
+                ctx.gfxText(i == 28 ? "<-" : "OK", x + Self.kbW / 2 - 15, keyTextY, 2, UI.ink)
             }
         }
     }
@@ -1050,7 +1053,7 @@ struct PetScreen: View {
         ctx.fillRoundRect(78, 230, 310, 24, 7, UI.bgDay)
         ctx.drawRoundRect(78, 230, 310, 24, 7, ink)
         let phaseColor: UInt16 = g.failUntil != 0 ? UI.barBad : (g.showing ? UI.barWarn : UI.barOK)
-        ctx.gfxTextCentered(phase, 234, 2, phaseColor)
+        ctx.gfxTextCentered(phase, TP.textTop(centeredOn: 230 + 12, size: 2), 2, phaseColor)
     }
 
     /// Clean minigame: scrub dirt spots before three slip past. Ported from
@@ -1136,7 +1139,7 @@ struct PetScreen: View {
         let enemyColor = pet.typeColor(forType: g.enemy)
         ctx.fillRoundRect(118, 126, 230, 54, 14, lerp565(enemyColor, UI.white, 4, 8))
         ctx.drawRoundRect(118, 126, 230, 54, 14, ink)
-        ctx.gfxTextCentered(enemyName, 143, 3, UI.ink)
+        ctx.gfxTextCentered(enemyName, TP.textTop(centeredOn: 126 + 27, size: 3), 3, UI.ink)
 
         for i in 0..<3 {
             let bx: CGFloat = 88
@@ -1145,7 +1148,7 @@ struct PetScreen: View {
             let col = pet.typeColor(forType: g.choices[i])
             ctx.fillRoundRect(bx, by, 290, 48, 12, lerp565(col, UI.white, 5, 8))
             ctx.drawRoundRect(bx, by, 290, 48, 12, ink)
-            ctx.gfxTextCentered2(label, bx, 290, by + 17, 2, UI.ink)
+            ctx.gfxTextCentered2(label, bx, 290, TP.textTop(centeredOn: by + 24, size: 2), 2, UI.ink)
         }
 
         let bw: CGFloat = 280
@@ -1396,13 +1399,14 @@ struct PetScreen: View {
                                        label: String, value: UInt16, color: UInt16) {
         ctx.fillRoundRect(x, y, 118, 34, 8, UI.white)
         ctx.drawRoundRect(x, y, 118, 34, 8, color)
-        ctx.gfxText(label, x + 10, y + 6, 1, color)
-        // Upstream puts the number at y+14, where its 16px-tall bitmap glyphs
-        // still clear the 34px box. The system font's size-2 line box is ~24px,
-        // so the same offset hangs it out the bottom; y+6 centres the digits in
-        // the box instead. The label is left of it, so sharing a top is fine.
+        // The label (size 1) and the number (size 2) don't share a line box
+        // height, so a shared top y looked centred for one and left the other
+        // riding high or hanging out the box. Centring each independently
+        // within the 34-tall box fixes both at once.
+        ctx.gfxText(label, x + 10, TP.textTop(centeredOn: y + 17, size: 1), 1, color)
         let num = "\(value)"
-        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12, y + 6, 2, UI.ink)
+        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12,
+                    TP.textTop(centeredOn: y + 17, size: 2), 2, UI.ink)
     }
 
     private func dailyGoalColor(_ kind: Int) -> UInt16 {
@@ -1438,16 +1442,17 @@ struct PetScreen: View {
         let col = dailyGoalColor(pet.dailyGoalKind(at: index))
         ctx.fillRoundRect(58, y, 350, 52, 12, done ? col : UI.white)
         ctx.drawRoundRect(58, y, 350, 52, 12, col)
-        ctx.gfxText(pet.dailyGoalLabel(at: index), 82, y + 18, 2, done ? UI.bgDay : UI.ink)
+        let rowTextY = TP.textTop(centeredOn: y + 26, size: 2)
+        ctx.gfxText(pet.dailyGoalLabel(at: index), 82, rowTextY, 2, done ? UI.bgDay : UI.ink)
 
         let progress = pet.dailyGoalProgress(at: index)
         let target = pet.dailyGoalTarget(at: index)
         if done {
-            ctx.gfxText(pet.doneText, 286, y + 18, 2, UI.bgDay)
+            ctx.gfxText(pet.doneText, 286, rowTextY, 2, UI.bgDay)
             ctx.fillCircle(374, y + 26, 12, UI.bgDay)
-            ctx.gfxText("v", 368, y + 18, 2, col)
+            ctx.gfxText("v", 368, rowTextY, 2, col)
         } else {
-            ctx.gfxText("\(progress)/\(target)", 286, y + 18, 2, UI.ink)
+            ctx.gfxText("\(progress)/\(target)", 286, rowTextY, 2, UI.ink)
         }
     }
 
@@ -1467,7 +1472,8 @@ struct PetScreen: View {
         let sort = pet.boxSortLabel
         ctx.fillRoundRect(302, 62, 106, 28, 9, UI.white)
         ctx.drawRoundRect(302, 62, 106, 28, 9, UI.ink)
-        ctx.gfxText(sort, 302 + (106 - CGFloat(sort.count) * 6) / 2, 73, 1, UI.ink)
+        ctx.gfxText(sort, 302 + (106 - CGFloat(sort.count) * 6) / 2,
+                   TP.textTop(centeredOn: 62 + 14, size: 1), 1, UI.ink)
 
         // caughtCountLine/knownCountLine share the same x as
         // renderCardPersonality's age/records pair, and the same fix: the
@@ -1540,11 +1546,13 @@ struct PetScreen: View {
 
         let wb = TP.wildBattleBtn
         ctx.fillRoundRect(wb.minX, wb.minY, wb.width, wb.height, 11, 0x4C98)
-        ctx.gfxTextCentered2(pet.wildBattleText, wb.minX, wb.width, wb.minY + 9, 2, UI.bgDay)
+        ctx.gfxTextCentered2(pet.wildBattleText, wb.minX, wb.width,
+                             TP.textTop(centeredOn: wb.midY, size: 2), 2, UI.bgDay)
 
         let b = TP.trainBtn
         ctx.fillRoundRect(b.minX, b.minY, b.width, b.height, 11, UI.barBad)
-        ctx.gfxTextCentered2(pet.trainButtonText, b.minX, b.width, b.minY + 9, 2, UI.bgDay)
+        ctx.gfxTextCentered2(pet.trainButtonText, b.minX, b.width,
+                             TP.textTop(centeredOn: b.midY, size: 2), 2, UI.bgDay)
     }
 
     private func renderCardMedals(_ ctx: GraphicsContext) {
@@ -1555,11 +1563,12 @@ struct PetScreen: View {
             let y = 104 + CGFloat(i / 2) * 54
             let got = pet.hasMedal(at: i)
             ctx.fillRoundRect(x, y, 196, 44, 10, got ? UI.barOK : UI.track)
+            let rowTextY = TP.textTop(centeredOn: y + 22, size: 2)
             if got {
                 ctx.fillCircle(x + 22, y + 22, 11, UI.bgDay)
-                ctx.gfxText("v", x + 16, y + 13, 2, UI.barOK)
+                ctx.gfxText("v", x + 16, rowTextY, 2, UI.barOK)
             }
-            ctx.gfxText(pet.medalDescription(at: i), x + 44, y + 14, 2,
+            ctx.gfxText(pet.medalDescription(at: i), x + 44, rowTextY, 2,
                         got ? UI.bgDay : 0x8410)
         }
     }
@@ -1601,7 +1610,7 @@ struct PetScreen: View {
         if pet.expeditionReady {
             ctx.gfxTextCentered(pet.expeditionFoundLine, 78, 2, UI.barOK)
             ctx.fillRoundRect(98, 98, 270, 48, 11, UI.barOK)
-            ctx.gfxTextCentered(pet.expeditionClaimText, 118, 2, UI.bgDay)
+            ctx.gfxTextCentered(pet.expeditionClaimText, TP.textTop(centeredOn: 98 + 24, size: 2), 2, UI.bgDay)
         } else if pet.expeditionActive {
             ctx.gfxTextCentered(pet.expeditionBackInLine, 86, 3, 0x4C98)
             ctx.gfxTextCentered(pet.expeditionWaitText, 118, 1, UI.track)
@@ -1753,7 +1762,7 @@ struct PetScreen: View {
 
         if !b.resolved {
             ctx.fillRoundRect(188, 102, 90, 32, 9, UI.track)
-            ctx.gfxTextCentered2(b.runText, 188, 90, 111, 2, UI.bgDay)
+            ctx.gfxTextCentered2(b.runText, 188, 90, TP.textTop(centeredOn: 102 + 16, size: 2), 2, UI.bgDay)
         }
 
         drawBattleSprite(ctx, dex: pet.speciesId, x: 142, now: now)
@@ -1773,15 +1782,16 @@ struct PetScreen: View {
             if b.catchOffered, !b.catchDone {
                 ctx.fillRoundRect(76, 396, 148, 52, 14, UI.barOK)
                 ctx.fillRoundRect(242, 396, 148, 52, 14, UI.track)
-                ctx.gfxTextCentered2(b.catchWildText, 76, 148, 414, 2, UI.bgDay)
-                ctx.gfxTextCentered2(b.leaveWildText, 242, 148, 414, 2, UI.bgDay)
+                let claimTextY = TP.textTop(centeredOn: 396 + 26, size: 2)
+                ctx.gfxTextCentered2(b.catchWildText, 76, 148, claimTextY, 2, UI.bgDay)
+                ctx.gfxTextCentered2(b.leaveWildText, 242, 148, claimTextY, 2, UI.bgDay)
             } else {
                 if b.catchDone, b.catchTried {
                     let msg = b.catchSuccess ? b.caughtOkText : b.escapedText
                     ctx.gfxTextCentered(msg, 378, 2, b.catchSuccess ? UI.barOK : UI.barBad)
                 }
                 ctx.fillRoundRect(118, 396, 230, 52, 14, UI.barOK)
-                ctx.gfxTextCentered(b.okText, 413, 3, UI.bgDay)
+                ctx.gfxTextCentered(b.okText, TP.textTop(centeredOn: 396 + 26, size: 3), 3, UI.bgDay)
             }
         } else {
             ctx.gfxText(b.roundLabel, 32, 318, 2, ink)
@@ -1796,15 +1806,17 @@ struct PetScreen: View {
             if b.attackMenuOpen {
                 ctx.fillRoundRect(74, 298, 150, 46, 12, UI.barBad)
                 ctx.fillRoundRect(242, 298, 150, 46, 12, UI.barWarn)
-                ctx.gfxTextCentered2(b.quickAttackText, 74, 150, 314, 2, UI.bgDay)
-                ctx.gfxTextCentered2(b.heavyAttackText, 242, 150, 314, 2, UI.bgDay)
+                let menuTextY = TP.textTop(centeredOn: 298 + 23, size: 2)
+                ctx.gfxTextCentered2(b.quickAttackText, 74, 150, menuTextY, 2, UI.bgDay)
+                ctx.gfxTextCentered2(b.heavyAttackText, 242, 150, menuTextY, 2, UI.bgDay)
             }
             ctx.fillRoundRect(58, 358, 108, 58, 13, UI.barBad)
             ctx.fillRoundRect(179, 358, 108, 58, 13, 0x4C98)
             ctx.fillRoundRect(300, 358, 108, 58, 13, UI.barOK)
-            ctx.gfxTextCentered2(b.attackText, 58, 108, 380, 2, UI.bgDay)
-            ctx.gfxTextCentered2(b.dodgeText, 179, 108, 380, 2, UI.bgDay)
-            ctx.gfxTextCentered2(b.restText, 300, 108, 380, 2, UI.bgDay)
+            let actionTextY = TP.textTop(centeredOn: 358 + 29, size: 2)
+            ctx.gfxTextCentered2(b.attackText, 58, 108, actionTextY, 2, UI.bgDay)
+            ctx.gfxTextCentered2(b.dodgeText, 179, 108, actionTextY, 2, UI.bgDay)
+            ctx.gfxTextCentered2(b.restText, 300, 108, actionTextY, 2, UI.bgDay)
         }
     }
 
@@ -1871,12 +1883,14 @@ struct PetScreen: View {
     /// Upstream's `drawCardStat`: label, value and a proportional bar.
     private func drawCardStat(_ ctx: GraphicsContext, y: CGFloat, label: String,
                               value: UInt16, maxBar: UInt16, color: UInt16) {
-        ctx.gfxText(label, 96, y, 2, UI.ink)
-        ctx.gfxText("\(value)", 330, y, 2, UI.ink)
+        let barY = y + 2, barH: CGFloat = 11
+        let textY = TP.textTop(centeredOn: barY + barH / 2, size: 2)
+        ctx.gfxText(label, 96, textY, 2, UI.ink)
+        ctx.gfxText("\(value)", 330, textY, 2, UI.ink)
         let bw: CGFloat = 160
         let fw = min(CGFloat(value) * bw / CGFloat(maxBar), bw)
-        ctx.fillRoundRect(150, y + 2, bw, 11, 3, UI.track)
-        if fw > 2 { ctx.fillRoundRect(150, y + 2, fw, 11, 3, color) }
+        ctx.fillRoundRect(150, barY, bw, barH, 3, UI.track)
+        if fw > 2 { ctx.fillRoundRect(150, barY, fw, barH, 3, color) }
     }
 
     /// The little streak flame, drawn as two stacked triangles.
@@ -1950,7 +1964,8 @@ struct PetScreen: View {
             ctx.fillRoundRect(fx, 74, 96, 18, 6, selected ? UI.ink : UI.white)
             ctx.drawRoundRect(fx, 74, 96, 18, 6, UI.ink)
             let label = filters[i]
-            ctx.gfxText(label, fx + (96 - CGFloat(label.count) * 6) / 2, 80, 1,
+            ctx.gfxText(label, fx + (96 - CGFloat(label.count) * 6) / 2,
+                       TP.textTop(centeredOn: 74 + 9, size: 1), 1,
                        selected ? UI.bgDay : UI.ink)
         }
 
@@ -2115,7 +2130,7 @@ struct PetScreen: View {
             // Nothing to show: not discovered yet, or no entry text installed.
             // See TPDexEntryText for where the text is expected to come from.
             let msg = known ? TPDexEntryText.shared.missingText : "???"
-            ctx.gfxTextCentered(msg, y + h / 2 - 10, 2, UI.track)
+            ctx.gfxTextCentered(msg, TP.textTop(centeredOn: y + h / 2, size: 2), 2, UI.track)
             return
         }
 
@@ -2128,12 +2143,11 @@ struct PetScreen: View {
         // dropped to size 1 if it would actually overflow, rather than always
         // picking one size and letting long entries run past the border.
         // Character width is `size * 6` (gfxText's own metric, see
-        // gfxTextCentered2) and a size's line box is `size * 13` tall -- close
-        // to its `size * 10`pt font with a little breathing room, matched
-        // against this file's other size-1/size-2 line strips.
+        // gfxTextCentered2) -- see TP.lineHeight for the line-box height this
+        // stacks lines by.
         func layout(size: Int) -> (lines: [String], lineH: CGFloat) {
             let columns = max(1, Int(usableW / CGFloat(size * 6)))
-            return (TPDexEntryText.wrap(text, columns: columns), CGFloat(size * 13))
+            return (TPDexEntryText.wrap(text, columns: columns), TP.lineHeight(size))
         }
 
         var size = 2
@@ -2217,9 +2231,7 @@ struct PetScreen: View {
             // clears the row's right edge, but shrink anyway if a longer one
             // is ever added to the table.
             let size = CGFloat(name.count) * 18 <= 240 ? 3 : 2
-            // gfxText's y is the top of the glyph box, and the box is ~13px per
-            // size step, so this is what centres the name in the taller row.
-            ctx.gfxText(name, 150, ry + (Self.starterRowH - CGFloat(size) * 13) / 2,
+            ctx.gfxText(name, 150, TP.textTop(centeredOn: ry + Self.starterRowH / 2, size: size),
                         size, UI.ink)
         }
 
