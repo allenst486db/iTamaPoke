@@ -1892,17 +1892,21 @@ struct PetScreen: View {
     /// Upstream's `drawCardStat`: label, value and a proportional bar.
     private func drawCardStat(_ ctx: GraphicsContext, y: CGFloat, label: String,
                               value: UInt16, maxBar: UInt16, color: UInt16) {
-        let bw: CGFloat = 160, barY = y + 2, barH: CGFloat = 11
+        let barX: CGFloat = 150, bw: CGFloat = 160, barY = y + 2, barH: CGFloat = 11
         // Upstream draws both labels at `y` and the bar at `y + 2`; with its
         // 16px bitmap glyphs against an 11px bar that reads as centred. The
         // system font's size-2 line box is 26px, so the same y put the text's
         // centre 5.5px below the bar's -- every stat row looked like it sagged.
         let textY = TP.textTop(centeredOn: barY + barH / 2, size: 2)
-        ctx.gfxText(label, 96, textY, 2, UI.ink)
+        // Right-aligned against the bar rather than parked at upstream's fixed
+        // x=96: that left only 54px, which 3-4 Latin capitals clear but a
+        // 3-syllable Korean label ("유대감") fills completely, leaving it
+        // touching the bar. Aligning to the bar keeps the gap in any language.
+        ctx.gfxText(label, barX - 10 - ctx.gfxTextWidth(label, 2), textY, 2, UI.ink)
         ctx.gfxText("\(value)", 330, textY, 2, UI.ink)
         let fw = min(CGFloat(value) * bw / CGFloat(maxBar), bw)
-        ctx.fillRoundRect(150, barY, bw, barH, 3, UI.track)
-        if fw > 2 { ctx.fillRoundRect(150, barY, fw, barH, 3, color) }
+        ctx.fillRoundRect(barX, barY, bw, barH, 3, UI.track)
+        if fw > 2 { ctx.fillRoundRect(barX, barY, fw, barH, 3, color) }
     }
 
     /// The little streak flame, drawn as two stacked triangles.
