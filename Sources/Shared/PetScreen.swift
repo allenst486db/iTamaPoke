@@ -1688,13 +1688,20 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, w, h, 9, count > 0 ? UI.white : 0xE4E7)
         ctx.drawRoundRect(x, y, w, h, 9, count > 0 ? col : UI.track)
         ctx.fillCircle(x + 22, y + 27, 12, count > 0 ? col : UI.track)
-        // Size 1 read as illegibly small (flagged directly: "글씨 너무 작아서
-        // 안 보임"). Size 2 first, dropping to size 1 only if it would run
-        // into the "x{count}" column -- a short label (간식) clears the 94px
-        // gap easily, but a longer one (기력 드링크) doesn't at size 2.
+        // Flagged twice now: size 1 read as illegibly small ("글씨 너무 작아서
+        // 안 보임"), but snapping straight from size 2 to size 1 whenever a
+        // label ran into the "x{count}" column overcorrected the other way
+        // -- every non-Korean language's item names are long enough to miss
+        // the 94px gap at size 2 (already-shortened Korean names clear it
+        // easily), so they all fell to size 1 while Korean stayed at size 2
+        // ("한글은 글씨 크기 아주 좋은데, 영어랑 다른 언어는 글씨 크기가 너무
+        // 작아"). Shrinking continuously to whatever point size actually
+        // clears the gap -- as low as 20pt (size 2), never below 10pt
+        // (size 1) -- means a label a few points over the budget only
+        // shrinks a few points, not a whole step.
         let label = pet.expeditionItemLabel(index)
-        let labelSize = ctx.gfxTextWidth(label, 2) <= 94 ? 2 : 1
-        ctx.gfxText(label, x + 42, y + 16, labelSize, count > 0 ? UI.ink : UI.track)
+        let labelPt = ctx.gfxFitPointSize(label, maxPt: 20, minPt: 10, budget: 94)
+        ctx.gfxText(label, x + 42, y + 16, pt: labelPt, count > 0 ? UI.ink : UI.track)
         ctx.gfxText("x\(count)", x + 136, y + 29, 2, count > 0 ? UI.ink : UI.track)
     }
 

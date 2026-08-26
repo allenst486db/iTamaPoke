@@ -30,6 +30,16 @@ void Pet::newEgg() {
   int shinyBase = (lastEnd == CER_FAREWELL ? 24 : 48) - careBonus();
   if (shinyBase < 8) shinyBase = 8;
   eggShiny = (random(shinyBase) == 0);
+  // The outgoing pet's streak/bond already fed the shiny roll above via
+  // careBonus() -- now it's spent, so the new pet starts its own streak at
+  // zero rather than immediately re-qualifying for the 7-day-streak medal
+  // (checkMedals() runs at the end of hatch()). bestStreak is a lifetime
+  // record, not this pet's own, so it isn't touched here.
+  streak = 0;
+  // Force ensureDailyGoals() to regenerate on next call instead of seeing
+  // today's date already recorded (from the outgoing pet, same calendar
+  // day) and leaving its stale progress/done bits in place.
+  dailyGoalDay = 0;
   eggTaps = 0;
   fullness = 80;
   joy = 80;

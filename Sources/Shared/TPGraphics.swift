@@ -120,6 +120,13 @@ private enum TPTextWidthCache {
     static var storage: [Key: CGFloat] = [:]
 }
 
+/// Backing store for the point-size `gfxTextWidth(_:pt:)` variant -- see
+/// its doc comment for why this is a separate cache from the one above.
+private enum TPTextWidthPtCache {
+    struct Key: Hashable { let pt: CGFloat; let string: String }
+    static var storage: [Key: CGFloat] = [:]
+}
+
 // MARK: - Arduino_GFX primitives on GraphicsContext
 
 extension GraphicsContext {
@@ -212,6 +219,47 @@ extension GraphicsContext {
         let w = resolve(t).measure(in: CGSize(width: CGFloat.infinity, height: CGFloat.infinity)).width
         TPTextWidthCache.storage[key] = w
         return w
+    }
+
+    /// `gfxText` at an arbitrary point size rather than one of the `size`
+    /// steps -- for continuous shrink-to-fit (see `gfxTextWidth(_:pt:)`),
+    /// where snapping straight from one step to the next would drop a label
+    /// that overflows its step by a single point all the way down to the
+    /// step below, when it could have shrunk by a few points and still read
+    /// clearly.
+    func gfxText(_ s: String, _ x: CGFloat, _ y: CGFloat, pt: CGFloat, _ c: UInt16) {
+        let t = Text(s)
+            .font(.system(size: pt, weight: .semibold, design: .monospaced))
+            .foregroundColor(Color(c))
+        draw(t, at: CGPoint(x: x, y: y), anchor: .topLeading)
+    }
+
+    /// The real rendered width of `s` at an arbitrary point size. Cached
+    /// separately from the `size`-step cache above: shrink-to-fit computes
+    /// its own continuous point size per string, and rounding that into the
+    /// integer-step keyspace would either collide with a real step or lose
+    /// the precision the fit needs.
+    func gfxTextWidth(_ s: String, pt: CGFloat) -> CGFloat {
+        let key = TPTextWidthPtCache.Key(pt: pt, string: s)
+        if let cached = TPTextWidthPtCache.storage[key] { return cached }
+        let t = Text(s).font(.system(size: pt, weight: .semibold, design: .monospaced))
+        let w = resolve(t).measure(in: CGSize(width: CGFloat.infinity, height: CGFloat.infinity)).width
+        TPTextWidthPtCache.storage[key] = w
+        return w
+    }
+
+    /// The largest point size in `minPt...maxPt` at which `s` measures no
+    /// wider than `budget`, assuming width scales linearly with point size
+    /// (true for this monospaced font at a fixed string -- no per-glyph
+    /// hinting kicks in across this range) -- one measurement at `maxPt`
+    /// plus a ratio, rather than a search. Never returns above `maxPt` (a
+    /// short string just keeps its natural size) or below `minPt` (a
+    /// string that still overflows there is left to overflow rather than
+    /// shrink to illegibility).
+    func gfxFitPointSize(_ s: String, maxPt: CGFloat, minPt: CGFloat, budget: CGFloat) -> CGFloat {
+        let wAtMax = gfxTextWidth(s, pt: maxPt)
+        guard wAtMax > budget else { return maxPt }
+        return max(minPt, maxPt * budget / wAtMax)
     }
 
     /// Centred on `TP.cx`, matching the firmware's `CX - strlen(s) * (3*size)` idiom.
