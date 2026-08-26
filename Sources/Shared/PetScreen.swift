@@ -1500,7 +1500,7 @@ struct PetScreen: View {
         let sort = pet.boxSortLabel
         ctx.fillRoundRect(302, 62, 106, 28, 9, UI.white)
         ctx.drawRoundRect(302, 62, 106, 28, 9, UI.ink)
-        ctx.gfxTextCentered2(sort, 302, 106, 73, 1, UI.ink)
+        ctx.gfxTextCentered2(sort, 302, 106, TP.textTop(centeredOn: 62 + 14, size: 1), 1, UI.ink)
 
         // caughtCountLine/knownCountLine share the same x as
         // renderCardPersonality's age/records pair, and the same fix: the
@@ -2008,7 +2008,8 @@ struct PetScreen: View {
             ctx.fillRoundRect(fx, 74, 96, 18, 6, selected ? UI.ink : UI.white)
             ctx.drawRoundRect(fx, 74, 96, 18, 6, UI.ink)
             let label = filters[i]
-            ctx.gfxTextCentered2(label, fx, 96, 80, 1, selected ? UI.bgDay : UI.ink)
+            ctx.gfxTextCentered2(label, fx, 96, TP.textTop(centeredOn: 74 + 9, size: 1), 1,
+                                 selected ? UI.bgDay : UI.ink)
         }
 
         if galleryPage >= galleryPageCount() { galleryPage = 0 }
