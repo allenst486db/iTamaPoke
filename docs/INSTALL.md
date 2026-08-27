@@ -1,6 +1,6 @@
 # Install guide (no coding knowledge needed)
 
-[한국어](INSTALL.ko.md)
+[한국어](INSTALL.ko.md) · with screenshots: [Install guide (HTML)](INSTALL.html)
 
 This assumes nothing except that you can download a file and follow steps.
 If a term isn't explained inline, it's explained the first time it comes up.

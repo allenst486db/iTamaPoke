@@ -12,7 +12,7 @@ source, [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)
 repository. Sections below say so where it matters; see the main
 [README](../README.md#status) for the attribution.
 
-[한국어](GAMEPLAY.ko.md)
+[한국어](GAMEPLAY.ko.md) · with screenshots: [Gameplay guide (HTML)](GAMEPLAY.html)
 
 ---
 
@@ -199,6 +199,23 @@ screen's sound pill cycles through four levels — **ALL** (everything),
 **MID**, **LOW** (only the important events — records, evolution, farewell,
 battle results), and **OFF** — rather than a plain on/off switch. A haptic
 plays alongside whatever sound is enabled.
+
+The dex detail screen's cry-preview button is the one exception — it plays an
+actual audio file, not a synthesized effect, and follows the same sound
+setting above (muted SFX mutes cries too). A species with no cry file
+installed simply has no button. See [README "Cries"](../README.md#cries) for
+how to install them.
+
+## Dex entries and language
+
+The dex detail view's second page shows that species' flavor text — like
+cries, it isn't bundled and has to be fetched (see [README "Pokédex
+entries"](../README.md#pokédex-entries)) — and it automatically picks the
+file matching whatever UI language is active. The settings screen cycles
+through 8 language slots: ES/EN/FR/DE/IT/PT plus two Korean modes, **KR**
+(the whole UI) and **kr** (species names and the dex only, everything else
+stays English). The starter-picker screen has its own language pill too, so
+you can switch before your very first creature exists.
 
 ---
 
