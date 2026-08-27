@@ -2203,7 +2203,7 @@ struct PetScreen: View {
     /// portrait and the page dots -- see the callers below for the spacing
     /// that made room for it. Hidden entirely when this species has no cry
     /// file installed -- see hasCry's guard in both this and galleryTap.
-    private static let cryButtonRect = CGRect(x: 126, y: 326, width: 150, height: 20)
+    private static let cryButtonRect = CGRect(x: TP.cx - 75, y: 326, width: 150, height: 20)
 
     private func drawCryButton(_ ctx: GraphicsContext, dex: Int16) {
         guard TPCryPlayer.shared.hasCry(dex: dex) else { return }
