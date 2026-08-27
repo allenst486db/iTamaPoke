@@ -194,6 +194,14 @@ struct TPMemoGame {
     /// The four pads' centres and hit radius, from the fork's memoPadAt.
     static let padX: [CGFloat] = [142, 324, 142, 324]
     static let padY: [CGFloat] = [164, 164, 318, 318]
+    /// How long the "you got it" ring lingers on a round's last correct tap,
+    /// and how long the pause before the next round's demo starts runs --
+    /// the same duration for both, so the ring is still on screen right up
+    /// until the demo begins rather than the two happening back to back.
+    /// Flagged directly: with the previous, much shorter gap it was hard to
+    /// tell whether the pads lighting up were the demo replaying or the
+    /// player's own turn still going.
+    static let roundCompletePause: UInt64 = 900
 
     var seq: [Int] = []
     var show = 0
@@ -231,14 +239,14 @@ struct TPMemoGame {
         startRound(now: now)
     }
 
-    mutating func startRound(now: UInt64) {
+    mutating func startRound(now: UInt64, afterDelay: UInt64 = 350) {
         if seq.count < 14 { seq.append(Int.random(in: 0..<4)) }
         show = 0
         input = 0
         activePad = -1
         hintPad = -1
         showing = true
-        nextAt = now + 350
+        nextAt = now + afterDelay
         turnUntil = 0
     }
 
@@ -311,18 +319,20 @@ struct TPMemoGame {
         }
         flashPad = pad
         flashGood = true
-        flashUntil = now + 180
         input += 1
         if input >= seq.count {
             rounds += 1
             if seq.count >= 14 {
+                flashUntil = now + 180
                 (newHigh, gain) = onGameOver(rounds)
                 overUntil = now + 4000
                 return .finished(pad)
             }
-            startRound(now: now)
+            flashUntil = now + Self.roundCompletePause
+            startRound(now: now, afterDelay: Self.roundCompletePause)
             return .roundUp(pad)
         }
+        flashUntil = now + 180
         return .pad(pad)
     }
 }
@@ -417,9 +427,9 @@ struct TPTypeGame {
     /// The fork's question pools: each defender pairs with one super-effective
     /// counter; distractors come from the option pool, filtered so none of
     /// them is also super-effective (checked via battleTypeEffectPct).
-    static let defenders: [UInt8] = [5, 2, 3, 4, 13, 9, 10, 8, 11, 14, 15, 6]
-    static let counters: [UInt8] = [2, 3, 5, 9, 3, 3, 4, 11, 12, 14, 6, 2]
-    static let options: [UInt8] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+    static let defenders: [UInt8] = [5, 2, 3, 4, 13, 9, 10, 8, 11, 14, 15, 6, 16, 17, 18]
+    static let counters: [UInt8] = [2, 3, 5, 9, 3, 3, 4, 11, 12, 14, 6, 2, 7, 2, 17]
+    static let options: [UInt8] = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
 
     var enemy: UInt8 = 0
     var choices: [UInt8] = [0, 0, 0]

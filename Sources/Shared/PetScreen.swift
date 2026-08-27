@@ -109,7 +109,20 @@ struct PetScreen: View {
                         dragNow = toScreenSpace(v.location, in: geo.size)
                     }
                     .onEnded { v in
-                        let from = dragStart ?? toScreenSpace(v.startLocation, in: geo.size)
+                        // `v.startLocation` rather than the cached `dragStart`:
+                        // tapping fast enough (repeated taps in a minigame,
+                        // say) can start the next gesture's `onChanged` before
+                        // this one's `onEnded` has cleared `dragStart`, which
+                        // then holds a stale, possibly far-off point from an
+                        // *earlier* tap. Classifying against that stale point
+                        // could read as a large, swipe-shaped jump and, since
+                        // swipeAllowed's "else" always forces onTap(from) with
+                        // that same wrong point, register as a tap somewhere
+                        // the finger never touched -- including the header's
+                        // "back out" strip, which silently exited the game.
+                        // `v.startLocation` is this specific gesture's own
+                        // recognized start, so it can't carry that staleness.
+                        let from = toScreenSpace(v.startLocation, in: geo.size)
                         dragStart = nil
                         dragNow = nil
                         // A fired hold has already acted; upstream swallows the
