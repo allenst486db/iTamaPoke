@@ -471,6 +471,9 @@ struct PetScreen: View {
         ]
         for (x, y, label, value) in rows {
             let bx = x + 48, bw: CGFloat = 100, bh: CGFloat = 15
+            // Same sag as the stat card's rows (see drawCardStat): the label
+            // shares the bar's top y upstream, which only looks centred with
+            // its shorter bitmap glyphs.
             ctx.gfxText(TPBarLabel(label), x, TP.textTop(centeredOn: y + bh / 2, size: 2), 2, ink)
             let fill: UInt16 = value >= 50 ? UI.barOK : (value >= 25 ? UI.barWarn : UI.barBad)
             ctx.fillRoundRect(bx, y, bw, bh, 4, UI.track)
@@ -514,7 +517,8 @@ struct PetScreen: View {
         ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 18, UI.white)
         ctx.drawRoundRect(r.minX + 2, r.minY + 2, r.width - 4, r.height - 4, 16, UI.white)
         let t = model.pet.evolveButtonText
-        ctx.gfxText(t, TP.cx - CGFloat(t.count) * 9, TP.textTop(centeredOn: r.midY, size: 3), 3, UI.white)
+        ctx.gfxText(t, TP.cx - ctx.gfxTextWidth(t, 3) / 2,
+                    TP.textTop(centeredOn: r.midY, size: 3), 3, UI.white)
     }
 
     /// The farewell and runaway calls to action share a rectangle and differ only
@@ -526,7 +530,8 @@ struct PetScreen: View {
         let r = TP.farBtn.insetBy(dx: -p, dy: -p)
         ctx.fillRoundRect(r.minX, r.minY, r.width, r.height, 16, fill)
         ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, 16, border)
-        ctx.gfxText(text, TP.cx - CGFloat(text.count) * 6, TP.textTop(centeredOn: r.midY, size: 2), 2, textColor)
+        ctx.gfxText(text, TP.cx - ctx.gfxTextWidth(text, 2) / 2,
+                    TP.textTop(centeredOn: r.midY, size: 2), 2, textColor)
     }
 
     /// Two stacked options over a white card: act, or keep things as they are.
@@ -756,10 +761,10 @@ struct PetScreen: View {
         ctx.gfxTextCentered(pet.releaseQuestion, 196, 2, UI.ink)
         let yes = TP.releaseYes, no = TP.releaseNo
         ctx.fillRoundRect(yes.minX, yes.minY, yes.width, yes.height, 12, UI.barOK)
-        ctx.gfxText(pet.yesText, yes.midX - CGFloat(pet.yesText.count) * 6,
+        ctx.gfxText(pet.yesText, yes.midX - ctx.gfxTextWidth(pet.yesText, 2) / 2,
                     TP.textTop(centeredOn: yes.midY, size: 2), 2, UI.white)
         ctx.fillRoundRect(no.minX, no.minY, no.width, no.height, 12, UI.barBad)
-        ctx.gfxText(pet.noText, no.midX - CGFloat(pet.noText.count) * 6,
+        ctx.gfxText(pet.noText, no.midX - ctx.gfxTextWidth(pet.noText, 2) / 2,
                     TP.textTop(centeredOn: no.midY, size: 2), 2, UI.white)
     }
 
@@ -772,7 +777,29 @@ struct PetScreen: View {
     /// hand-set time instead of the system clock is precisely the bug that made
     /// the sky run nine hours early. What remains is the rest of that screen:
     /// the language picker and the sound toggle, which are real settings.
-    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT"]
+    // "KR" rather than the ISO 639-1 code "KO" -- matches how the other six
+    // codes here are already country/keyboard-style abbreviations, not
+    // language-code-standard ones (there is no "FR"/"DE" vs "France"/German"
+    // distinction to make, but "KR" is the more immediately recognizable
+    // 2-letter label for Korean to a Korean-reading user).
+    //
+    // "kr" (lowercase, 8th slot) is a second, partial Korean mode: only
+    // species names and the dex screen's own chrome switch to Korean (see
+    // isDexKorean below); every other string stays in English. TPLanguage/
+    // TPSetLanguage map this 8-value index to (gLang, gDexNamesKorean) --
+    // see TPPet.mm.
+    private static let langCodes = ["ES", "EN", "FR", "DE", "IT", "PT", "KR", "kr"]
+
+    /// True for both Korean UI modes ("KR" full, "kr" partial) -- gates the
+    /// dex screen's own labels (which are tied to showing Korean species
+    /// names, not to the rest of the UI's language). Dex *entry* text
+    /// wrapping is intentionally not gated by this: that text comes from an
+    /// unlocalized external file (see TPDexEntryText), so only full "KR"
+    /// mode assumes it might actually be Korean.
+    private static func isDexKorean(_ idx: Int) -> Bool {
+        let code = langCodes[idx]
+        return code == "KR" || code == "kr"
+    }
     private static let langPill = CGRect(x: 336, y: 296, width: 96, height: 30)
     private static let sndPill = CGRect(x: 34, y: 296, width: 96, height: 30)
 
@@ -796,14 +823,14 @@ struct PetScreen: View {
         ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
         ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
         let sl = model.pet.soundModeLabel(model.soundMode.rawValue)
-        ctx.gfxText(sl, s.minX + (s.width - CGFloat(sl.count) * 12) / 2,
+        ctx.gfxText(sl, s.minX + (s.width - ctx.gfxTextWidth(sl, 2)) / 2,
                     TP.textTop(centeredOn: s.midY, size: 2), 2, snd ? UI.bgDay : UI.ink)
 
         let l = Self.langPill
         ctx.fillRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.white)
         ctx.drawRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.ink)
         let lp = "\(Self.langCodes[Int(TPLanguage())]) >"
-        ctx.gfxText(lp, l.minX + (l.width - CGFloat(lp.count) * 12) / 2,
+        ctx.gfxText(lp, l.minX + (l.width - ctx.gfxTextWidth(lp, 2)) / 2,
                     TP.textTop(centeredOn: l.midY, size: 2), 2, UI.ink)
 
         ctx.gfxTextCentered(model.pet.backHint, 410, 2, UI.track)
@@ -905,7 +932,7 @@ struct PetScreen: View {
 
         if g.overUntil != 0 {
             let score = pet.scoreLine(g.score)
-            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 160, 4, ink)
+            ctx.gfxText(score, TP.cx - ctx.gfxTextWidth(score, 4) / 2, 160, 4, ink)
             if g.newHigh, g.score > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 214, 2, UI.barWarn)
             } else {
@@ -916,7 +943,7 @@ struct PetScreen: View {
         }
 
         let s = "\(g.score)"
-        ctx.gfxText(s, TP.cx - CGFloat(s.count) * 12, 30, 4, ink)
+        ctx.gfxText(s, TP.cx - ctx.gfxTextWidth(s, 4) / 2, 30, 4, ink)
         ctx.gfxTextCentered(pet.shortRecordLine(pet.gameHigh), 76, 2, ink)
         for i in 0..<3 {
             let cx = 180 + CGFloat(i) * 28
@@ -963,7 +990,7 @@ struct PetScreen: View {
 
         if g.overUntil != 0 {
             let score = pet.scoreLine(g.score)
-            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 160, 4, ink)
+            ctx.gfxText(score, TP.cx - ctx.gfxTextWidth(score, 4) / 2, 160, 4, ink)
             if g.newHigh, g.score > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 214, 2, UI.barWarn)
             } else {
@@ -1010,9 +1037,9 @@ struct PetScreen: View {
 
         if g.overUntil != 0 {
             let score = pet.scoreLine(g.rounds)
-            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            ctx.gfxText(score, TP.cx - ctx.gfxTextWidth(score, 4) / 2, 148, 4, ink)
             let gain = pet.defGainLine(g.gain)
-            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, 0x4C98)
+            ctx.gfxText(gain, TP.cx - ctx.gfxTextWidth(gain, 3) / 2, 204, 3, 0x4C98)
             if g.newHigh, g.rounds > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
             } else {
@@ -1066,9 +1093,9 @@ struct PetScreen: View {
 
         if g.overUntil != 0 {
             let score = pet.scoreLine(g.score)
-            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            ctx.gfxText(score, TP.cx - ctx.gfxTextWidth(score, 4) / 2, 148, 4, ink)
             let gain = pet.hygGainLine(g.gain)
-            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, UI.barOK)
+            ctx.gfxText(gain, TP.cx - ctx.gfxTextWidth(gain, 3) / 2, 204, 3, UI.barOK)
             if g.newHigh, g.score > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
             } else {
@@ -1115,9 +1142,9 @@ struct PetScreen: View {
 
         if g.overUntil != 0 {
             let score = pet.scoreLine(g.score)
-            ctx.gfxText(score, TP.cx - CGFloat(score.count) * 12, 148, 4, ink)
+            ctx.gfxText(score, TP.cx - ctx.gfxTextWidth(score, 4) / 2, 148, 4, ink)
             let gain = pet.atkGainLine(g.gain)
-            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 204, 3, UI.barBad)
+            ctx.gfxText(gain, TP.cx - ctx.gfxTextWidth(gain, 3) / 2, 204, 3, UI.barBad)
             if g.newHigh, g.score > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
             } else {
@@ -1165,9 +1192,9 @@ struct PetScreen: View {
 
         if s.overUntil != 0 {
             let hits = pet.hitsLine(s.hits)
-            ctx.gfxText(hits, TP.cx - CGFloat(hits.count) * 12, 150, 4, ink)
+            ctx.gfxText(hits, TP.cx - ctx.gfxTextWidth(hits, 4) / 2, 150, 4, ink)
             let gain = pet.strengthGainLine(s.gain)
-            ctx.gfxText(gain, TP.cx - CGFloat(gain.count) * 9, 210, 3, UI.barBad)
+            ctx.gfxText(gain, TP.cx - ctx.gfxTextWidth(gain, 3) / 2, 210, 3, UI.barBad)
             if s.newHigh, s.hits > 0 {
                 ctx.gfxTextCentered(pet.newRecordText, 256, 2, UI.barWarn)
             } else {
@@ -1187,7 +1214,7 @@ struct PetScreen: View {
         ctx.fillRect(sx - 42, top + 70, 84, 4, rgb565(0x7e, 0x28, 0x28))
 
         let count = "\(s.hits)"
-        ctx.gfxText(count, TP.cx - CGFloat(count.count) * 18, 268, 6, ink)
+        ctx.gfxText(count, TP.cx - ctx.gfxTextWidth(count, 6) / 2, 268, 6, ink)
         ctx.gfxTextCentered(pet.hitFastText, 322, 2, ink)
 
         let left = s.until > now ? s.until - now : 0
@@ -1337,7 +1364,7 @@ struct PetScreen: View {
         }
 
         drawFlame(ctx, x: 138, y: 224)
-        ctx.gfxText(pet.streakLine, 162, 226, 2, UI.ink)
+        ctx.gfxText(pet.streakLine, 162, TP.textTop(centeredOn: 224 + 9, size: 2), 2, UI.ink)
         drawCardStat(ctx, y: 258, label: pet.bondLabel, value: UInt16(pet.bond),
                      maxBar: 100, color: rgb565(0xd4, 0x52, 0x7e))
         ctx.gfxTextCentered(pet.infoLine, 296, 2, UI.ink)
@@ -1400,12 +1427,19 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, 118, 34, 8, UI.white)
         ctx.drawRoundRect(x, y, 118, 34, 8, color)
         // The label (size 1) and the number (size 2) don't share a line box
-        // height, so a shared top y looked centred for one and left the other
-        // riding high or hanging out the box. Centring each independently
-        // within the 34-tall box fixes both at once.
+        // height, so the old shared `y+6` top looked centred for the number
+        // but left the label riding noticeably high above it -- visible as
+        // the two mismatched baselines the Korean screenshots surfaced (see
+        // kor_patch/FEASIBILITY.ko.md), though the mismatch was in the
+        // original English layout too, just harder to notice there. Centring
+        // each independently within the 34-tall box fixes both at once.
         ctx.gfxText(label, x + 10, TP.textTop(centeredOn: y + 17, size: 1), 1, color)
+        // Upstream puts the number at y+14, where its 16px-tall bitmap glyphs
+        // still clear the 34px box. The system font's size-2 line box is ~26px,
+        // so the same offset hangs it out the bottom; centring it in the box
+        // instead (below) fixes that the same way the label's centring does.
         let num = "\(value)"
-        ctx.gfxText(num, x + 118 - 12 - CGFloat(num.count) * 12,
+        ctx.gfxText(num, x + 118 - 12 - ctx.gfxTextWidth(num, 2),
                     TP.textTop(centeredOn: y + 17, size: 2), 2, UI.ink)
     }
 
@@ -1472,8 +1506,7 @@ struct PetScreen: View {
         let sort = pet.boxSortLabel
         ctx.fillRoundRect(302, 62, 106, 28, 9, UI.white)
         ctx.drawRoundRect(302, 62, 106, 28, 9, UI.ink)
-        ctx.gfxText(sort, 302 + (106 - CGFloat(sort.count) * 6) / 2,
-                   TP.textTop(centeredOn: 62 + 14, size: 1), 1, UI.ink)
+        ctx.gfxTextCentered2(sort, 302, 106, TP.textTop(centeredOn: 62 + 14, size: 1), 1, UI.ink)
 
         // caughtCountLine/knownCountLine share the same x as
         // renderCardPersonality's age/records pair, and the same fix: the
@@ -1497,16 +1530,21 @@ struct PetScreen: View {
             ctx.fillRoundRect(58, y, 350, 34, 9, UI.white)
             ctx.drawRoundRect(58, y, 350, 34, 9, TPDexAccent(dex))
             let name = String(format: "#%03d %@", dex, TPDexName(dex))
-            ctx.gfxText(name, 72, y + (name.count <= 16 ? 7 : 5), name.count <= 16 ? 2 : 1, UI.ink)
+            // Was `name.count <= 16`: a Korean name can be well under 16
+            // characters and still overrun this budget at 1.44x/glyph, so
+            // this checks the actual rendered width at size 2 against the
+            // same ~192px budget 16 ASCII characters at size 2 used to imply.
+            let nameFits = ctx.gfxTextWidth(name, 2) <= 192
+            ctx.gfxText(name, 72, y + (nameFits ? 7 : 5), nameFits ? 2 : 1, UI.ink)
             // Type sits right-aligned in the row rather than under the name
             // (the fork stacks them, but the row reads cleaner split
             // left/right); RAISED stacks under the type when both apply.
             let type = pet.typeText(forDex: dex)
-            let tx = 394 - CGFloat(type.count) * 6
+            let tx = 394 - ctx.gfxTextWidth(type, 1)
             if raised {
                 ctx.gfxText(type, tx, y + 6, 1, pet.typeColor(forDex: dex))
                 let rm = pet.raisedMarkText
-                ctx.gfxText(rm, 394 - CGFloat(rm.count) * 6, y + 19, 1, UI.barOK)
+                ctx.gfxText(rm, 394 - ctx.gfxTextWidth(rm, 1), y + 19, 1, UI.barOK)
             } else {
                 ctx.gfxText(type, tx, y + 11, 1, pet.typeColor(forDex: dex))
             }
@@ -1578,7 +1616,7 @@ struct PetScreen: View {
         ctx.gfxTextCentered(pet.progressTitle, 44, 3, UI.ink)
 
         let lv = pet.levelLine
-        ctx.gfxText(lv, TP.cx - CGFloat(lv.count) * 15, 86, 5, UI.ink)
+        ctx.gfxText(lv, TP.cx - ctx.gfxTextWidth(lv, 5) / 2, 86, 5, UI.ink)
 
         let bx: CGFloat = 93, bw: CGFloat = 280, by: CGFloat = 158, bh: CGFloat = 22
         ctx.fillRoundRect(bx, by, bw, bh, 6, UI.track)
@@ -1650,11 +1688,17 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, w, h, 9, count > 0 ? UI.white : 0xE4E7)
         ctx.drawRoundRect(x, y, w, h, 9, count > 0 ? col : UI.track)
         ctx.fillCircle(x + 22, y + 27, 12, count > 0 ? col : UI.track)
-        // A flat size 1 read as illegibly small. Shrink continuously from
-        // size 2 (20pt) down to size 1 (10pt) instead -- whatever actually
-        // clears the 94px gap before the "x{count}" column -- so an item
-        // name a few points over the budget only shrinks a few points
-        // rather than always bottoming out at the smallest step.
+        // Flagged twice now: size 1 read as illegibly small ("글씨 너무 작아서
+        // 안 보임"), but snapping straight from size 2 to size 1 whenever a
+        // label ran into the "x{count}" column overcorrected the other way
+        // -- every non-Korean language's item names are long enough to miss
+        // the 94px gap at size 2 (already-shortened Korean names clear it
+        // easily), so they all fell to size 1 while Korean stayed at size 2
+        // ("한글은 글씨 크기 아주 좋은데, 영어랑 다른 언어는 글씨 크기가 너무
+        // 작아"). Shrinking continuously to whatever point size actually
+        // clears the gap -- as low as 20pt (size 2), never below 10pt
+        // (size 1) -- means a label a few points over the budget only
+        // shrinks a few points, not a whole step.
         let label = pet.expeditionItemLabel(index)
         let labelPt = ctx.gfxFitPointSize(label, maxPt: 20, minPt: 10, budget: 94)
         ctx.gfxText(label, x + 42, y + 16, pt: labelPt, count > 0 ? UI.ink : UI.track)
@@ -1753,8 +1797,8 @@ struct PetScreen: View {
 
         let left = b.playerLabel, right = b.enemyLabel
         ctx.gfxText(left, 28, 82, 2, ink)
-        let rightSize = right.count <= 12 ? 2 : 1
-        ctx.gfxText(right, 466 - 28 - CGFloat(right.count) * CGFloat(rightSize) * 6,
+        let rightSize = ctx.gfxTextWidth(right, 2) <= 144 ? 2 : 1
+        ctx.gfxText(right, 466 - 28 - ctx.gfxTextWidth(right, rightSize),
                    rightSize == 2 ? 82 : 88, rightSize, ink)
 
         drawBattleHpBar(ctx, x: 28, y: 110, cur: b.playerHp, max: b.playerMaxHp, color: UI.barOK)
@@ -1765,7 +1809,7 @@ struct PetScreen: View {
         let pet = model.pet
         ctx.gfxText(pet.typeText(forDex: pet.speciesId), 28, 130, 1, pet.typeColor(forDex: pet.speciesId))
         let enemyType = pet.typeText(forDex: b.wildDex)
-        ctx.gfxText(enemyType, 438 - CGFloat(enemyType.count) * 6, 130, 1, pet.typeColor(forDex: b.wildDex))
+        ctx.gfxText(enemyType, 438 - ctx.gfxTextWidth(enemyType, 1), 130, 1, pet.typeColor(forDex: b.wildDex))
 
         if !b.resolved {
             ctx.fillRoundRect(188, 102, 90, 32, 9, UI.track)
@@ -1777,7 +1821,7 @@ struct PetScreen: View {
 
         if b.resolved {
             let res = b.resultText
-            ctx.gfxText(res, TP.cx - CGFloat(res.count) * 12, 300, 4,
+            ctx.gfxText(res, TP.cx - ctx.gfxTextWidth(res, 4) / 2, 300, 4,
                        b.playerWon ? UI.barOK : UI.barBad)
             ctx.gfxTextCentered(b.roundsLine, 334, 2, ink)
             ctx.gfxTextCentered(b.damageLine, 356, 2, ink)
@@ -1890,14 +1934,21 @@ struct PetScreen: View {
     /// Upstream's `drawCardStat`: label, value and a proportional bar.
     private func drawCardStat(_ ctx: GraphicsContext, y: CGFloat, label: String,
                               value: UInt16, maxBar: UInt16, color: UInt16) {
-        let barY = y + 2, barH: CGFloat = 11
+        let barX: CGFloat = 150, bw: CGFloat = 160, barY = y + 2, barH: CGFloat = 11
+        // Upstream draws both labels at `y` and the bar at `y + 2`; with its
+        // 16px bitmap glyphs against an 11px bar that reads as centred. The
+        // system font's size-2 line box is 26px, so the same y put the text's
+        // centre 5.5px below the bar's -- every stat row looked like it sagged.
         let textY = TP.textTop(centeredOn: barY + barH / 2, size: 2)
-        ctx.gfxText(label, 96, textY, 2, UI.ink)
+        // Right-aligned against the bar rather than parked at upstream's fixed
+        // x=96: that left only 54px, which 3-4 Latin capitals clear but a
+        // 3-syllable Korean label ("유대감") fills completely, leaving it
+        // touching the bar. Aligning to the bar keeps the gap in any language.
+        ctx.gfxText(label, barX - 10 - ctx.gfxTextWidth(label, 2), textY, 2, UI.ink)
         ctx.gfxText("\(value)", 330, textY, 2, UI.ink)
-        let bw: CGFloat = 160
         let fw = min(CGFloat(value) * bw / CGFloat(maxBar), bw)
-        ctx.fillRoundRect(150, barY, bw, barH, 3, UI.track)
-        if fw > 2 { ctx.fillRoundRect(150, barY, fw, barH, 3, color) }
+        ctx.fillRoundRect(barX, barY, bw, barH, 3, UI.track)
+        if fw > 2 { ctx.fillRoundRect(barX, barY, fw, barH, 3, color) }
     }
 
     /// The little streak flame, drawn as two stacked triangles.
@@ -1961,7 +2012,12 @@ struct PetScreen: View {
         let pet = model.pet
         // Same size-2-is-too-tall-for-a-12px-gap issue as the Personality
         // page (see renderCardPersonality) -- the R:/C: line drops to size 1.
-        ctx.gfxTextCentered("POKEDEX", 22, 3, UI.ink)
+        // Never went through the C string table like the rest of the UI does
+        // (see kor_patch/FEASIBILITY.ko.md item 2.2) -- the other five
+        // languages show this in English too, an existing gap rather than
+        // something new to Korean, so only Korean is special-cased here
+        // rather than adding a StrId for all six just to fix this one word.
+        ctx.gfxTextCentered(Self.isDexKorean(Int(TPLanguage())) ? "도감" : "POKEDEX", 22, 3, UI.ink)
         ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
 
         let filters = [pet.filterAllText, pet.raisedMarkText, pet.caughtMarkText]
@@ -1971,9 +2027,8 @@ struct PetScreen: View {
             ctx.fillRoundRect(fx, 74, 96, 18, 6, selected ? UI.ink : UI.white)
             ctx.drawRoundRect(fx, 74, 96, 18, 6, UI.ink)
             let label = filters[i]
-            ctx.gfxText(label, fx + (96 - CGFloat(label.count) * 6) / 2,
-                       TP.textTop(centeredOn: 74 + 9, size: 1), 1,
-                       selected ? UI.bgDay : UI.ink)
+            ctx.gfxTextCentered2(label, fx, 96, TP.textTop(centeredOn: 74 + 9, size: 1), 1,
+                                 selected ? UI.bgDay : UI.ink)
         }
 
         if galleryPage >= galleryPageCount() { galleryPage = 0 }
@@ -2036,8 +2091,9 @@ struct PetScreen: View {
         ctx.gfxTextCentered(String(format: "#%03d", dex), 78, 2, UI.track)
         let name = (known ? TPDexName(dex) : "???") + (known && shiny ? " *" : "")
         // Shrink rather than let a long name run off the narrow round panel,
-        // the same rule the profile card's header uses.
-        let nameSize = name.count <= 12 ? 3 : 2
+        // the same rule the profile card's header uses. Measured rather than
+        // counted, same reasoning as every other fit test on this screen.
+        let nameSize = ctx.gfxTextWidth(name, 3) <= 216 ? 3 : 2
         ctx.gfxTextCentered(name, nameSize == 3 ? 104 : 110, nameSize, UI.ink)
 
         if galleryDetailPage == 0 {
@@ -2085,7 +2141,7 @@ struct PetScreen: View {
         guard !ids.isEmpty else { return }
         let chips = ids.map { (label: pet.typeName(forType: $0), color: pet.typeColor(forType: $0)) }
         let gap: CGFloat = 10, h: CGFloat = 24
-        let widths = chips.map { CGFloat($0.label.count) * 6 + 22 }
+        let widths = chips.map { ctx.gfxTextWidth($0.label, 1) + 22 }
         let total = widths.reduce(0, +) + gap * CGFloat(chips.count - 1)
         var x = TP.cx - total / 2
         for (i, chip) in chips.enumerated() {
@@ -2149,12 +2205,15 @@ struct PetScreen: View {
         // already do elsewhere on this screen, size 2 is tried first and only
         // dropped to size 1 if it would actually overflow, rather than always
         // picking one size and letting long entries run past the border.
-        // Character width is `size * 6` (gfxText's own metric, see
-        // gfxTextCentered2) -- see TP.lineHeight for the line-box height this
-        // stacks lines by.
+        // See TP.lineHeight for the line-box height this stacks lines by.
+        // Line width is measured for real (not assumed from a character
+        // count) so this wraps correctly in every language, and Korean wraps
+        // character-by-character rather than by word -- see TPDexEntryText.wrap.
+        let byCharacter = Self.langCodes[Int(TPLanguage())] == "KR"
         func layout(size: Int) -> (lines: [String], lineH: CGFloat) {
-            let columns = max(1, Int(usableW / CGFloat(size * 6)))
-            return (TPDexEntryText.wrap(text, columns: columns), TP.lineHeight(size))
+            (TPDexEntryText.wrap(text, maxWidth: usableW, byCharacter: byCharacter) {
+                ctx.gfxTextWidth($0, size)
+            }, TP.lineHeight(size))
         }
 
         var size = 2
@@ -2207,7 +2266,12 @@ struct PetScreen: View {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(TPChooseStarterTitle(), 56, 2, UI.ink)
-        ctx.gfxTextCentered("GEN \(starterPage + 1)", 92, 2, UI.track)
+        // Same reasoning as the "POKEDEX" header above: Korean-only special
+        // case rather than a new StrId, since the other languages already
+        // show this in English and that gap is pre-existing, not new here.
+        let genLabel = Self.isDexKorean(Int(TPLanguage()))
+            ? "\(starterPage + 1)세대" : "GEN \(starterPage + 1)"
+        ctx.gfxTextCentered(genLabel, 92, 2, UI.track)
 
         let first = starterPage * Self.starterRowsPerPage
         let last = min(first + Self.starterRowsPerPage, Int(TPStarterCount()))
@@ -2234,10 +2298,12 @@ struct PetScreen: View {
                           cellY: ry + (Self.starterRowH - TP.galCell) / 2, scale: 2)
             }
             let name = TPDexName(dex)
-            // Size 3 is 18px per character; the widest of these names still
-            // clears the row's right edge, but shrink anyway if a longer one
-            // is ever added to the table.
-            let size = CGFloat(name.count) * 18 <= 240 ? 3 : 2
+            // The widest of the ASCII names still clears the row's right edge
+            // at size 3, but a translated name can be wider per character
+            // (Korean measures ~1.44x a Latin glyph -- see
+            // kor_patch/FEASIBILITY.ko.md), so this measures the real width
+            // rather than assuming 18px/character.
+            let size = ctx.gfxTextWidth(name, 3) <= 240 ? 3 : 2
             ctx.gfxText(name, 150, TP.textTop(centeredOn: ry + Self.starterRowH / 2, size: size),
                         size, UI.ink)
         }

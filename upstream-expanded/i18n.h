@@ -1,9 +1,12 @@
 #pragma once
 #include <Arduino.h>
 
-// Idiomas soportados. La fuente del firmware no tiene acentos: ambos textos van
-// sin tildes ni enes (igual que ya iba el espanol).
-enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT, LANG_COUNT };
+// Idiomas soportados. La fuente del firmware no tenia acentos (por eso el
+// espanol ya iba sin tildes ni enes), pero este port dibuja con la fuente del
+// sistema, que si reproduce UTF-8 de verdad -- LANG_KO es el primer idioma no
+// ASCII de la tabla. Anadido al final a proposito: el indice de idioma
+// guardado en cada partida sigue siendo valido para quien ya tenia una.
+enum Lang : uint8_t { LANG_ES = 0, LANG_EN, LANG_FR, LANG_DE, LANG_IT, LANG_PT, LANG_KO, LANG_COUNT };
 #define LANG_DEFAULT LANG_EN  // idioma por defecto: ingles
 
 extern Lang gLang;  // idioma activo (definido en i18n.cpp)
@@ -97,3 +100,12 @@ const char *medalDesc(int i);  // descripcion larga de medalla
 
 void loadLang();             // lee el idioma de NVS (llamar en setup)
 void setLang(Lang l);        // cambia y persiste el idioma
+
+// Modo de nombres/dex en coreano sin traducir el resto de la UI ("kr"
+// parcial, frente a LANG_KO que traduce todo). Cuando esta activo, dexName()
+// devuelve DEX_NAMES[LANG_KO][...] sin importar gLang; T() no se ve afectado.
+// Vive aparte de gLang porque no es un idioma de UI real -- es una superposicion
+// sobre el idioma de UI elegido (ver TPSetLanguage/TPLanguage en TPPet.mm, que
+// mapean el indice de 8 posiciones del picker a (gLang, gDexNamesKorean)).
+extern bool gDexNamesKorean;
+void setDexNamesKorean(bool on);  // cambia y persiste el modo

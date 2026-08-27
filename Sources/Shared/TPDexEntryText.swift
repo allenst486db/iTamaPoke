@@ -15,6 +15,7 @@
 //
 
 import Foundation
+import CoreGraphics
 
 final class TPDexEntryText {
 
@@ -55,29 +56,57 @@ final class TPDexEntryText {
         return out
     }
 
-    /// Greedy word wrap to `columns` characters. The renderer draws with a
-    /// monospaced face, so a character count is an exact width budget; a word
-    /// longer than the whole line is hard-split rather than allowed to
-    /// overflow the panel.
-    static func wrap(_ text: String, columns: Int) -> [String] {
-        guard columns > 0 else { return [text] }
+    /// Greedy wrap to `maxWidth`, measured by `width` rather than assumed from
+    /// a character count -- the old `columns: Int` budget relied on the
+    /// renderer's font advancing a fixed px/character, which is only true for
+    /// the monospaced system font's Latin glyphs. Korean has no glyphs in
+    /// that font at all (falls back to non-monospaced Apple SD Gothic Neo,
+    /// ~1.44x wider per character -- see kor_patch/FEASIBILITY.ko.md), so
+    /// wrapping it needs the same real-width measurement `gfxTextWidth` uses
+    /// for alignment.
+    ///
+    /// `byCharacter` switches from word wrapping (space-delimited languages)
+    /// to wrapping one character at a time, which is how Korean text is
+    /// actually set: dex entries run long stretches with no spaces, so word
+    /// wrapping barely wraps at all and the mid-word hard-split fallback
+    /// below fires on nearly every line instead of being the rare case it is
+    /// for the other languages.
+    static func wrap(_ text: String, maxWidth: CGFloat, byCharacter: Bool = false,
+                     width: (String) -> CGFloat) -> [String] {
+        guard maxWidth > 0 else { return [text] }
+        let units: [String] = byCharacter
+            ? text.map { String($0) }
+            : text.split(separator: " ", omittingEmptySubsequences: true).map(String.init)
+        let sep = byCharacter ? "" : " "
+
         var lines: [String] = []
         var line = ""
-        for word in text.split(separator: " ", omittingEmptySubsequences: true) {
-            var word = String(word)
-            while word.count > columns {
-                if !line.isEmpty { lines.append(line); line = "" }
-                lines.append(String(word.prefix(columns)))
-                word = String(word.dropFirst(columns))
+        for unit in units {
+            let candidate = line.isEmpty ? unit : line + sep + unit
+            if width(candidate) <= maxWidth {
+                line = candidate
+                continue
             }
-            if line.isEmpty {
-                line = word
-            } else if line.count + 1 + word.count <= columns {
-                line += " " + word
-            } else {
-                lines.append(line)
-                line = word
+            if !line.isEmpty { lines.append(line); line = "" }
+            if width(unit) <= maxWidth {
+                line = unit
+                continue
             }
+            // A single unit alone is wider than the line (a long word in a
+            // narrow box, or -- in character mode -- shouldn't happen since a
+            // lone glyph always fits, but stays defensive): hard-split it
+            // character by character rather than let it overflow the panel.
+            var chunk = ""
+            for ch in unit {
+                let next = chunk + String(ch)
+                if width(next) > maxWidth, !chunk.isEmpty {
+                    lines.append(chunk)
+                    chunk = String(ch)
+                } else {
+                    chunk = next
+                }
+            }
+            line = chunk
         }
         if !line.isEmpty { lines.append(line) }
         return lines

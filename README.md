@@ -69,6 +69,20 @@ chip-tune waveforms (square/triangle/soft/noise, with slides and per-effect
 volume) the fork's own audio.cpp generates — see [How the port
 works](#how-the-port-works).
 
+**Korean is a seventh language**, alongside the fork's existing ES/EN/FR/DE/IT/PT
+— cycle to it from Settings. Unlike those six, Korean has no glyphs in the
+system's monospaced font and falls back to a proportional one, so every
+centring/alignment call in the UI now measures real glyph width instead of
+assuming a fixed `size*6`px/character (see
+[`kor_patch/FEASIBILITY.ko.md`](kor_patch/FEASIBILITY.ko.md) for why, and
+[`kor_patch/`](kor_patch) generally for the localization notes). Species
+names and UI strings are translated and built in; Pokédex entry text follows
+the existing per-user fetch (`Scripts/fetch_dex_entries.sh --lang ko`), same
+copyright handling as the sprites. **Not yet verified on a real phone or
+watch** — only structural checks (string-table sizes, printf format-specifier
+safety, compiler syntax checks) — so treat it as freshly landed until someone
+actually plays through it in Korean.
+
 **One deliberate difference:** the settings screen has no manual clock. The
 original hardware sets its own clock by hand because it has no other way to
 know the time; the phone already knows, so this port just uses that instead.

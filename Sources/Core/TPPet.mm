@@ -208,7 +208,7 @@ static const DexEntry *TPDexEntry(int16_t dex);
 
 - (NSString *)headerName {
   if (gPet.isEgg()) return [NSString stringWithUTF8String:T(S_EGG_HDR)];
-  const char *base = gPet.nick[0] ? gPet.nick : DEX_TBL[gPet.speciesId].name;
+  const char *base = gPet.nick[0] ? gPet.nick : dexName(gPet.speciesId);
   char out[40];
   snprintf(out, sizeof(out), T(S_NAME_FMT), gPet.shiny ? "*" : "", base, gPet.level());
   return [NSString stringWithUTF8String:out];
@@ -237,7 +237,7 @@ static const DexEntry *TPDexEntry(int16_t dex);
 // The two CTA strings take the creature's name, so they are composed with the
 // same nick-or-dex-name rule drawEvolveButton/drawFarewellButton use upstream.
 static NSString *TPNamedPrompt(StrId id) {
-  const char *nm = gPet.nick[0] ? gPet.nick : DEX_TBL[gPet.speciesId].name;
+  const char *nm = gPet.nick[0] ? gPet.nick : dexName(gPet.speciesId);
   char out[64];
   snprintf(out, sizeof(out), T(id), nm);
   return [NSString stringWithUTF8String:out];
@@ -283,7 +283,7 @@ static NSString *TPNamedPrompt(StrId id) {
 }
 
 - (NSString *)speciesName {
-  return [NSString stringWithUTF8String:TPDexEntry(gPet.speciesId)->name];
+  return [NSString stringWithUTF8String:dexName(gPet.speciesId)];
 }
 
 - (NSString *)streakLine {
@@ -639,8 +639,10 @@ static uint16_t TPBoxBuildList(int16_t *out) {
 
 // Type names/colours aren't in the string table (upstream keeps them as a
 // raw per-language array inside TamaPoke.ino, which isn't vendored) --
-// English-only here, same simplification the existing speciesName/DEX_TBL
-// name already makes regardless of the active language.
+// deliberately English-only in every language, confirmed rather than left
+// as a gap: unlike speciesName below (which used to make this same
+// simplification by accident -- see kor_patch/FEASIBILITY.ko.md -- until
+// that turned out to be a real bug, not a design choice).
 static const char *const kTypeNames[19] = {
   "", "NORMAL", "FIRE", "WATER", "ELEC", "GRASS", "ICE", "FIGHT", "POISON",
   "GROUND", "FLY", "PSY", "BUG", "ROCK", "GHOST", "DRAGON", "DARK", "STEEL", "FAIRY"
@@ -849,7 +851,7 @@ static const uint8_t kExpMinutes[3] = { 15, 30, 60 };
 // --- release dialog -----------------------------------------------------
 - (NSString *)releaseQuestion {
   char out[48];
-  snprintf(out, sizeof(out), T(S_RELEASE_FMT), TPDexEntry(gPet.speciesId)->name);
+  snprintf(out, sizeof(out), T(S_RELEASE_FMT), dexName(gPet.speciesId));
   return [NSString stringWithUTF8String:out];
 }
 
@@ -873,7 +875,14 @@ static const DexEntry *TPDexEntry(int16_t dex) {
 int16_t TPDexCount(void) { return DEX_COUNT; }
 
 NSString *TPDexName(int16_t dex) {
-  return [NSString stringWithUTF8String:TPDexEntry(dex)->name];
+  // dexName(dex) reads DEX_NAMES[gLang][dex] -- the actually-localized table.
+  // TPDexEntry(dex)->name is DEX_TBL's single, always-English name (battle
+  // logic/species data only, never meant to reach the UI) -- using it here
+  // was a real bug: every screen that shows a species name (header, gallery,
+  // box, starter picker) stayed English regardless of the selected language,
+  // including for the two languages (FR/DE) whose DEX_NAMES rows have always
+  // carried real localized names.
+  return [NSString stringWithUTF8String:dexName(dex)];
 }
 
 uint16_t TPDexAccent(int16_t dex) { return TPDexEntry(dex)->accent; }
@@ -890,11 +899,29 @@ NSString *TPString(uint8_t strId) {
   return [NSString stringWithUTF8String:T((StrId)strId)];
 }
 
+// `lang` here is the settings picker's 8-slot UI index, not the raw `Lang`
+// enum: 0-5 are the plain languages, 6 is "KR" (full Korean: gLang=LANG_KO),
+// 7 is "kr" (species names + dex chrome only, in Korean, with everything
+// else staying in English -- see gDexNamesKorean in i18n.h/.cpp). Folding
+// the mapping in here keeps the Swift call sites unaware of the split.
 void TPSetLanguage(uint8_t lang) {
-  if (lang < LANG_COUNT) setLang((Lang)lang);
+  if (lang <= 5) {
+    setDexNamesKorean(false);
+    setLang((Lang)lang);
+  } else if (lang == 6) {
+    setDexNamesKorean(true);
+    setLang(LANG_KO);
+  } else if (lang == 7) {
+    setDexNamesKorean(true);
+    setLang(LANG_EN);
+  }
 }
 
-uint8_t TPLanguage(void) { return (uint8_t)gLang; }
+uint8_t TPLanguage(void) {
+  if (gLang == LANG_KO) return 6;
+  if (gDexNamesKorean) return 7;
+  return (uint8_t)gLang;
+}
 
 void TPSetSfxHandler(void (^handler)(uint8_t)) {
   gSfxBlock = [handler copy];
