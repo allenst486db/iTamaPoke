@@ -219,13 +219,15 @@ screen, so partial sets are fine.
 Tapping a species in the Pokédex opens a two-page detail view — the portrait
 with its type chips on the first page, its dex entry on the second. That entry
 text is Nintendo / Game Freak's writing, so, exactly like the sprites above,
-**none of it is committed here**. The page reads `mons/dex_entries.txt`,
+**none of it is committed here**. The page reads `mons/dex_entries_<lang>.txt`
+— one file per language, matching whichever the UI is currently set to —
 resolved the same way sprites are: `Documents/mons/` first (Files → On My
 iPhone → iTamaPoke), then the app bundle.
 
-`Scripts/fetch_dex_entries.sh` builds that file from
+`Scripts/fetch_dex_entries.sh` builds one of those files from
 [PokéAPI](https://pokeapi.co) — the same source upstream already uses for the
-battle stats in `dex.h`:
+battle stats in `dex.h`. Run it once per language you want available; each
+run only touches that language's own file:
 
 ```bash
 Scripts/fetch_dex_entries.sh              # every species, in English

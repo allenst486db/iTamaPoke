@@ -208,12 +208,15 @@ C(Xcode로 워치와 직접 연결해 빌드)를 이용하세요.
 도감에서 포켓몬을 누르면 2페이지짜리 상세 화면이 열립니다 — 첫 페이지는
 초상화와 타입 칩, 둘째 페이지는 도감 설명문입니다. 이 설명문은 Nintendo /
 Game Freak의 저작물이라, 위의 스프라이트와 똑같이 **저장소에 포함하지
-않습니다**. 화면은 `mons/dex_entries.txt`를 읽으며, 경로 규칙도 스프라이트와
-같습니다: `Documents/mons/`(파일 앱 → 내 iPhone 안에 → iTamaPoke)를 먼저
-보고, 없으면 앱 번들을 봅니다.
+않습니다**. 화면은 `mons/dex_entries_<언어>.txt`를 읽습니다 — 현재 UI 언어에
+맞는 파일 하나를 골라서 읽으며, 경로 규칙도 스프라이트와 같습니다:
+`Documents/mons/`(파일 앱 → 내 iPhone 안에 → iTamaPoke)를 먼저 보고, 없으면
+앱 번들을 봅니다.
 
-`Scripts/fetch_dex_entries.sh`가 [PokéAPI](https://pokeapi.co)에서 그 파일을
-만들어줍니다 — 원작이 `dex.h`의 전투 스탯을 가져오는 것과 같은 출처입니다:
+`Scripts/fetch_dex_entries.sh`가 [PokéAPI](https://pokeapi.co)에서 언어별
+파일을 하나씩 만들어줍니다 — 원작이 `dex.h`의 전투 스탯을 가져오는 것과 같은
+출처입니다. 원하는 언어마다 한 번씩 실행하면 되고, 각 실행은 그 언어의
+파일만 건드립니다:
 
 ```bash
 Scripts/fetch_dex_entries.sh              # 전체 종, 영어

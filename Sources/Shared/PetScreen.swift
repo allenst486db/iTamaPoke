@@ -2222,7 +2222,9 @@ struct PetScreen: View {
         // Line width is measured for real (not assumed from a character
         // count) so this wraps correctly in every language, and Korean wraps
         // character-by-character rather than by word -- see TPDexEntryText.wrap.
-        let byCharacter = Self.langCodes[Int(TPLanguage())] == "KR"
+        // Slots 6 ("KR") and 7 ("kr") both show Korean dex text -- see
+        // TPDexEntryText.langCodeForSlot.
+        let byCharacter = Int(TPLanguage()) >= 6
         func layout(size: Int) -> (lines: [String], lineH: CGFloat) {
             (TPDexEntryText.wrap(text, maxWidth: usableW, byCharacter: byCharacter) {
                 ctx.gfxTextWidth($0, size)

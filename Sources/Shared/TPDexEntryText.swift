@@ -2,9 +2,10 @@
 // The Pokedex detail view's second page shows a species' dex entry. That text
 // is Nintendo / Game Freak's writing, so -- exactly like the sprites and the
 // app icon -- it is NOT committed to this repository. It is read at runtime
-// from `mons/dex_entries.txt`, resolved through TPMonsSource: Documents/mons
-// first (drop a file in via Files -> On My iPhone -> iTamaPoke), then the app
-// bundle. With no such file the page simply says so; nothing else changes.
+// from `mons/dex_entries_<lang>.txt` (one file per PokeAPI language code),
+// resolved through TPMonsSource: Documents/mons first (drop a file in via
+// Files -> On My iPhone -> iTamaPoke), then the app bundle. With no such file
+// for the active language the page simply says so; nothing else changes.
 //
 // Format: one entry per line, `<dex number>|<text>`. Blank lines and lines
 // starting with `#` are ignored, so a generated file can carry a header.
@@ -21,16 +22,31 @@ final class TPDexEntryText {
 
     static let shared = TPDexEntryText()
 
-    /// Parsed on first use and kept: the file is small and never changes
-    /// while the app is running.
-    private lazy var entries: [Int16: String] = Self.load()
-
     private init() {}
 
-    /// The entry for `dex`, or nil when no file is installed or it has no
-    /// line for that species.
+    /// PokeAPI's language code for each of the settings picker's 8 language
+    /// slots (see TPLanguage()). Slots 6 ("KR", full Korean) and 7 ("kr",
+    /// names + dex only) both show Korean dex text -- that overlay is
+    /// exactly what gDexNamesKorean covers, see FEASIBILITY.ko.md.
+    private static let langCodeForSlot = ["es", "en", "fr", "de", "it", "pt", "ko", "ko"]
+
+    /// One parsed table per language code, loaded the first time that
+    /// language is actually shown and kept after that: each file is small
+    /// and never changes while the app is running.
+    private var cache: [String: [Int16: String]] = [:]
+
+    /// The entry for `dex` in the active language, or nil when no file is
+    /// installed for it or that file has no line for this species.
     func entry(dex: Int16) -> String? {
-        guard let text = entries[dex], !text.isEmpty else { return nil }
+        let code = Self.langCodeForSlot[Int(TPLanguage())]
+        let table: [Int16: String]
+        if let cached = cache[code] {
+            table = cached
+        } else {
+            table = Self.load(langCode: code)
+            cache[code] = table
+        }
+        guard let text = table[dex], !text.isEmpty else { return nil }
         return text
     }
 
@@ -38,8 +54,8 @@ final class TPDexEntryText {
     /// this is the normal state for a fresh checkout, not an error.
     let missingText = "NO DEX ENTRY"
 
-    private static func load() -> [Int16: String] {
-        guard let url = TPMonsSource.url(name: "dex_entries", ext: "txt"),
+    private static func load(langCode: String) -> [Int16: String] {
+        guard let url = TPMonsSource.url(name: "dex_entries_\(langCode)", ext: "txt"),
               let raw = try? String(contentsOf: url, encoding: .utf8)
         else { return [:] }
 

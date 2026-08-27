@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 #
-# Builds Resources/mons/dex_entries.txt -- the text the Pokedex detail view's
-# second page shows -- from PokeAPI (https://pokeapi.co).
+# Builds Resources/mons/dex_entries_<lang>.txt -- the text the Pokedex detail
+# view's second page shows -- from PokeAPI (https://pokeapi.co).
 #
 # Resources/mons/ is gitignored on purpose. Pokedex entries are Nintendo /
 # Game Freak's writing: fine to fetch onto your own device, not fine to commit
@@ -15,15 +15,16 @@
 # screen, so fetching a subset is a supported state.
 #
 # The file is one entry per line, `<dex number>|<text>`; `#` comments and
-# blank lines are ignored. It holds one language at a time, because the app
-# reads a single dex_entries.txt -- re-run with a different --lang to switch.
+# blank lines are ignored. Each language gets its own file (dex_entries_ko.txt,
+# dex_entries_en.txt, ...) since the app picks the file matching the active UI
+# language at read time (see TPDexEntryText) -- re-run with a different --lang
+# to add or refresh that language, without disturbing the others.
 
 set -euo pipefail
 
 cd "$(dirname "$0")/.."
 
 DST="Resources/mons"
-OUT="$DST/dex_entries.txt"
 API="https://pokeapi.co/api/v2/pokemon-species"
 lang="en"
 
@@ -40,6 +41,8 @@ if [ "${1-}" = "--lang" ]; then
   fi
   shift 2
 fi
+
+OUT="$DST/dex_entries_$lang.txt"
 
 if [ $# -eq 0 ]; then
   # Default to whatever this build's dex holds, read from dex.h rather
