@@ -1650,7 +1650,14 @@ struct PetScreen: View {
         ctx.fillRoundRect(x, y, w, h, 9, count > 0 ? UI.white : 0xE4E7)
         ctx.drawRoundRect(x, y, w, h, 9, count > 0 ? col : UI.track)
         ctx.fillCircle(x + 22, y + 27, 12, count > 0 ? col : UI.track)
-        ctx.gfxText(pet.expeditionItemLabel(index), x + 42, y + 16, 1, count > 0 ? UI.ink : UI.track)
+        // A flat size 1 read as illegibly small. Shrink continuously from
+        // size 2 (20pt) down to size 1 (10pt) instead -- whatever actually
+        // clears the 94px gap before the "x{count}" column -- so an item
+        // name a few points over the budget only shrinks a few points
+        // rather than always bottoming out at the smallest step.
+        let label = pet.expeditionItemLabel(index)
+        let labelPt = ctx.gfxFitPointSize(label, maxPt: 20, minPt: 10, budget: 94)
+        ctx.gfxText(label, x + 42, y + 16, pt: labelPt, count > 0 ? UI.ink : UI.track)
         ctx.gfxText("x\(count)", x + 136, y + 29, 2, count > 0 ? UI.ink : UI.track)
     }
 
