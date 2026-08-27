@@ -54,7 +54,7 @@ CONTENT = f'''
       <header>
         <p class="eyebrow">GAMEPLAY GUIDE · v0.7.1</p>
         <h1>iTamaPoke 게임 설명서</h1>
-        <p class="lede">화면 캡쳐는 전부 <strong>영어(EN) 모드</strong>에서, 도감에 <strong>피카츄</strong>를 등록해서 찍었습니다. 실제 조작감은 한글 모드에서도 동일합니다.</p>
+        <p class="lede">화면 캡쳐는 전부 <strong>영어(EN) 모드</strong>에서, <strong>GIRAFARIG</strong>를 키우면서 찍었습니다. 실제 조작감은 한글 모드에서도 동일합니다.</p>
       </header>
 
       <section>
@@ -69,7 +69,10 @@ CONTENT = f'''
         <h2>대기 화면</h2>
         <p>캐릭터는 실제 기기 시간에 맞춰 낮/밤이 바뀌는 하늘 아래에서 혼자 돌아다닙니다. 계속 붙잡고 있어야 하는 게임이 아니라, 가끔 들여다보도록 설계되어 있습니다.</p>
 
-        {shot("idle.png", "Idle screen showing PIKACHU", "대기 화면 — 이름/레벨, 상태 메시지, FOOD/JOY/ENE/HYG 네 게이지, 하단 네 버튼(먹이·놀기·잠자기·씻기).")}
+        <div class="cards" style="grid-template-columns:1fr 1fr">
+          {shot("idle-full.png", "Idle screen with all four stats above 70%", "네 게이지가 전부 70% 이상 — 초록 막대, 밝은 상태 메시지.")}
+          {shot("idle-low.png", "Idle screen with stats depleted", "돌보지 않고 방치하면 — 빨간 막대, 응가가 쌓이고 캐릭터가 지친 포즈.")}
+        </div>
 
         <ul class="pts">
           <li><strong>위로 스와이프</strong> — 8페이지짜리 스탯 카드</li>
@@ -103,10 +106,12 @@ CONTENT = f'''
         <div class="method">
           <div class="m-head"><span class="m-badge">BALL</span></div>
           <p class="m-desc">타이밍 맞춰 잡기/튕기기 게임. 행복도와 유대감 상승.</p>
+          {shot("ball-game.png", "BALL minigame with a bouncing ball", "BALL — 튕기는 공, 놓친 횟수 표시(빨간 점).")}
         </div>
         <div class="method">
           <div class="m-head"><span class="m-badge alt">CATCH</span><span class="m-pill ok">Expanded 포크</span></div>
           <p class="m-desc">시간이 다 되거나 인내심이 바닥나기 전에 움직이는 타겟을 탭. 잘못 탭해도 놓친 것과 동일 처리.</p>
+          {shot("catch-game.png", "CATCH minigame score screen", "CATCH — SCORE/BEST 표시. 라운드가 끝나면 +happiness로 보상이 들어옵니다.")}
         </div>
         <div class="method">
           <div class="m-head"><span class="m-badge alt">MEMO</span><span class="m-pill ok">Expanded 포크</span></div>
@@ -116,10 +121,12 @@ CONTENT = f'''
         <div class="method">
           <div class="m-head"><span class="m-badge alt">CLEAN</span><span class="m-pill ok">Expanded 포크</span></div>
           <p class="m-desc">계속 새로 생기는 먼지를 세 번 놓치거나 시간이 다 되기 전에 닦아내기.</p>
+          {shot("clean-game.png", "CLEAN minigame with dirt patches to tap", "CLEAN — 화면에 쌓이는 먼지, 남은 시간 게이지, 놓친 횟수 표시.")}
         </div>
         <div class="method">
           <div class="m-head"><span class="m-badge alt">TYPE</span><span class="m-pill ok">Expanded 포크</span></div>
           <p class="m-desc">시간 내에 화면에 나온 타입을 이기는 타입 셋 중 정답을 고르는 상성 퀴즈. 1~3세대 전체 18타입(악/강철/페어리 포함) 커버.</p>
+          {shot("type-game.png", "TYPE minigame with GROUND/WATER/POISON/STEEL choices", "TYPE — 상단에 상대 타입, 아래 보기 3개 중 상성 우위 타입을 선택.")}
         </div>
       </section>
 
@@ -142,7 +149,7 @@ CONTENT = f'''
         <h2>스탯 카드</h2>
         <p>대기 화면에서 위로 스와이프한 뒤, 좌우로 스와이프해서 8페이지를 넘깁니다.</p>
 
-        {shot("statcard-profile.png", "Stat card profile page for PIKACHU", "스탯 카드 1페이지(프로필) — 이름, 레벨, 배고픔/행복도/청결도. 이름을 탭하면 이름변경 키보드가 열립니다.")}
+        {shot("statcard-profile.png", "Stat card profile page for GIRAFARIG", "스탯 카드 1페이지(프로필) — 이름, 레벨, STREAK/BOND, BERRY/AGE. 이름을 탭하면 이름변경 키보드가 열립니다.")}
 
         <div class="table-wrap"><table>
           <thead><tr><th>#</th><th>페이지</th><th>내용</th></tr></thead>
@@ -164,13 +171,13 @@ CONTENT = f'''
         <h2>도감, 도감 설명문, 울음소리</h2>
         <p>대기 화면에서 왼쪽으로 스와이프하면 도감 그리드가 열립니다. 전체(ALL) / 키운 것(RAISED) / 잡은 것(CAUGHT) 세 필터로 좁혀볼 수 있습니다.</p>
 
-        {shot("dex-list.png", "Pokedex grid filtered to RAISED", "도감 그리드 — RAISED 필터로 좁힌 상태(이 예시에서는 BULBASAUR와 PIKACHU).")}
+        {shot("dex-list.png", "Pokedex grid filtered to RAISED", "도감 그리드 — RAISED 필터로 좁힌 상태(이 예시에서는 BULBASAUR와 GIRAFARIG).")}
 
         <p>종을 탭하면 2페이지짜리 상세 화면이 열립니다.</p>
 
-        {shot("dex-pikachu.png", "Pokedex detail for PIKACHU with cry button", "도감 상세 1페이지 — 번호/이름/타입 칩, 초상화, 울음소리 재생 버튼, RAISED/CAUGHT 표시. 두 번째 페이지는 도감 설명문.")}
+        {shot("dex-detail.png", "Pokedex detail for GIRAFARIG with cry button", "도감 상세 1페이지 — 번호/이름/타입 칩, 초상화, 울음소리 재생 버튼, RAISED/CAUGHT 표시. 두 번째 페이지는 도감 설명문.")}
 
-        <div class="note info"><span class="lbl">울음소리 재생</span><p>초상화 아래 캡슐 버튼을 탭하면 짧은 울음소리가 재생되며, 게이지가 도감 마스트헤드와 같은 빨간색으로 차오릅니다. 사운드 파일이 없는 종은 버튼 자체가 안 보입니다. 재생은 <strong>설정의 소리 모드</strong>를 그대로 따르므로, 소리를 꺼두면 울음소리도 재생되지 않습니다.</p></div>
+        <div class="note info"><span class="lbl">울음소리 재생</span><p>초상화 아래 캡슐 버튼을 탭하면 짧은 울음소리가 재생되며, 게이지가 도감 마스트헤드와 같은 빨간색으로 차오릅니다. 사운드 파일이 없는 종은 버튼 자체가 안 보입니다. 재생은 <strong>설정의 소리 모드가 "소리+진동"일 때만</strong> 됩니다 — "진동만"·"무음"에서는 재생되지 않습니다. 버튼을 눌러도 별도의 탭 효과음은 나지 않습니다(울음소리와 겹치지 않도록 일부러 뺐습니다).</p></div>
         <div class="note plain"><span class="lbl">도감 설명문</span><p>2페이지에는 실제 게임 도감 문구가 뜹니다 — 스프라이트·울음소리와 마찬가지로 저장소에는 포함돼 있지 않고, 직접 받아와서 <code>Files → On My iPhone → iTamaPoke → mons</code>에 넣거나 Xcode 빌드 시 스크립트로 받아옵니다. 설치 방법은 <a href="INSTALL.html">설치 가이드</a> 참고.</p></div>
       </section>
 
@@ -186,13 +193,13 @@ CONTENT = f'''
         <h2>언어와 사운드 설정</h2>
         <p>대기 화면에서 아래로 스와이프하면 설정 화면이 열립니다: 시간대/시각, 소리 모드, 언어.</p>
 
-        {shot("settings.png", "Settings screen with SND ALL and EN language pill", "설정 화면 — SET TIME, 소리 모드(SND ALL/MED/LOW/OFF 순환), 언어 핀(8단계: ES/EN/FR/DE/IT/PT/KR/kr).")}
+        {shot("settings.png", "Settings screen with SND VIB and EN language pill", "설정 화면 — SET TIME, 소리 모드(사진은 VIB 상태), 언어 핀(8단계: ES/EN/FR/DE/IT/PT/KR/kr).")}
 
         <ul class="pts">
-          <li><strong>소리 버튼</strong> — 단순 켜기/끄기가 아니라 4단계(전체/중간/최소/끔)를 순환. 켜져 있는 동안은 햅틱도 함께 울립니다.</li>
+          <li><strong>소리 버튼</strong> — 3단계(<strong>소리+진동</strong> → <strong>진동만</strong> → <strong>무음</strong>)를 순환. "진동만"은 소리 없이 탭 반응 햅틱만 남기고, "무음"은 둘 다 끕니다.</li>
           <li><strong>언어 핀</strong> — ES/EN/FR/DE/IT/PT 6개 언어에 더해, <strong>KR</strong>(UI 전체 한글화)과 <strong>kr</strong>(포켓몬 이름·도감만 한글, 나머지 UI는 영어) 두 가지 한글 모드까지 8단계.</li>
         </ul>
-        <p>모든 효과음(탭, 먹기, 진화, 메달, 배틀 타격 등)은 녹음이 아니라 원본 하드웨어처럼 실시간 합성한 칩튠 사운드입니다. 도감의 울음소리만 예외적으로 실제 음원 파일을 재생합니다 — 위 "도감" 섹션 참고.</p>
+        <p>모든 효과음(탭, 먹기, 진화, 메달, 배틀 타격 등)은 녹음이 아니라 원본 하드웨어처럼 실시간 합성한 칩튠 사운드입니다. 도감의 울음소리만 예외적으로 실제 음원 파일을 재생합니다 — 위 "도감" 섹션 참고. 두 경우 다 "무음" 모드에서는 나오지 않고, "진동만" 모드에서는 효과음의 햅틱만 남고 소리는 꺼지며 울음소리는 아예 재생되지 않습니다.</p>
       </section>
 
       <section>

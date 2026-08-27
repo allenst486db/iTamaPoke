@@ -137,7 +137,7 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 @property (nonatomic, readonly, copy) NSString *knownLine;       ///< "Known 12"
 @property (nonatomic, readonly, copy) NSString *frameLine;       ///< "Frame 1/3"
 
-/// The fork's sound-mode labels by TPSoundMode raw value (0 OFF .. 3 FULL).
+/// Sound-mode labels by TPSoundMode raw value (0 SILENT, 1 VIBRATE, 2 FULL).
 - (NSString *)soundModeLabel:(NSInteger)mode;
 
 @property (nonatomic, readonly, copy) NSString *dailyTitle;

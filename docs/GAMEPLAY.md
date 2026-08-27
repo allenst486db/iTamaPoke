@@ -195,16 +195,17 @@ Every effect (tap, eat, evolve, medal, deny, farewell, battle hits, minigame
 feedback, and more) is a chip-tune synthesized the same way the original
 hardware and the Expanded fork generate theirs, not a recording — see the
 main [README](../README.md#status) if you're curious how. The settings
-screen's sound pill cycles through four levels — **ALL** (everything),
-**MID**, **LOW** (only the important events — records, evolution, farewell,
-battle results), and **OFF** — rather than a plain on/off switch. A haptic
-plays alongside whatever sound is enabled.
+screen's sound pill cycles through three levels — **ALL** (sound + haptic),
+**VIB** (haptic only, no sound at all), and **OFF** (neither) — rather than
+a plain on/off switch.
 
 The dex detail screen's cry-preview button is the one exception — it plays an
-actual audio file, not a synthesized effect, and follows the same sound
-setting above (muted SFX mutes cries too). A species with no cry file
-installed simply has no button. See [README "Cries"](../README.md#cries) for
-how to install them.
+actual audio file, not a synthesized effect, and only plays at all when the
+sound mode above is set to ALL (VIB and OFF both skip it, since it has no
+haptic to fall back to). Tapping the button itself makes no separate SFX,
+so it doesn't overlap the cry. A species with no cry file installed simply
+has no button. See [README "Cries"](../README.md#cries) for how to install
+them.
 
 ## Dex entries and language
 

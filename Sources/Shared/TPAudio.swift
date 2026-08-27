@@ -26,11 +26,11 @@ enum TPSfx: UInt8, CaseIterable {
     case expeditionStart, expeditionFound, expeditionClaim, itemUse
 }
 
-/// The fork's `SoundMode`: OFF mutes everything, and each effect declares the
-/// quietest mode it still plays at (`minMode` below) — LOW keeps only the
-/// important events, FULL plays every click.
+/// Three-level sound mode: SILENT mutes both audio and haptics, VIBRATE
+/// keeps only the haptic (no audio at all -- there is no more graduated
+/// "quiet but still audible" tier), FULL plays both.
 enum TPSoundMode: Int {
-    case off = 0, low, med, full
+    case silent = 0, vibrate, full
 }
 
 final class TPAudio {
@@ -117,48 +117,32 @@ final class TPAudio {
         [SOFT(659, 48, 62), SL(784, 95, 1175, 70, .tri)],                       // itemUse
     ]
 
-    /// The fork's `SFX_MIN_MODE[]`: the quietest sound mode each effect still
-    /// plays at. `.low` marks the important events that survive even "poco".
-    private static let minMode: [TPSoundMode] = [
-        .full, .med, .full, .med, .low,   // tap, eat, play, heart, hatch
-        .low, .low, .low, .low, .low,     // evolve, medal, deny, bye, level
-        .low, .low, .low, .low, .low,     // battleWin/Loss, catchOK/Fail, dailyGoal
-        .med, .med, .med, .full, .med,    // eventSparkle, rest, counter, menu, gameStart
-        .full, .full, .full,              // ballBounce, ballMiss, memoStep
-        .full, .full, .full, .full,       // memoPad0-3
-        .full, .full, .full, .med, .full, // attackQuick/Heavy, enemyHit, effective, weakHit
-        .med, .med, .low,                 // minigameOK/Bad, lowHP
-        .med, .low, .med, .med,           // expeditionStart/Found/Claim, itemUse
-    ]
-
-    /// The fork's `modeGainPct` — FULL is deliberately over 100%.
-    private static func gainPct(_ mode: TPSoundMode) -> Double {
-        switch mode {
-        case .low: return 58
-        case .med: return 82
-        case .full: return 118
-        case .off: return 0
-        }
-    }
+    /// The fork's `modeGainPct` for FULL, its only audible tier now --
+    /// deliberately over 100%. VIBRATE and SILENT never reach render() at
+    /// all (see play()), so there is nothing left to scale down to.
+    private static let fullGainPct: Double = 118
 
     /// Upstream runs the codec at 16kHz; keeping it makes the waveforms alias
     /// exactly the way they do on the hardware, which is most of the character.
     private static let sampleRate: Double = 16000
     /// The fork's base amplitude (9200 in Q15), scaled per note by vol/100 and
-    /// per mode by gainPct/100 at render time.
+    /// by fullGainPct/100 at render time.
     private static let baseAmp: Float = 9200.0 / 32768.0
 
     private let engine = AVAudioEngine()
     private let player = AVAudioPlayerNode()
     private let format: AVAudioFormat
-    /// Rendered per (effect, mode) on first use and reused: fixed waveforms.
-    private var cache: [UInt16: AVAudioPCMBuffer] = [:]
+    /// Rendered per effect on first use and reused: fixed waveforms, and
+    /// there is only one audible gain tier to render at now.
+    private var cache: [UInt8: AVAudioPCMBuffer] = [:]
     private var running = false
     /// watchOS activates the session asynchronously; these hold the gap so the
     /// effect that triggered `start()` is not swallowed while we wait.
     private var activating = false
     private var pending: UInt8?
-    /// The active sound mode, set by GameModel; gates and scales every effect.
+    /// The active sound mode, set by GameModel; gates whether effects render
+    /// at all -- VIBRATE and SILENT both mean "no audio", just with a
+    /// different haptic story handled entirely on the GameModel side.
     var mode: TPSoundMode = .full
 
     private init() {
@@ -244,22 +228,21 @@ final class TPAudio {
         #endif
     }
 
-    /// Queues one effect, honouring the sound mode the fork's audioTask honours:
-    /// nothing in OFF, and each effect's own `minMode` above that. Silently does
-    /// nothing when audio could not start, so a device that refuses the session
-    /// never breaks the game.
+    /// Queues one effect. Only FULL is audible now -- VIBRATE and SILENT both
+    /// skip rendering entirely, since GameModel handles their haptic-only (or
+    /// nothing-at-all) story on its own. Silently does nothing when audio
+    /// could not start, so a device that refuses the session never breaks
+    /// the game.
     func play(_ id: UInt8) {
-        guard id < Self.effects.count, mode != .off,
-              mode.rawValue >= Self.minMode[Int(id)].rawValue else { return }
+        guard id < Self.effects.count, mode == .full else { return }
         // Held rather than dropped only while watchOS is mid-activation; with no
         // session coming this stays nil and the effect is discarded as before.
         guard running else {
             if activating { pending = id }
             return
         }
-        let key = UInt16(id) << 2 | UInt16(mode.rawValue)
-        let buffer = cache[key] ?? render(id, mode: mode)
-        cache[key] = buffer
+        let buffer = cache[id] ?? render(id)
+        cache[id] = buffer
         guard let buffer else { return }
         player.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
     }
@@ -273,8 +256,9 @@ final class TPAudio {
 
     /// Port of the fork's `playTone` run over a whole effect: waveform per
     /// note, linear frequency slide, a 64-sample attack and 96-sample decay so
-    /// notes do not click, and the mode's gain baked into the amplitude.
-    private func render(_ id: UInt8, mode: TPSoundMode) -> AVAudioPCMBuffer? {
+    /// notes do not click, and FULL's gain baked into the amplitude -- the
+    /// only tier this ever renders at, see play().
+    private func render(_ id: UInt8) -> AVAudioPCMBuffer? {
         let notes = Self.effects[Int(id)]
         let frames = notes.reduce(0) { $0 + Int(Self.sampleRate) * $1.ms / 1000 }
         guard frames > 0,
@@ -287,7 +271,7 @@ final class TPAudio {
         var w = 0
         for note in notes {
             let total = Int(Self.sampleRate) * note.ms / 1000
-            let amp = Self.baseAmp * Float(note.vol) / 100 * Float(Self.gainPct(mode)) / 100
+            let amp = Self.baseAmp * Float(note.vol) / 100 * Float(Self.fullGainPct) / 100
             var phase = 0
 
             for i in 0..<total {

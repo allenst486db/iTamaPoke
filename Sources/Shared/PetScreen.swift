@@ -2579,8 +2579,9 @@ struct PetScreen: View {
             // grid", so this has to come before that catch-all.
             if galleryDetailPage == 0, Self.cryButtonRect.contains(p),
                TPCryPlayer.shared.hasCry(dex: galleryDetail) {
+                // No tap SFX here on purpose -- it would overlap the cry
+                // itself, which is the whole point of the button.
                 TPCryPlayer.shared.play(dex: galleryDetail)
-                model.playSfx(.tap)
                 return
             }
             TPCryPlayer.shared.stop()

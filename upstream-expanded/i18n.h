@@ -49,7 +49,7 @@ enum StrId : uint8_t {
   S_PROGRESS, S_LVL_FMT, S_NEXT_LVL_FMT, S_EVO_LABEL, S_FINAL_FORM,
   S_EVO_READY, S_EVO_BLOCKED, S_EVO_IN_FMT, S_MISTAKES_FMT,
   // modo de sonido (ajustes)
-  S_SND_FULL, S_SND_MED, S_SND_LOW, S_SND_OFF, S_PSAVE_ON, S_PSAVE_OFF,
+  S_SND_FULL, S_SND_VIB, S_SND_OFF, S_PSAVE_ON, S_PSAVE_OFF,
   S_EVO_TAP,        // texto del boton de evolucion
   S_FAREWELL_BTN,   // texto del boton de despedida (lleva el nombre: "%s ...")
   S_RUNAWAY_BTN,    // texto del boton de escapada por abandono (final triste)

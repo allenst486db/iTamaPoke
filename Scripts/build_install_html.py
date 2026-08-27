@@ -101,7 +101,7 @@ CONTENT = f'''
         </ol>
         <div class="note ok"><span class="lbl">Xcode로 빌드한다면</span><p><code>Scripts/fetch_assets.sh</code> 한 번으로 스프라이트·이로치·울음소리를 전부 받아 빌드에 바로 포함시킬 수 있습니다(아래 경로 C 참고).</p></div>
 
-        {shot("dex-pikachu.png", "Pokedex detail confirming PIKACHU art, dex entry and cry are installed", "정상 설치됐을 때 도감 상세화면 — 초상화·타입·울음소리 재생 버튼이 전부 나옵니다(예시: PIKACHU).")}
+        {shot("dex-detail.png", "Pokedex detail confirming art, dex entry and cry are installed", "정상 설치됐을 때 도감 상세화면 — 초상화·타입·울음소리 재생 버튼이 전부 나옵니다.")}
       </section>
 
       <section>

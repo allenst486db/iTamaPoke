@@ -38,7 +38,7 @@ final class TPCryPlayer: NSObject, AVAudioPlayerDelegate {
     /// standing up a second one: `start()` is idempotent, so this is free
     /// once the SFX engine is already going.
     func play(dex: Int16) {
-        guard TPAudio.shared.mode != .off, let url = Self.url(forDex: dex) else { return }
+        guard TPAudio.shared.mode == .full, let url = Self.url(forDex: dex) else { return }
         TPAudio.shared.start()
         stop()
         do {

@@ -140,8 +140,8 @@ final class GameModel: ObservableObject {
     func playSfx(_ sfx: TPSfx) { emitSfx(sfx.rawValue) }
 
     private func emitSfx(_ id: UInt8) {
-        guard soundEnabled else { return }
-        TPAudio.shared.play(id)
+        guard hapticEnabled else { return }
+        if soundEnabled { TPAudio.shared.play(id) }
         Self.playFeedback()
     }
 
@@ -513,28 +513,37 @@ final class GameModel: ObservableObject {
     }
     #endif
 
-    /// The fork's four-level sound mode (OFF/LOW/MED/FULL), replacing the
-    /// original on/off switch. An existing save's boolean preference (the old
-    /// "tamapoke/haptics" key) migrates to FULL or OFF on first read.
+    /// Three-level sound mode (SILENT/VIBRATE/FULL) -- VIBRATE is new: sound
+    /// and haptic used to be an all-or-nothing pair (whatever plays audio
+    /// also buzzes), this splits them so a silenced phone can still feel
+    /// responsive without making noise. An existing save's stored raw value
+    /// is under the *old* four-level scheme (0 OFF..3 FULL); LOW and MED
+    /// both collapse into the new VIBRATE tier since there is no longer a
+    /// "quieter but still audible" option. The still-older boolean
+    /// "tamapoke/haptics" key migrates to FULL or SILENT.
     private(set) var soundMode: TPSoundMode = {
-        if let stored = UserDefaults.standard.object(forKey: "tamapoke/soundmode") as? Int,
-           let mode = TPSoundMode(rawValue: stored) {
-            return mode
+        if let stored = UserDefaults.standard.object(forKey: "tamapoke/soundmode") as? Int {
+            switch stored {
+            case 0: return .silent
+            case 1, 2: return .vibrate
+            case 3: return .full
+            default: break
+            }
         }
         let legacy = UserDefaults.standard.object(forKey: "tamapoke/haptics") as? Bool ?? true
-        return legacy ? .full : .off
+        return legacy ? .full : .silent
     }()
 
-    var soundEnabled: Bool { soundMode != .off }
+    var soundEnabled: Bool { soundMode == .full }
+    var hapticEnabled: Bool { soundMode != .silent }
 
-    /// The settings pill cycles FULL -> MED -> LOW -> OFF, like the fork's.
+    /// The settings pill cycles FULL -> VIBRATE -> SILENT -> FULL.
     func cycleSound() {
         let next: TPSoundMode
         switch soundMode {
-        case .full: next = .med
-        case .med: next = .low
-        case .low: next = .off
-        case .off: next = .full
+        case .full: next = .vibrate
+        case .vibrate: next = .silent
+        case .silent: next = .full
         }
         setSound(next)
     }
@@ -543,13 +552,13 @@ final class GameModel: ObservableObject {
         soundMode = mode
         UserDefaults.standard.set(mode.rawValue, forKey: "tamapoke/soundmode")
         TPAudio.shared.mode = mode
-        if mode != .off {
+        if mode == .full {
             TPAudio.shared.start()
             TPAudio.shared.play(TPSfx.menu.rawValue)   // confirm at the new level
-            Self.playFeedback()
         } else {
             TPAudio.shared.stop()
         }
+        if mode != .silent { Self.playFeedback() }     // vibrate confirms too, just quietly
     }
 
     private static func playFeedback() {

@@ -486,8 +486,8 @@ static NSString *TPFormatted(StrId id, unsigned v) {
 }
 
 - (NSString *)soundModeLabel:(NSInteger)mode {
-  StrId ids[4] = { S_SND_OFF, S_SND_LOW, S_SND_MED, S_SND_FULL };
-  return [NSString stringWithUTF8String:T(ids[mode >= 0 && mode <= 3 ? mode : 0])];
+  StrId ids[3] = { S_SND_OFF, S_SND_VIB, S_SND_FULL };
+  return [NSString stringWithUTF8String:T(ids[mode >= 0 && mode <= 2 ? mode : 0])];
 }
 
 - (NSString *)dailyTitle { return [NSString stringWithUTF8String:T(S_DAILY)]; }
@@ -859,10 +859,6 @@ static const uint8_t kExpMinutes[3] = { 15, 30, 60 };
 - (NSString *)noText    { return [NSString stringWithUTF8String:T(S_NO)]; }
 - (NSString *)nameLabel     { return [NSString stringWithUTF8String:T(S_NAME)]; }
 - (NSString *)settingsTitle { return [NSString stringWithUTF8String:T(S_SET_TIME)]; }
-// The fork replaced the base's on/off S_SND_ON with a multi-level SoundMode
-// (S_SND_FULL/MED/LOW/OFF); this app only has a binary switch, so FULL is
-// the "on" label.
-
 
 @end
 
