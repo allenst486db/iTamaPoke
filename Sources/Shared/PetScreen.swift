@@ -2261,11 +2261,24 @@ struct PetScreen: View {
     private static var starterPageCount: Int {
         max(1, (Int(TPStarterCount()) + starterRowsPerPage - 1) / starterRowsPerPage)
     }
+    // The starter picker is the one screen a fresh install always shows
+    // before Settings (and its language pill) is even reachable -- without
+    // a language control here, a Korean-reading user's very first choice
+    // is stuck with English names no matter what they later switch to,
+    // since chooseStarter() only ever runs once (registeredCount() == 0).
+    private static let starterLangPill = CGRect(x: 300, y: 78, width: 96, height: 26)
 
     private func renderStarterSelect(_ ctx: GraphicsContext) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(TPChooseStarterTitle(), 56, 2, UI.ink)
+
+        let l = Self.starterLangPill
+        ctx.fillRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.white)
+        ctx.drawRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.ink)
+        let lp = "\(Self.langCodes[Int(TPLanguage())]) >"
+        ctx.gfxText(lp, l.minX + (l.width - ctx.gfxTextWidth(lp, 1)) / 2,
+                    TP.textTop(centeredOn: l.midY, size: 1), 1, UI.ink)
         // Same reasoning as the "POKEDEX" header above: Korean-only special
         // case rather than a new StrId, since the other languages already
         // show this in English and that gap is pre-existing, not new here.
@@ -2583,6 +2596,11 @@ struct PetScreen: View {
         }
 
         if pet.awaitingStarter {
+            if Self.starterLangPill.contains(p) {
+                TPSetLanguage((TPLanguage() + 1) % UInt8(Self.langCodes.count))
+                model.playSfx(.tap)
+                return
+            }
             let first = starterPage * Self.starterRowsPerPage
             let last = min(first + Self.starterRowsPerPage, Int(TPStarterCount()))
             for slot in first..<last {
