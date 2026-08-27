@@ -2112,13 +2112,16 @@ struct PetScreen: View {
         if galleryDetailPage == 0 {
             if known { drawTypeChips(ctx, dex: dex, y: 150) }
             drawDetailPortrait(ctx, dex: dex, known: known, shiny: shiny, now: now)
+            if known { drawCryButton(ctx, dex: dex) }
             // How this one was obtained: raised, caught, or both -- they stack
             // when both apply, hence each line's y depending on the other.
+            // Pushed down 18px from where they used to sit (342-based) to
+            // leave the cry button (see drawCryButton) room above the dots.
             if registered {
-                ctx.gfxTextCentered(pet.raisedMarkText, caught ? 366 : 378, 2, UI.barOK)
+                ctx.gfxTextCentered(pet.raisedMarkText, caught ? 384 : 396, 2, UI.barOK)
             }
             if caught {
-                ctx.gfxTextCentered(pet.caughtMarkText, registered ? 388 : 378, 2, UI.barWarn)
+                ctx.gfxTextCentered(pet.caughtMarkText, registered ? 406 : 396, 2, UI.barWarn)
             }
         } else {
             drawDexEntry(ctx, dex: dex, known: known)
@@ -2126,9 +2129,10 @@ struct PetScreen: View {
 
         // The entry page's panel is deep enough to push the dots down, which
         // is what the hardware does too -- they sit lower there than under
-        // the portrait.
+        // the portrait. Page 0's own dots dropped a further 18px (342 -> 360)
+        // when the cry button was added above them.
         let dotsX = TP.cx - 13
-        let dotsY: CGFloat = galleryDetailPage == 0 ? 342 : 396
+        let dotsY: CGFloat = galleryDetailPage == 0 ? 360 : 396
         for i in 0..<2 {
             let cx = dotsX + CGFloat(i) * 26
             if i == galleryDetailPage { ctx.fillCircle(cx, dotsY, 5, UI.ink) }
@@ -2190,6 +2194,41 @@ struct PetScreen: View {
         } else if let img = TPThumbs.shared.image(dex: dex, silhouette: !known),
                   let sz = TPThumbs.shared.size(dex: dex) {
             drawThumb(ctx, img, size: sz, cellX: TP.cx - TP.galCell, cellY: 196, scale: 4)
+        }
+    }
+
+    /// The cry preview control: a capsule track that fills with the
+    /// masthead's own red as the clip plays, reusing drawBars' track/fill
+    /// idiom rather than inventing a new bar style. Sits between the
+    /// portrait and the page dots -- see the callers below for the spacing
+    /// that made room for it. Hidden entirely when this species has no cry
+    /// file installed -- see hasCry's guard in both this and galleryTap.
+    private static let cryButtonRect = CGRect(x: 126, y: 326, width: 150, height: 20)
+
+    private func drawCryButton(_ ctx: GraphicsContext, dex: Int16) {
+        guard TPCryPlayer.shared.hasCry(dex: dex) else { return }
+        let r = Self.cryButtonRect
+        let radius = r.height / 2
+        ctx.fillRoundRect(r.minX, r.minY, r.width, r.height, radius, UI.white)
+        ctx.drawRoundRect(r.minX, r.minY, r.width, r.height, radius, UI.ink)
+
+        let progress = TPCryPlayer.shared.progress(forDex: dex)
+        if let progress, progress > 0 {
+            let fw = (r.width - 4) * CGFloat(progress)
+            ctx.fillRoundRect(r.minX + 2, r.minY + 2, fw, r.height - 4, radius - 2, Self.dexRed)
+        }
+
+        // The icon sits in its own circle at the capsule's left end rather
+        // than directly on the (sometimes red) track, so it stays legible
+        // whether or not the gauge has reached that far yet.
+        let iconCx = r.minX + radius, iconCy = r.midY
+        let playing = progress != nil
+        ctx.fillCircle(iconCx, iconCy, radius - 2, playing ? Self.dexRed : UI.ink)
+        if playing {
+            ctx.fillRect(iconCx - 4, iconCy - 5, 3, 10, UI.white)
+            ctx.fillRect(iconCx + 1, iconCy - 5, 3, 10, UI.white)
+        } else {
+            ctx.fillTriangle(iconCx - 3, iconCy - 5, iconCx - 3, iconCy + 5, iconCx + 5, iconCy, UI.white)
         }
     }
 
@@ -2411,6 +2450,7 @@ struct PetScreen: View {
             return
         }
         if galleryDetail != 0 {          // in detail: page between portrait and entry
+            TPCryPlayer.shared.stop()    // leaving page 0 -- its button goes with it
             galleryDetailPage = min(max(galleryDetailPage + (dir > 0 ? -1 : 1), 0), 1)
             return
         }
@@ -2533,7 +2573,17 @@ struct PetScreen: View {
     }
 
     private func galleryTap(_ p: CGPoint) {
-        if galleryDetail != 0 {          // any tap in detail returns to the grid
+        if galleryDetail != 0 {
+            // The cry button is the one tappable thing inside the detail
+            // view -- everywhere else, tapping still means "back to the
+            // grid", so this has to come before that catch-all.
+            if galleryDetailPage == 0, Self.cryButtonRect.contains(p),
+               TPCryPlayer.shared.hasCry(dex: galleryDetail) {
+                TPCryPlayer.shared.play(dex: galleryDetail)
+                model.playSfx(.tap)
+                return
+            }
+            TPCryPlayer.shared.stop()
             galleryDetail = 0
             return
         }

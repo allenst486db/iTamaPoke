@@ -242,9 +242,42 @@ comments are ignored, so you can also write it by hand:
 122|It uses its hands to create invisible walls.
 ```
 
-It holds one language at a time — re-run with a different `--lang` to switch.
-With no file installed the page just says `NO DEX ENTRY`; nothing else about
-the screen changes.
+With no file installed for the active language, the page just says
+`NO DEX ENTRY`; nothing else about the screen changes.
+
+---
+
+## Cries
+
+The same detail view's first page can also play a short cry, in a capsule
+button between the portrait and the page dots — hidden entirely for a species
+with no cry file installed. Like the sprites and dex entries, cries are
+Nintendo / Game Freak's audio, **not committed here**, read from
+`mons/psnd<dex number>.m4a` the same way (`Documents/mons/` first, then the
+bundle). Playback follows the app's own sound setting — muted SFX means muted
+cries too.
+
+`Scripts/fetch_cries.sh` builds those files from
+[PokéAPI's cries repo](https://github.com/PokeAPI/cries), converting each
+clip from `.ogg` to `.m4a` with `ffmpeg` on the way in, since AVFoundation
+cannot decode Ogg Vorbis on iOS/watchOS. Install `ffmpeg` first
+(`brew install ffmpeg`), then:
+
+```bash
+Scripts/fetch_cries.sh              # every species
+Scripts/fetch_cries.sh 1 4 7        # just these three
+```
+
+`Scripts/fetch_assets.sh` is a thin wrapper that fetches sprites, shiny
+sprites, and cries together — everything `Resources/mons/` can hold, in one
+call:
+
+```bash
+Scripts/fetch_assets.sh                    # every asset, every species
+Scripts/fetch_assets.sh 1 4 7              # every asset, just these three
+Scripts/fetch_assets.sh --only sound       # cries only
+Scripts/fetch_assets.sh --only sprites,shiny 25 25   # Pikachu's two sprites
+```
 
 ---
 

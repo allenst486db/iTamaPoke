@@ -126,6 +126,11 @@ README](../README.md#sprites). Add them like this:
 7. Fully close the iTamaPoke app (swipe it away in the app switcher) and
    reopen it. The creature should now appear instead of a placeholder.
 
+Want dex entries and cries too? Both are optional and go in the same `mons`
+folder — see [README "Pokédex entries"](../README.md#pokédex-entries) and
+[README "Cries"](../README.md#cries). Cries need `ffmpeg` on the computer
+you fetch them with (`brew install ffmpeg`), not on the iPhone.
+
 This `.ipa` doesn't include the Apple Watch app — see the note in step 1. If
 you want the game on a paired Apple Watch without a paid developer account,
 use Path C below (build with Xcode, connected directly to your watch)
@@ -193,6 +198,14 @@ Scripts/fetch_sprites.sh all      # or a few dex numbers instead of "all"
 xcodegen generate
 open TamaPoke.xcodeproj
 ```
+
+Building with none of that run at all works too — the app just starts with no
+sprites, dex entries, or cries until you add them (see [README
+"Sprites"](../README.md#sprites), ["Pokédex
+entries"](../README.md#pokédex-entries), and ["Cries"](../README.md#cries)).
+`Scripts/fetch_assets.sh` fetches sprites, shiny sprites, and cries together
+in one call instead of running each script by hand; cries need `ffmpeg`
+(`brew install ffmpeg`) first.
 
 In Xcode: select the **TamaPoke** target → *Signing & Capabilities* → turn on
 *Automatically manage signing* → pick your Apple ID as the team. Do the same

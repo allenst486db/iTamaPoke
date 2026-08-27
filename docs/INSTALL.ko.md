@@ -120,6 +120,11 @@ ID로 먼저 서명해줍니다. 둘 중 하나를 고르세요:
 7. iTamaPoke 앱을 완전히 종료(앱 전환기에서 위로 스와이프)했다가 다시
    엽니다. 이제 플레이스홀더 대신 캐릭터가 보여야 합니다.
 
+도감 설명문과 울음소리도 넣고 싶다면 같은 `mons` 폴더 안에 넣으면 됩니다 —
+[README "도감 설명문"](../README.ko.md#도감-설명문), [README
+"울음소리"](../README.ko.md#울음소리) 참고. 울음소리는 받아올 때 컴퓨터에
+`ffmpeg`가 필요합니다(`brew install ffmpeg`) — 아이폰 쪽에는 필요 없습니다.
+
 이 `.ipa`에는 애플워치 앱이 아예 들어있지 않습니다 — 1단계의 안내 참고.
 유료 개발자 계정 없이 애플워치에도 넣고 싶다면 사이드로딩 대신 아래 경로
 C(Xcode로 워치와 직접 연결해 빌드)를 이용하세요 — 무료 계정에서는 워치로
@@ -183,6 +188,14 @@ Scripts/fetch_sprites.sh all      # "all" 대신 도감 번호 몇 개만 써도
 xcodegen generate
 open TamaPoke.xcodeproj
 ```
+
+위 스크립트 없이 그냥 빌드해도 됩니다 — 스프라이트·도감 설명문·울음소리
+없이 시작할 뿐이고, 나중에 언제든 추가할 수 있습니다([README
+"스프라이트"](../README.ko.md#스프라이트), ["도감
+설명문"](../README.ko.md#도감-설명문), ["울음소리"](../README.ko.md#울음소리)
+참고). `Scripts/fetch_assets.sh`는 스프라이트·이로치·울음소리를 스크립트
+하나하나 따로 실행하지 않고 한 번에 받아옵니다 — 울음소리는 먼저 `ffmpeg`
+설치가 필요합니다(`brew install ffmpeg`).
 
 Xcode에서: **TamaPoke** 타겟 선택 → *Signing & Capabilities* → *Automatically
 manage signing* 켜기 → 본인 Apple ID를 팀으로 선택. **TamaPokeWatch**도

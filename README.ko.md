@@ -231,9 +231,39 @@ Scripts/fetch_dex_entries.sh 1 4 7        # 이 셋만
 122|손으로 보이지 않는 벽을 만들어낸다.
 ```
 
-파일 하나에 한 가지 언어만 담깁니다 — 언어를 바꾸려면 `--lang`을 바꿔 다시
-실행하세요. 파일이 없으면 해당 페이지에 `NO DEX ENTRY`라고만 표시되고,
-나머지 화면은 그대로 동작합니다.
+현재 UI 언어에 맞는 파일이 없으면 해당 페이지에 `NO DEX ENTRY`라고만
+표시되고, 나머지 화면은 그대로 동작합니다.
+
+---
+
+## 울음소리
+
+같은 상세 화면 첫 페이지에서 짧은 울음소리도 들을 수 있습니다 — 초상화와
+페이지 점(●○) 사이의 캡슐 버튼으로, 사운드 파일이 없는 종은 버튼 자체가
+아예 안 보입니다. 스프라이트·도감 설명문과 마찬가지로 울음소리도 Nintendo /
+Game Freak의 저작물이라 **저장소에 포함하지 않으며**, `mons/psnd<도감번호>.m4a`를
+같은 방식으로 읽습니다(`Documents/mons/`를 먼저 보고, 없으면 앱 번들). 재생은
+앱의 사운드 설정을 따르므로, 효과음을 꺼두면 울음소리도 같이 꺼집니다.
+
+`Scripts/fetch_cries.sh`가 [PokéAPI의 cries 저장소](https://github.com/PokeAPI/cries)에서
+파일을 만들어줍니다. iOS/watchOS의 AVFoundation이 Ogg Vorbis를 디코딩하지
+못해서, 받아오는 김에 `ffmpeg`로 `.ogg`를 `.m4a`로 변환합니다. 먼저
+`ffmpeg`를 설치하세요(`brew install ffmpeg`):
+
+```bash
+Scripts/fetch_cries.sh              # 전체 종
+Scripts/fetch_cries.sh 1 4 7        # 이 셋만
+```
+
+`Scripts/fetch_assets.sh`는 스프라이트·이로치·울음소리를 한 번에 받아오는
+래퍼입니다 — `Resources/mons/`에 들어갈 수 있는 걸 전부 한 번에:
+
+```bash
+Scripts/fetch_assets.sh                    # 전체 종, 모든 에셋
+Scripts/fetch_assets.sh 1 4 7              # 이 셋만, 모든 에셋
+Scripts/fetch_assets.sh --only sound       # 울음소리만
+Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트 둘만
+```
 
 ---
 
