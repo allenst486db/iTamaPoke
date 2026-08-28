@@ -326,8 +326,16 @@ spriteInput.addEventListener("change", async () => {
   setTimeout(() => { spriteLoadBtn.textContent = "Load sprites…"; }, 2500);
 });
 
+const soundToggle = document.getElementById("soundToggle");
+soundToggle.addEventListener("click", () => {
+  const on = soundToggle.textContent.includes("off");
+  setSoundOn(on);
+  soundToggle.textContent = on ? "🔊 Sound on" : "🔇 Sound off";
+  if (on) playSfx(18); // "menu" -- audible confirmation the toggle worked
+});
+
 createTPCore({
-  onSfx(id) { console.log("[sfx]", id); },
+  onSfx(id) { playSfx(id); },
 }).then(async (mod) => {
   Module = mod;
   fns = {
