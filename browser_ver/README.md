@@ -13,12 +13,11 @@ system, evolution/farewell/runaway, the rename keyboard, and all eight
 stat card pages (including Daily goals/Box/Expedition and the training
 sack) work against the real C++ game logic in an actual browser tab.
 Native shells (WKWebView/WebView) exist too -- see `native/`. Dex grid
-tiles now show the real sprite once you've picked it, and the dex
-detail screen has a real second page for user-supplied dex-entry text
-(`Load dex text…`, same local-file-picker pattern as sprites). What's
-left is presentation polish, not missing gameplay: the evolution/
-ceremony screens are a plain progress bar/message rather than the
-original's particle FX -- see the roadmap below.
+tiles now show the real sprite once you've picked it, the dex detail
+screen has a real second page for user-supplied dex-entry text, and
+evolution/farewell/runaway now draw the real halo/ray/spark/rain/heart
+particle FX rather than a plain progress bar -- `PetScreen.swift`'s
+render() is fully covered end to end, gameplay and presentation both.
 
 ## What's here
 
@@ -106,14 +105,17 @@ Python for everything after that.
    age info, and a real rename round-tripping through `Pet::rename`. The
    card's other seven pages (personality, daily goals, box, battle record,
    medals, progress, expeditions) aren't ported.
-   Evolution/farewell/runaway ✅ done too (`web/ceremony.js`) -- the
-   evolve/farewell/runaway call-to-action buttons, their confirm dialogs,
-   and the ceremony/evolving screens all work against the real
-   `Pet::evolve`/`startFarewell`/`startRunaway`. Deliberately simplified
-   from `PetScreen.swift`'s `drawEvolveFX`/`drawCeremony`: a plain pulsing
-   button and a progress-bar/message screen instead of the halo/ray/spark
-   particle animation, which needs `SceneRenderer.swift` ported first to
-   have a backdrop worth animating over.
+   Evolution/farewell/runaway ✅ done, including the particle FX
+   (`web/ceremony.js`) -- the evolve/farewell/runaway call-to-action
+   buttons, their confirm dialogs, and the ceremony/evolving screens all
+   work against the real `Pet::evolve`/`startFarewell`/`startRunaway`.
+   `drawEvolveFX`/`drawCeremony`'s halo rings, turning rays, sparks, rain,
+   rising hearts and the white-out reveal are all ported (canvas
+   `arc`/`fillRect` in place of `GraphicsContext`'s equivalents, and a
+   `source-atop` composite for the flat-silhouette look). The one real
+   simplification: evolving flickers the current sprite against itself
+   rather than the old species against the new one, since this build
+   doesn't keep a second sprite around for the pre-evolution form.
    Four more card pages ✅ done -- Personality, Battle (ATK/DEF/SPD/WGT
    bars, W/L record, a working wild-battle button), Medals, Progress
    (level bar, evolution status). Page-dot navigation added (tap left/

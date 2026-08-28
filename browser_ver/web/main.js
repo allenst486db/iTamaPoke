@@ -1056,6 +1056,7 @@ createTPCore({
     evolvingNow: mod.cwrap("tp_evolving_now", "number", []),
     evolveProgress: mod.cwrap("tp_evolve_progress", "number", []),
     ceremony: mod.cwrap("tp_ceremony", "number", []),
+    ceremonyProgress: mod.cwrap("tp_ceremony_progress", "number", []),
     ceremonyMessage: mod.cwrap("tp_ceremony_message", "string", []),
     evolveButtonText: mod.cwrap("tp_evolve_button_text", "string", []),
     farewellButtonText: mod.cwrap("tp_farewell_button_text", "string", []),
