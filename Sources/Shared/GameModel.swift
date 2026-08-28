@@ -516,12 +516,23 @@ final class GameModel: ObservableObject {
     /// Three-level sound mode (SILENT/VIBRATE/FULL) -- VIBRATE is new: sound
     /// and haptic used to be an all-or-nothing pair (whatever plays audio
     /// also buzzes), this splits them so a silenced phone can still feel
-    /// responsive without making noise. An existing save's stored raw value
-    /// is under the *old* four-level scheme (0 OFF..3 FULL); LOW and MED
-    /// both collapse into the new VIBRATE tier since there is no longer a
-    /// "quieter but still audible" option. The still-older boolean
-    /// "tamapoke/haptics" key migrates to FULL or SILENT.
+    /// responsive without making noise.
+    ///
+    /// Stored under its own key, "tamapoke/soundmode3", deliberately
+    /// distinct from the old four-level scheme's "tamapoke/soundmode":
+    /// this enum's raw values (0 SILENT, 1 VIBRATE, 2 FULL) collide with
+    /// the old scheme's (0 OFF, 1 LOW, 2 MED, 3 FULL) at 1 and 2, so
+    /// writing the new value into the old key made a save of FULL (2)
+    /// read back on the next launch as the old scheme's MED, i.e. this
+    /// enum's VIBRATE (2 falls into the `case 1, 2` migration branch
+    /// below) -- FULL silently downgraded to VIBRATE on every relaunch.
+    /// The old key is now read only once, as a one-time migration for a
+    /// save that predates soundmode3 entirely.
     private(set) var soundMode: TPSoundMode = {
+        if let v3 = UserDefaults.standard.object(forKey: "tamapoke/soundmode3") as? Int,
+           let mode = TPSoundMode(rawValue: v3) {
+            return mode
+        }
         if let stored = UserDefaults.standard.object(forKey: "tamapoke/soundmode") as? Int {
             switch stored {
             case 0: return .silent
@@ -550,7 +561,7 @@ final class GameModel: ObservableObject {
 
     func setSound(_ mode: TPSoundMode) {
         soundMode = mode
-        UserDefaults.standard.set(mode.rawValue, forKey: "tamapoke/soundmode")
+        UserDefaults.standard.set(mode.rawValue, forKey: "tamapoke/soundmode3")
         TPAudio.shared.mode = mode
         if mode == .full {
             TPAudio.shared.start()
