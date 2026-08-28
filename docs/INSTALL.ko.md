@@ -25,7 +25,9 @@
 
 **경로 C**도 있습니다 — Xcode로 직접 빌드하는 방법인데, 이미 Xcode가 설치된
 Mac이 있고 스프라이트를 설치 후 추가하는 대신 빌드에 바로 내장하고 싶을
-때만 관련 있습니다.
+때만 관련 있습니다. **경로 D**는 iOS/워치 앱과 완전히 별개인 **브라우저
+빌드**(`browser_ver/`)입니다 — 같은 게임 로직을 웹페이지(또는 그걸 감싼
+얇은 네이티브 앱)에서 돌립니다.
 
 ---
 
@@ -216,6 +218,72 @@ iOS 16+ / watchOS 9+ 모두 **개발자 모드**를 한 번 켜야 합니다: �
 Scripts/fetch_app_icon.sh path/to/icon.png   # 정사각형, 가급적 1024x1024
 xcodegen generate
 ```
+
+---
+
+## 경로 D — 브라우저 빌드 (iOS/워치 앱과 별개)
+
+`browser_ver/`는 같은 C++ 게임 로직을 WebAssembly로 컴파일해서 iOS 앱 대신
+평범한 웹페이지에서 돌립니다 — App Store도, 사이드로딩도, 7일 만료도 없습니다.
+iOS 앱과 세이브 데이터·스프라이트·도감 설명문을 공유하지 않는 완전히 별도의
+빌드입니다. 이 저장소의 [LICENSE](../LICENSE)에 따라, 본인 기기에서 빌드해서
+본인만 쓰는 용도이며 공개 배포하지 않습니다.
+
+```bash
+# 최초 1회: Emscripten SDK 설치
+git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
+source ./emsdk_env.sh
+cd /path/to/iTamaPoke
+
+# 코어 빌드 -> browser_ver/web/tp_core.{js,wasm}
+browser_ver/build.sh
+
+# 로컬 서버로 열기 (file://는 안 됨 — WASM 로드에 실제 origin이 필요)
+cd browser_ver/web && python3 -m http.server 8123
+# 그 다음 브라우저에서 http://localhost:8123 열기
+```
+
+`emsdk`는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면
+[astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)의
+이식용 빌드로 `emsdk.py`만 실행하면 됩니다(그 이후로는 Emscripten 자체
+번들 Python을 씁니다).
+
+### 스프라이트 넣기 (자세히)
+
+브라우저 빌드에는 파일 앱이 없습니다 — 대신 **페이지 안에서 직접 파일을
+고릅니다**:
+
+1. 컴퓨터에서 `Scripts/fetch_sprites.sh`(경로 C와 같은 스크립트)로 `.bin`
+   파일을 받습니다 — 종마다 하나씩, `p<도감번호>.bin`(일반)과
+   `ps<도감번호>.bin`(이로치).
+2. 브라우저 화면 우측 상단의 **"Load sprites…"** 버튼을 클릭합니다.
+3. 파일 선택 창에서 **원하는 `.bin` 파일 전부를 한 번에 다중 선택**합니다 —
+   폴더째 끌어놓는 게 아닙니다. (일부러 폴더 선택을 안 씁니다: iOS
+   Safari의 폴더 선택이 불안정해서, 모든 플랫폼에서 똑같이 다중 파일
+   선택 방식을 씁니다.)
+4. 고른 파일은 **이 브라우저 자체의 IndexedDB**(이 브라우저·이 기기에
+   묶인 로컬 저장소)에 저장되고, 새로고침해도 그대로 남습니다 — 브라우저당
+   한 번만 고르면 됩니다.
+5. 이미 넣은 종의 파일을 다시 고르면 그냥 덮어씌워집니다 — 따로 지울
+   필요 없습니다.
+
+브라우저를 바꾸거나(사파리→크롬), 시크릿/프라이빗 창을 쓰거나, 이 사이트의
+데이터를 지우면 그 IndexedDB도 같이 비워집니다 — 그럴 때는 "Load
+sprites…"를 다시 누르면 됩니다. `.bin` 파일 자체는 어느 경우든 컴퓨터에
+그대로 남아 있고, 어디로도 업로드되지 않습니다.
+
+### 도감 설명문 넣기 (선택)
+
+같은 방식으로 버튼 하나 더 있습니다: `Scripts/fetch_dex_entries.sh`로
+`dex_entries_<언어>.txt`를 받은 뒤 **"Load dex text…"**를 눌러 다중
+선택합니다. 도감 상세화면 두 번째 페이지(오른쪽 점)에 나타납니다.
+
+### 브라우저 탭이 아니라 앱처럼 쓰고 싶다면
+
+`browser_ver/native/README.md`를 보세요 — Xcode에 새 타깃으로 추가하는
+WKWebView 셸 소스(iOS)와, 바로 열 수 있는 Android Studio WebView 프로젝트가
+있습니다. 둘 다 서버 없이 로컬 파일만 읽고, 본인 기기에만 설치합니다.
 
 ---
 

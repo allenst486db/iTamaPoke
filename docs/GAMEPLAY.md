@@ -14,6 +14,12 @@ repository. Sections below say so where it matters; see the main
 
 [한국어](GAMEPLAY.ko.md) · with screenshots: [Gameplay guide (HTML)](GAMEPLAY.html)
 
+> This describes the iPhone/Watch app. There's also a separate **browser
+> build** (`browser_ver/`) running the same C++ game logic in a web page —
+> same rules, a different screen; see [INSTALL "Path
+> D"](INSTALL.md#path-d--browser-build-separate-from-the-ioswatchos-app) to
+> build it.
+
 ---
 
 ## Getting a creature

@@ -26,7 +26,10 @@ Do you have a paid Apple Developer account ($99/year)?
 
 There's also **Path C**, building it yourself with Xcode — only relevant if
 you already have a Mac with Xcode and want to bake sprites directly into the
-app instead of adding them afterward.
+app instead of adding them afterward — and **Path D**, a separate browser
+build (`browser_ver/`) that runs the same game logic in a web page or a
+thin native shell instead of the iOS/watchOS app, if that's what you're
+after.
 
 ---
 
@@ -229,6 +232,76 @@ own image instead:
 Scripts/fetch_app_icon.sh path/to/your/icon.png   # square, ideally 1024x1024
 xcodegen generate
 ```
+
+---
+
+## Path D — Browser build (separate from the iOS/watchOS app)
+
+`browser_ver/` compiles the same C++ game logic to WebAssembly and runs it
+in a plain web page instead of an iOS app — no App Store, no sideloading,
+no 7-day expiry. It doesn't share save data, sprites, or dex text with the
+iOS app; it's a fully separate build. Per this repo's own
+[LICENSE](../LICENSE), it's meant to be built and used on your own
+device(s), never hosted anywhere public.
+
+```bash
+# One-time: install the Emscripten SDK
+git clone --depth 1 https://github.com/emscripten-core/emsdk.git
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
+source ./emsdk_env.sh
+cd /path/to/iTamaPoke
+
+# Build the core -> browser_ver/web/tp_core.{js,wasm}
+browser_ver/build.sh
+
+# Serve it locally (not file:// -- the WASM load needs a real origin)
+cd browser_ver/web && python3 -m http.server 8123
+# then open http://localhost:8123 in a browser
+```
+
+`emsdk` needs Python 3.10+; if your system Python is older, a portable
+build from
+[astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)
+works fine just to run `emsdk.py` (Emscripten uses its own bundled Python
+after that).
+
+### Adding sprites (in detail)
+
+The browser build has no Files app to drop files into — instead, **you
+pick the files directly inside the page itself**:
+
+1. On your computer, run `Scripts/fetch_sprites.sh` (same script Path C
+   uses) to get `.bin` files — one per species, named `p<dex>.bin`
+   (normal) and `ps<dex>.bin` (shiny).
+2. In the browser page, click **"Load sprites…"** (top right).
+3. In the file picker, **select every `.bin` file you want at once** —
+   multi-select, not a folder drag. (Deliberately not a folder picker:
+   iOS Safari's folder-select is unreliable, so this build always uses a
+   plain multi-file select instead, on every platform.)
+4. The files are stored in **this browser's own IndexedDB** (local
+   storage tied to this browser, this device) and stay there across
+   reloads — you only need to pick them once per browser.
+5. Picking a file again for a species you already loaded just overwrites
+   it; nothing needs deleting first.
+
+Switching browsers (Safari → Chrome), using a private/incognito window, or
+clearing this site's data empties that IndexedDB — just click "Load
+sprites…" again when that happens. The `.bin` files themselves stay on
+your computer either way; nothing is ever uploaded anywhere.
+
+### Adding dex entry text (optional)
+
+Same idea, a second button: run `Scripts/fetch_dex_entries.sh` to get
+`dex_entries_<lang>.txt`, then click **"Load dex text…"** and multi-select
+the file(s). It shows up on the dex detail screen's second page (tap the
+right-hand page dot).
+
+### Making it feel like an app instead of a browser tab
+
+See `browser_ver/native/README.md` for a minimal WKWebView (iOS) shell
+you drop into a new Xcode target, and a ready-to-open Android Studio
+project for a WebView shell — both load `browser_ver/web/` from local
+files, no server, installed only on your own device.
 
 ---
 
