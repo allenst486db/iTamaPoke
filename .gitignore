@@ -25,3 +25,9 @@ Sources/watchOS/Assets.xcassets/AppIcon.appiconset/AppIcon.png
 # fetch_app_icon.sh -- Resources/DefaultAppIcon.png (the generic mascot) is
 # the only icon PNG meant to be tracked.
 Resources/AppIcon.png
+
+# browser_ver: build.sh's output. Regenerated from upstream-expanded/*.cpp
+# (unmodified) + browser_ver/core -- not worth committing, same reasoning as
+# build/ above. See browser_ver/README.md.
+browser_ver/web/tp_core.js
+browser_ver/web/tp_core.wasm

@@ -68,8 +68,9 @@ and are covered by the "NOT COVERED" section below.
 
 The Personality, Daily goals, Box, and Pokédex-filter features, the
 wild-battle system, the Catch/Memo/Clean/Type minigames, expeditions, and the
-sound-effect synthesizer (note tables, waveforms, and the four-level sound
-mode) are translated from a second, separate source: ShadowEnemyx/TamaPoke
+sound-effect synthesizer (note tables, waveforms, and the sound-mode concept
+this build's own three-level SILENT/VIBRATE/FULL switch descends from) are
+translated from a second, separate source: ShadowEnemyx/TamaPoke
 (https://github.com/ShadowEnemyx/TamaPoke), a community fork of the same
 project credited above (not socquique's own repository, and not the
 `upstream/` submodule, which stays pinned to socquique's). It carries the
@@ -85,10 +86,36 @@ CREDITS
 
 Battle stats compiled into upstream's `dex.h` (attack/defense/speed etc.) come
 from PokéAPI (https://pokeapi.co), per upstream's own `tools/dex_stats.py`.
+
 `Scripts/fetch_dex_entries.sh` uses the same API to fetch Pokedex entry text
-for the dex detail view. That text is Nintendo's, not PokéAPI's, and the
-script writes it to a gitignored path: it is fetched per user, never
-committed or redistributed here.
+for the dex detail view, one file per language (`mons/dex_entries_<lang>.txt`).
+That text is Nintendo's, not PokéAPI's, and the script writes it to a
+gitignored path: it is fetched per user, never committed or redistributed
+here. See README "Pokédex entries".
+
+`Scripts/fetch_cries.sh` fetches each species' cry from the PokeAPI/cries
+repository (https://github.com/PokeAPI/cries), a community-maintained mirror
+of the same in-game audio, converting `.ogg` to `.m4a` with `ffmpeg` on the
+way in (AVFoundation cannot decode Ogg Vorbis). Same status as the dex
+text above: Nintendo's audio, not PokéAPI's or that repository's, fetched
+per user to a gitignored path (`mons/psnd<dex>.m4a`), never committed or
+redistributed here. See README "Cries".
+
+`Scripts/fetch_sprites.sh` / `pack_normal_sprites.py` / `pack_shiny_sprites.py`
+pull creature sprites from PMD SpriteCollab (https://github.com/PMDCollab/SpriteCollab,
+CC BY-NC 4.0 — https://creativecommons.org/licenses/by-nc/4.0/), a
+fan-maintained art project, also to a gitignored path never committed or
+redistributed here. See README "Sprites" and the "NOT COVERED" section below
+for why this repository still doesn't distribute them even though CC BY-NC
+would, on its own, permit non-commercial redistribution with attribution:
+they are fetched alongside Nintendo's own dex text and cry audio above,
+which carry no such permission, and this project treats all creature assets
+under one uniform "fetch per device, never redistribute" rule rather than
+splitting hairs per license.
+
+`Scripts/fetch_assets.sh` is a thin wrapper that runs the three fetch paths
+above together (`--only sprites,shiny,sound`, or all by default) for
+whichever species you ask for.
 
 
 NOT COVERED by any license granted here

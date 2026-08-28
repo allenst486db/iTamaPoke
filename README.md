@@ -319,11 +319,16 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
 - **The `upstream/` submodule itself**: not ours to relicense — get it
   directly from [its own repository](https://github.com/socquique/TamaPoke)
   under its own MIT terms.
-- **Pokémon names, designs, and sprites**: © Nintendo / Game Freak / The
-  Pokémon Company; sprite art from
-  [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab) (CC BY-NC
-  4.0). **Not distributed anywhere in this repository or its builds** — see
-  [Sprites](#sprites) for how you add your own copy after installing.
+- **Pokémon names, designs, dex text, and cries**: © Nintendo / Game Freak /
+  The Pokémon Company. **Not distributed anywhere in this repository or its
+  builds** — see [Sprites](#sprites), [Pokédex entries](#pokédex-entries),
+  and [Cries](#cries) for how you fetch your own copy after installing.
+- **Sprite art**: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
+  (CC BY-NC 4.0 — https://creativecommons.org/licenses/by-nc/4.0/), a
+  fan-drawn, non-commercial project distinct from Nintendo's own art. Also
+  not distributed here — see [NOTICE](NOTICE) for why this repo treats it
+  under the same "fetch per device" rule as the Nintendo-owned assets above,
+  even though CC BY-NC alone would permit more.
 
 This is an unofficial fan project, not affiliated with or endorsed by
 Nintendo. Full accounting of what is and isn't covered: [NOTICE](NOTICE).

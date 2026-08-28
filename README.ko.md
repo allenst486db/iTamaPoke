@@ -305,11 +305,19 @@ Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트
 - **`upstream/` 서브모듈 자체**: 저희가 재라이선스할 수 있는 대상이
   아닙니다 — [원본 저장소](https://github.com/socquique/TamaPoke)에서 직접
   받으면 그쪽 MIT 조건이 그대로 적용됩니다.
-- **포켓몬 이름, 디자인, 스프라이트**: © Nintendo / Game Freak / The Pokémon
-  Company; 스프라이트 아트는 [PMD
-  SpriteCollab](https://github.com/PMDCollab/SpriteCollab)(CC BY-NC 4.0)
-  출처입니다. **이 저장소나 그 빌드 어디에도 포함되어 있지 않습니다** —
-  설치 후 직접 추가하는 방법은 [스프라이트](#스프라이트) 참고.
+- **포켓몬 이름, 디자인, 도감 설명문, 울음소리**: © Nintendo / Game Freak /
+  The Pokémon Company. **이 저장소나 그 빌드 어디에도 포함되어 있지
+  않습니다** — 설치 후 직접 받는 방법은 [스프라이트](#스프라이트),
+  [도감 설명문](#도감-설명문), [울음소리](#울음소리) 참고.
+- **스프라이트 아트**: [PMD
+  SpriteCollab](https://github.com/PMDCollab/SpriteCollab)(CC BY-NC
+  4.0 — https://creativecommons.org/licenses/by-nc/4.0/), Nintendo와
+  무관한 팬 제작 비영리 프로젝트입니다. 이것도 이 저장소에 포함돼 있지
+  않습니다 — CC BY-NC 자체는 출처 표기만 하면 비영리 재배포를 허용하지만,
+  위의 Nintendo 소유 자산(도감문, 울음소리)과 함께 받아오는 데다 그쪽은
+  그런 허용이 없기 때문에, 이 프로젝트는 라이선스별로 따지지 않고 모든
+  캐릭터 에셋에 "기기별로 직접 받고, 재배포하지 않는다"는 규칙을 똑같이
+  적용합니다. 자세한 이유는 [NOTICE](NOTICE) 참고.
 
 이 프로젝트는 비공식 팬 프로젝트이며 Nintendo와 무관하고 승인받지
 않았습니다. 무엇이 포함되고 안 되는지 전체 정리는 [NOTICE](NOTICE) 참고.
