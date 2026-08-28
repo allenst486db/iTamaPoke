@@ -18,6 +18,7 @@
 #include "pet.h"
 #include "i18n.h"
 #include "audio.h"
+#include "battle.h"
 #include "shim/Preferences.h"
 
 // Defined here, read by shim/Arduino.h's millis(). JS drives this once per
@@ -131,6 +132,61 @@ int tp_play_result(int score) {
   int prevHigh = gPet.gameHi;
   gPet.playResult((uint8_t)score);
   return score > prevHigh ? 1 : 0;
+}
+
+// --- Catch/Memo/Clean/Type minigames ----------------------------------
+//
+// Same split as Ball above and as GameModel.swift/MiniGames.swift keep:
+// the physics/timers/sequence state live in web/minigames.js, ported from
+// TPCatchGame/TPMemoGame/TPCleanGame/TPTypeGame; only the end-of-run score
+// crosses into C++, through the same Pet::apply*Result methods
+// GameModel.swift's onGameOver closures call. Each getter/setter pair
+// mirrors tp_game_high()/tp_play_result() above.
+
+EMSCRIPTEN_KEEPALIVE int tp_catch_high() { return gPet.catchHi; }
+EMSCRIPTEN_KEEPALIVE int tp_memo_high() { return gPet.memoHi; }
+EMSCRIPTEN_KEEPALIVE int tp_clean_high() { return gPet.cleanHi; }
+EMSCRIPTEN_KEEPALIVE int tp_type_high() { return gPet.typeHi; }
+
+EMSCRIPTEN_KEEPALIVE
+int tp_catch_result(int score) {
+  int prevHigh = gPet.catchHi;
+  gPet.applyCatchResult((uint8_t)score);
+  return score > prevHigh ? 1 : 0;
+}
+// Memo/Clean/Type's result cards show the stat gain their apply*Result call
+// returns (DEF/HYG-via-hygiene/ATK training), same as PetScreen.swift's
+// defGainLine/hygGainLine/atkGainLine -- Catch and Ball don't. Stashed here
+// rather than threaded through the result functions' own return value so
+// tp_*_result can keep the same "1 = new record" shape as tp_play_result.
+int gLastGain = 0;
+EMSCRIPTEN_KEEPALIVE int tp_last_gain() { return gLastGain; }
+
+EMSCRIPTEN_KEEPALIVE
+int tp_memo_result(int rounds) {
+  int prevHigh = gPet.memoHi;
+  gLastGain = gPet.applyMemoResult((uint8_t)rounds);
+  return rounds > prevHigh ? 1 : 0;
+}
+EMSCRIPTEN_KEEPALIVE
+int tp_clean_result(int score) {
+  int prevHigh = gPet.cleanHi;
+  gLastGain = gPet.applyCleanResult((uint8_t)score);
+  return score > prevHigh ? 1 : 0;
+}
+EMSCRIPTEN_KEEPALIVE
+int tp_type_result(int score) {
+  int prevHigh = gPet.typeHi;
+  gLastGain = gPet.applyTypeResult((uint8_t)score);
+  return score > prevHigh ? 1 : 0;
+}
+
+// The Type quiz's distractor filter (MiniGames.swift's TPTypeGame.
+// nextQuestion effectPct closure) needs the real type chart so a wrong
+// answer is never accidentally also super-effective.
+EMSCRIPTEN_KEEPALIVE
+int tp_type_effect_pct(int attacker, int defender) {
+  return (int)battleTypeEffectPct((uint8_t)attacker, (uint8_t)defender, TYPE_NONE);
 }
 
 // --- Settings screen -----------------------------------------------------

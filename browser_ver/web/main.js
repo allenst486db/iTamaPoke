@@ -208,10 +208,23 @@ function settingsTap(x, y) {
   if (y > 380) screen = "idle";
 }
 
-// Ports drawGameMenu()'s single-tile-so-far subset: only Ball is playable
-// here yet (see roadmap), so this is one tile rather than the five
-// PetScreen.swift draws.
-const BALL_TILE = { x: 133, y: 178, w: 200, h: 110 };
+// Ports drawGameMenu(): five tiles, same layout math as PetScreen.swift's
+// `gameMenuTiles` (two rows of tiles inside the 78,112,310,266 card).
+let gameMode = 0; // 0 ball, 1 catch, 2 memo, 3 clean, 4 type
+const GAME_TILES = [
+  { x: 92, y: 168, w: 138, h: 78, label: "BALL", color: UI.barBad, hi: () => fns.gameHigh() },
+  { x: 236, y: 168, w: 138, h: 78, label: "CATCH", color: UI.barWarn, hi: () => fns.catchHigh() },
+  { x: 92, y: 254, w: 138, h: 78, label: "MEMO", color: "#4C98D9", hi: () => fns.memoHigh() },
+  { x: 236, y: 254, w: 138, h: 78, label: "CLEAN", color: UI.barOK, hi: () => fns.cleanHigh() },
+  { x: 92, y: 340, w: 282, h: 30, label: "TYPE", color: "#F3B7D9", hi: () => fns.typeHigh() },
+];
+const GAME_STARTERS = [
+  () => BallGame.start(performance.now()),
+  (now) => CatchGame.start(now),
+  (now) => MemoGame.start(now),
+  (now) => CleanGame.start(now),
+  (now) => TypeGame.start(now),
+];
 
 function drawGameMenu() {
   ctx.fillStyle = UI.bgDay;
@@ -225,17 +238,19 @@ function drawGameMenu() {
   ctx.font = "bold 20px monospace";
   ctx.fillText("PLAY", TP.cx, 140);
 
-  ctx.fillStyle = UI.barBad;
-  roundRect(BALL_TILE.x, BALL_TILE.y, BALL_TILE.w, BALL_TILE.h, 14);
-  ctx.fill();
-  ctx.strokeStyle = UI.ink;
-  roundRect(BALL_TILE.x, BALL_TILE.y, BALL_TILE.w, BALL_TILE.h, 14);
-  ctx.stroke();
-  ctx.fillStyle = UI.bgDay;
-  ctx.font = "bold 22px monospace";
-  ctx.fillText("BALL", BALL_TILE.x + BALL_TILE.w / 2, BALL_TILE.y + BALL_TILE.h / 2 - 2);
-  ctx.font = "13px monospace";
-  ctx.fillText(`hi ${fns.gameHigh()}`, BALL_TILE.x + BALL_TILE.w / 2, BALL_TILE.y + BALL_TILE.h / 2 + 22);
+  for (const t of GAME_TILES) {
+    ctx.fillStyle = t.color;
+    roundRect(t.x, t.y, t.w, t.h, 14);
+    ctx.fill();
+    ctx.strokeStyle = UI.ink;
+    roundRect(t.x, t.y, t.w, t.h, 14);
+    ctx.stroke();
+    ctx.fillStyle = UI.bgDay;
+    ctx.font = "bold 15px monospace";
+    ctx.fillText(t.label, t.x + t.w / 2, t.y + t.h / 2 - 2);
+    ctx.font = "11px monospace";
+    ctx.fillText(`hi ${t.hi()}`, t.x + t.w / 2, t.y + t.h / 2 + 16);
+  }
 
   ctx.fillStyle = UI.track;
   ctx.font = "13px monospace";
@@ -244,13 +259,31 @@ function drawGameMenu() {
 }
 
 function gameMenuTap(x, y) {
-  if (inRect(x, y, { x: BALL_TILE.x, y: BALL_TILE.y, w: BALL_TILE.w, h: BALL_TILE.h })) {
-    BallGame.start();
-    lastFrameT = performance.now();
-    screen = "game";
-    return;
+  const now = performance.now();
+  for (let i = 0; i < GAME_TILES.length; i++) {
+    const t = GAME_TILES[i];
+    if (inRect(x, y, t)) {
+      gameMode = i;
+      GAME_STARTERS[i](now);
+      lastFrameT = now;
+      screen = "game";
+      return;
+    }
   }
   screen = "idle";
+}
+
+// Shared game-over card: the four newer minigames all show the same
+// "SCORE: N" + record/new-record layout, matching renderCatchGame etc.'s
+// shared shape in PetScreen.swift.
+function drawGameOverCard(ink, score, newHigh, high) {
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 40px monospace";
+  ctx.fillText(`SCORE: ${score}`, TP.cx, 170);
+  ctx.font = "bold 20px monospace";
+  ctx.fillStyle = newHigh ? UI.barWarn : ink;
+  ctx.fillText(newHigh ? "NEW RECORD!" : `record: ${high}`, TP.cx, 220);
 }
 
 // Ports renderBallGame(): the day/night habitat backdrop, score + lives,
@@ -264,13 +297,7 @@ function drawBallGame(now) {
   const ink = night ? UI.inkNight : UI.ink;
 
   if (BallGame.overUntil !== 0) {
-    ctx.fillStyle = ink;
-    ctx.textAlign = "center";
-    ctx.font = "bold 40px monospace";
-    ctx.fillText(`SCORE: ${BallGame.score}`, TP.cx, 170);
-    ctx.font = "bold 20px monospace";
-    ctx.fillStyle = BallGame.newHigh ? UI.barWarn : ink;
-    ctx.fillText(BallGame.newHigh ? "NEW RECORD!" : `record: ${fns.gameHigh()}`, TP.cx, 220);
+    drawGameOverCard(ink, BallGame.score, BallGame.newHigh, fns.gameHigh());
     if (now >= BallGame.overUntil) { screen = "idle"; BallGame.running = false; }
     statusEl.textContent = `Ball · game over · score ${BallGame.score}`;
     return;
@@ -321,6 +348,212 @@ function drawBallGame(now) {
   statusEl.textContent = `Ball · score ${BallGame.score} · misses ${BallGame.misses}/3`;
 }
 
+const CATCH_ICONS = ["🍖", "🫐", "🍏"];
+
+// Ports renderCatchGame(): a target that shrinks its own patience bar,
+// three lives, and the day/night backdrop shared with Ball.
+function drawCatchGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+  const g = CatchGame;
+
+  if (g.overUntil !== 0) {
+    drawGameOverCard(ink, g.score, g.newHigh, fns.catchHigh());
+    if (now >= g.overUntil) screen = "idle";
+    statusEl.textContent = `Catch · game over · score ${g.score}`;
+    return;
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 24px monospace";
+  ctx.fillText("CATCH", TP.cx, 44);
+  ctx.textAlign = "left";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(`${g.score}`, 50, 82);
+  ctx.textAlign = "right";
+  ctx.fillText(`hi ${fns.catchHigh()}`, 396, 82);
+  ctx.textAlign = "center";
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(180 + i * 28, 104, 6, 0, Math.PI * 2);
+    if (i < 3 - g.misses) { ctx.fillStyle = UI.barBad; ctx.fill(); }
+    else { ctx.strokeStyle = UI.track; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+
+  ctx.beginPath();
+  ctx.arc(g.targetX, g.targetY, 34, 0, Math.PI * 2);
+  ctx.fillStyle = UI.white; ctx.fill();
+  ctx.strokeStyle = UI.barWarn; ctx.lineWidth = 2; ctx.stroke();
+  ctx.font = "26px monospace";
+  ctx.fillText(CATCH_ICONS[g.icon], g.targetX, g.targetY + 9);
+
+  const bw = 280;
+  const left = g.targetUntil > now ? g.targetUntil - now : 0;
+  const fw = bw * Math.min(left, 20000) / 20000;
+  ctx.fillStyle = UI.track;
+  roundRect(TP.cx - bw / 2, 362, bw, 16, 5); ctx.fill();
+  if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, 362, fw, 16, 5); ctx.fill(); }
+
+  const since = now - g.hitAt;
+  if (g.hitAt !== 0 && since < 220) {
+    ctx.strokeStyle = UI.barWarn; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(g.hitX, g.hitY, 42 + since / 8, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  statusEl.textContent = `Catch · score ${g.score} · misses ${g.misses}/3`;
+}
+
+// Ports renderMemoGame(): four pads, lighting during playback and flashing
+// green/red on the player's own taps.
+function drawMemoGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+  const g = MemoGame;
+
+  if (g.overUntil !== 0) {
+    ctx.fillStyle = ink;
+    ctx.textAlign = "center";
+    ctx.font = "bold 40px monospace";
+    ctx.fillText(`SCORE: ${g.rounds}`, TP.cx, 148);
+    ctx.font = "bold 24px monospace";
+    ctx.fillStyle = "#4C98D9";
+    ctx.fillText(`+${g.gain || 0} DEF`, TP.cx, 194);
+    ctx.font = "bold 18px monospace";
+    ctx.fillStyle = g.newHigh ? UI.barWarn : ink;
+    ctx.fillText(g.newHigh ? "NEW RECORD!" : `record: ${fns.memoHigh()}`, TP.cx, 230);
+    if (now >= g.overUntil) screen = "idle";
+    statusEl.textContent = `Memo · game over · rounds ${g.rounds}`;
+    return;
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(`Round ${g.rounds + 1}`, TP.cx, 60);
+
+  const padColors = ["#e86464", "#5da0e8", "#e8c85d", "#5dd08a"];
+  for (let i = 0; i < 4; i++) {
+    let fill = padColors[i];
+    if (g.activePad === i) fill = UI.white;
+    if (g.hintPad === i) fill = UI.barWarn;
+    if (g.flashPad === i && now < g.flashUntil) fill = g.flashGood ? UI.barOK : UI.barBad;
+    ctx.fillStyle = fill;
+    roundRect(g.padX[i] - 60, g.padY[i] - 60, 120, 120, 16);
+    ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 2;
+    roundRect(g.padX[i] - 60, g.padY[i] - 60, 120, 120, 16);
+    ctx.stroke();
+  }
+
+  ctx.fillStyle = UI.track;
+  ctx.font = "13px monospace";
+  ctx.fillText(g.showing ? "watch..." : "your turn", TP.cx, 410);
+
+  statusEl.textContent = `Memo · round ${g.rounds + 1} · ${g.showing ? "playback" : "input"}`;
+}
+
+// Ports renderCleanGame(): dirt spots to scrub within a countdown.
+function drawCleanGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+  const g = CleanGame;
+
+  if (g.overUntil !== 0) {
+    drawGameOverCard(ink, g.score, g.newHigh, fns.cleanHigh());
+    if (now >= g.overUntil) screen = "idle";
+    statusEl.textContent = `Clean · game over · score ${g.score}`;
+    return;
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 24px monospace";
+  ctx.fillText("CLEAN", TP.cx, 44);
+  ctx.textAlign = "left";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(`${g.score}`, 50, 82);
+  const bw = 280;
+  const left = g.until > now ? g.until - now : 0;
+  const fw = bw * Math.min(left, 18000) / 18000;
+  ctx.fillStyle = UI.track;
+  roundRect(TP.cx - bw / 2, 362, bw, 16, 5); ctx.fill();
+  if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, 362, fw, 16, 5); ctx.fill(); }
+
+  ctx.textAlign = "center";
+  ctx.font = "28px monospace";
+  for (let i = 0; i < 4; i++) {
+    if (!g.alive[i]) continue;
+    ctx.fillText("🫧", g.x[i], g.y[i] + 10);
+  }
+  const since = now - g.hitAt;
+  if (g.hitAt !== 0 && since < 220) {
+    ctx.strokeStyle = UI.barOK; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(g.hitX, g.hitY, 30 + since / 8, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  statusEl.textContent = `Clean · score ${g.score} · misses ${g.misses}/3`;
+}
+
+// Ports renderTypeGame(): the attacking type shown at top, three answer
+// rows, a countdown bar per question.
+const TYPE_NAMES = ["", "NORMAL", "FIRE", "WATER", "ELECTRIC", "GRASS", "ICE",
+  "FIGHT", "POISON", "GROUND", "FLYING", "PSYCHIC", "BUG", "ROCK", "GHOST",
+  "DRAGON", "DARK", "STEEL", "FAIRY"];
+
+function drawTypeGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+  const g = TypeGame;
+
+  if (g.overUntil !== 0) {
+    drawGameOverCard(ink, g.score, g.newHigh, fns.typeHigh());
+    if (now >= g.overUntil) screen = "idle";
+    statusEl.textContent = `Type · game over · score ${g.score}`;
+    return;
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 18px monospace";
+  ctx.fillText("What beats...", TP.cx, 70);
+  ctx.font = "bold 28px monospace";
+  ctx.fillText(TYPE_NAMES[g.enemy], TP.cx, 110);
+
+  const left = g.until > now ? g.until - now : 0;
+  const bw = 326;
+  ctx.fillStyle = UI.track;
+  roundRect(TP.cx - bw / 2, 150, bw, 10, 4); ctx.fill();
+  ctx.fillStyle = UI.barOK;
+  roundRect(TP.cx - bw / 2, 150, bw * Math.min(left, 4200) / 4200, 10, 4); ctx.fill();
+
+  for (let i = 0; i < 3; i++) {
+    const by = 210 + i * 60;
+    ctx.fillStyle = UI.white;
+    roundRect(70, by - 8, 326, 56, 12); ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 2;
+    roundRect(70, by - 8, 326, 56, 12); ctx.stroke();
+    ctx.fillStyle = ink;
+    ctx.font = "bold 18px monospace";
+    ctx.fillText(TYPE_NAMES[g.choices[i]], TP.cx, by + 28);
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "left";
+  ctx.font = "bold 16px monospace";
+  ctx.fillText(`${g.score}`, 30, 44);
+
+  statusEl.textContent = `Type · score ${g.score} · misses ${g.misses}/3`;
+}
+
 function draw() {
   if (!Module) return;
 
@@ -336,8 +569,13 @@ function draw() {
     const now = performance.now();
     const dt = now - lastFrameT;
     lastFrameT = now;
-    BallGame.step(dt, now);
-    drawBallGame(now);
+    switch (gameMode) {
+      case 0: BallGame.step(dt, now); drawBallGame(now); break;
+      case 1: CatchGame.step(now); drawCatchGame(now); break;
+      case 2: MemoGame.step(now); drawMemoGame(now); break;
+      case 3: CleanGame.step(now); drawCleanGame(now); break;
+      case 4: TypeGame.step(now); drawTypeGame(now); break;
+    }
     return;
   }
 
@@ -441,7 +679,37 @@ canvas.addEventListener("pointerdown", (e) => {
     return;
   }
   if (screen === "game") {
-    BallGame.tap(x, y, performance.now());
+    const now = performance.now();
+    switch (gameMode) {
+      case 0:
+        BallGame.tap(x, y, now);
+        break;
+      case 1: {
+        const r = CatchGame.tap(x, y, now);
+        if (r === "hit") playSfx(12); // catchOK
+        else if (r === "miss") playSfx(13); // catchFail
+        break;
+      }
+      case 2: {
+        const r = MemoGame.tap(x, y, now);
+        if (r.pad >= 0) playSfx(23 + r.pad);
+        break;
+      }
+      case 3: {
+        const r = CleanGame.tap(x, y, now);
+        if (r === "hit") playSfx(32); // minigameOK
+        else if (r === "miss") playSfx(33); // minigameBad
+        break;
+      }
+      case 4: {
+        const choice = TypeGame.choiceAt(x, y);
+        if (choice >= 0) {
+          const r = TypeGame.tap(choice, now);
+          playSfx(r === "hit" ? 30 : 31); // effective / weakHit
+        }
+        break;
+      }
+    }
     return;
   }
   if (fns.isEgg() !== 0) {
@@ -574,6 +842,10 @@ createTPCore({
     settingsTitle: mod.cwrap("tp_settings_title", "string", []),
     backHint: mod.cwrap("tp_back_hint", "string", []),
     gameHigh: mod.cwrap("tp_game_high", "number", []),
+    catchHigh: mod.cwrap("tp_catch_high", "number", []),
+    memoHigh: mod.cwrap("tp_memo_high", "number", []),
+    cleanHigh: mod.cwrap("tp_clean_high", "number", []),
+    typeHigh: mod.cwrap("tp_type_high", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

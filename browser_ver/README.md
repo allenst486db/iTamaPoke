@@ -65,12 +65,17 @@ Python for everything after that.
 1. ~~Verify the C++ core actually compiles and runs as WASM~~ ✅ done
 2. Canvas 2D renderer — idle screen (header, bars, poop, the four action
    buttons, egg tap-to-hatch, day/night/sleep palette) + settings screen
-   ✅ done, `web/main.js`. The Ball minigame ✅ done too (`web/minigames.js`,
-   a port of `MiniGames.swift`'s `TPBallGame` -- physics, tap hit-test,
-   scoring through the same `Pet::playResult`/`gameHi` the iOS build uses).
-   Still missing from `PetScreen.swift`'s full render(): the other four
-   minigames (Catch/Memo/Clean/Type), the Pokédex, battle, evolution/
-   farewell/runaway ceremonies, the stat card, and the rename keyboard.
+   ✅ done, `web/main.js`. All five minigames ✅ done too (`web/minigames.js`,
+   a port of `MiniGames.swift`'s five game structs -- physics/timers/
+   sequence state, tap hit-tests, scoring through the same
+   `Pet::playResult`/`applyCatchResult`/`applyMemoResult`/`applyCleanResult`/
+   `applyTypeResult` the iOS build calls, including the Type quiz's real
+   `battleTypeEffectPct` distractor filter). Emoji glyphs (ball, food/berry
+   icons, dirt bubbles) don't render in every environment -- a font-fallback
+   gap, not a logic one; the underlying hit-tests were verified directly.
+   Still missing from `PetScreen.swift`'s full render(): the Pokédex,
+   battle, evolution/farewell/runaway ceremonies, the stat card, and the
+   rename keyboard.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played
