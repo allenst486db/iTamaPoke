@@ -89,8 +89,15 @@ Python for everything after that.
    already be the currently-loaded one) and the catch minigame integration
    isn't wired to the post-battle catch offer yet, just the plain
    probability roll.
+   The stat card's profile page + rename keyboard ✅ done too
+   (`web/card.js`, a Card button next to Dex) -- streak, bond bar, berry/
+   age info, and a real rename round-tripping through `Pet::rename`. The
+   card's other seven pages (personality, daily goals, box, battle record,
+   medals, progress, expeditions) aren't ported.
    Still missing from `PetScreen.swift`'s full render(): evolution/
-   farewell/runaway ceremonies, the stat card, and the rename keyboard.
+   farewell/runaway ceremonies (the game logic behind them -- evolving,
+   the ending states -- already runs correctly server-side; only their
+   animated screens aren't drawn), and the card's other seven pages.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

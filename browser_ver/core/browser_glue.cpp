@@ -388,4 +388,48 @@ void tp_import_state(const uint8_t *data, int len) {
   }
 }
 
+// --- Stat card (profile page) + rename ----------------------------------
+//
+// Just PetScreen.swift's renderCardProfile -- personality/daily/box/battle/
+// medals/progress/expedition pages aren't ported yet (see
+// browser_ver/README.md's roadmap).
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_species_name() {
+  static std::string out;
+  out = dexName(gPet.speciesId);
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_streak_line() {
+  static std::string out;
+  char buf[40];
+  snprintf(buf, sizeof(buf), T(S_STREAK_FMT), gPet.streak, gPet.bestStreak);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_info_line() {
+  static std::string out;
+  const char *berry = !gPet.berryKnown   ? T(S_BERRY_UNK)
+                     : gPet.lovesBerry(0) ? T(S_BERRY_RED)
+                     : gPet.lovesBerry(1) ? T(S_BERRY_BLUE)
+                                          : T(S_BERRY_GREEN);
+  char buf[64];
+  snprintf(buf, sizeof(buf), T(S_INFO_FMT), berry, (unsigned long)(gPet.ageMinutes / 1440));
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_rename_hint() { return T(S_RENAME_HINT); }
+EMSCRIPTEN_KEEPALIVE const char *tp_bond_label() { return T(S_VIN); }
+EMSCRIPTEN_KEEPALIVE int tp_bond() { return gPet.bond; }
+EMSCRIPTEN_KEEPALIVE int tp_streak() { return gPet.streak; }
+EMSCRIPTEN_KEEPALIVE int tp_best_streak() { return gPet.bestStreak; }
+EMSCRIPTEN_KEEPALIVE int tp_has_nick() { return gPet.nick[0] ? 1 : 0; }
+
+// Truncates rather than rejecting an over-long name, same as TPPet.mm's
+// renamePet: (nameBuf is 12 bytes including the terminator).
+EMSCRIPTEN_KEEPALIVE
+void tp_rename(const char *name) { gPet.rename(name); }
+
 } // extern "C"

@@ -569,6 +569,14 @@ function draw() {
     drawBattle(performance.now());
     return;
   }
+  if (screen === "card") {
+    drawCardProfile(performance.now());
+    return;
+  }
+  if (screen === "keyboard") {
+    drawKeyboard();
+    return;
+  }
   if (screen === "gamemenu") {
     drawGameMenu();
     return;
@@ -696,6 +704,14 @@ canvas.addEventListener("pointerdown", (e) => {
     battleTap(x, y);
     return;
   }
+  if (screen === "card") {
+    cardTap(x, y);
+    return;
+  }
+  if (screen === "keyboard") {
+    keyboardTap(x, y);
+    return;
+  }
   if (screen === "gamemenu") {
     gameMenuTap(x, y);
     return;
@@ -758,6 +774,10 @@ document.getElementById("dexBtn").addEventListener("click", () => {
   if (screen === "dex") { screen = "idle"; return; }
   dexScreen = "grid";
   screen = "dex";
+});
+
+document.getElementById("cardBtn").addEventListener("click", () => {
+  screen = screen === "card" ? "idle" : "card";
 });
 
 // --- Save persistence ----------------------------------------------------
@@ -933,6 +953,14 @@ createTPCore({
     battleOkText: mod.cwrap("tp_battle_ok_text", "string", []),
     battleCaughtOkText: mod.cwrap("tp_battle_caught_ok_text", "string", []),
     battleEscapedText: mod.cwrap("tp_battle_escaped_text", "string", []),
+
+    speciesName: mod.cwrap("tp_species_name", "string", []),
+    streakLine: mod.cwrap("tp_streak_line", "string", []),
+    infoLine: mod.cwrap("tp_info_line", "string", []),
+    renameHint: mod.cwrap("tp_rename_hint", "string", []),
+    bondLabel: mod.cwrap("tp_bond_label", "string", []),
+    bond: mod.cwrap("tp_bond", "number", []),
+    hasNick: mod.cwrap("tp_has_nick", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 
