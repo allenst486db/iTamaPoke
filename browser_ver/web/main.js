@@ -565,6 +565,10 @@ function draw() {
     if (dexScreen === "detail") drawDexDetail(); else drawDexGrid();
     return;
   }
+  if (screen === "battle") {
+    drawBattle(performance.now());
+    return;
+  }
   if (screen === "gamemenu") {
     drawGameMenu();
     return;
@@ -662,6 +666,12 @@ function draw() {
     ctx.fillText("Zz", 320, 140);
   }
 
+  // Wild-encounter prompt, checked once a frame while the idle screen is
+  // genuinely the front-most thing -- mirrors PetScreen.swift's
+  // mainScreenReadyForWild gate (no egg/sleeping/other dialog open).
+  Module._tp_battle_check_wild(!isEgg && !sleeping ? 1 : 0);
+  if (fns.wildPromptActive() !== 0) drawWildPrompt();
+
   statusEl.textContent =
     `${fns.name()} Lv${fns.level()} · FUL ${fns.fullness()} JOY ${fns.joy()} ` +
     `ENE ${fns.energy()} HYG ${fns.hygiene()}` + (sleeping ? " · sleeping" : "");
@@ -680,6 +690,10 @@ canvas.addEventListener("pointerdown", (e) => {
   }
   if (screen === "dex") {
     if (dexScreen === "detail") dexDetailTap(); else dexGridTap(x, y);
+    return;
+  }
+  if (screen === "battle") {
+    battleTap(x, y);
     return;
   }
   if (screen === "gamemenu") {
@@ -722,6 +736,10 @@ canvas.addEventListener("pointerdown", (e) => {
   }
   if (fns.isEgg() !== 0) {
     Module._tp_egg_tap();
+    return;
+  }
+  if (fns.wildPromptActive() !== 0) {
+    wildPromptTap(x, y);
     return;
   }
   for (const b of BUTTONS) {
@@ -869,6 +887,52 @@ createTPCore({
     dexType2: mod.cwrap("tp_dex_type2", "number", ["number"]),
     registeredCount: mod.cwrap("tp_registered_count", "number", []),
     caughtCount: mod.cwrap("tp_caught_count", "number", []),
+
+    wildPromptActive: mod.cwrap("tp_wild_prompt_active", "number", []),
+    battleWildPromptLine: () => {
+      const dex = mod.ccall("tp_wild_prompt_dex", "number", [], []);
+      const lvl = mod.ccall("tp_wild_prompt_level", "number", [], []);
+      return `${mod.ccall("tp_dex_name", "string", ["number"], [dex])} Lv.${lvl}`;
+    },
+    battleWildQuestionText: mod.cwrap("tp_battle_wild_question_text", "string", []),
+    battleFightText: mod.cwrap("tp_battle_fight_text", "string", []),
+    battleLaterText: mod.cwrap("tp_battle_later_text", "string", []),
+
+    battleResolved: mod.cwrap("tp_battle_resolved", "number", []),
+    battlePlayerWon: mod.cwrap("tp_battle_player_won", "number", []),
+    battleWildDex: mod.cwrap("tp_battle_wild_dex", "number", []),
+    battlePlayerHp: mod.cwrap("tp_battle_player_hp", "number", []),
+    battlePlayerMaxHp: mod.cwrap("tp_battle_player_max_hp", "number", []),
+    battleEnemyHp: mod.cwrap("tp_battle_enemy_hp", "number", []),
+    battleEnemyMaxHp: mod.cwrap("tp_battle_enemy_max_hp", "number", []),
+    battleAttackMenuOpen: mod.cwrap("tp_battle_attack_menu_open", "number", []),
+    battleLastEnemyDamage: mod.cwrap("tp_battle_last_enemy_damage", "number", []),
+    battleRound: mod.cwrap("tp_battle_round", "number", []),
+    battleTitle: mod.cwrap("tp_battle_title_text", "string", []),
+    battlePlayerLabel: mod.cwrap("tp_battle_player_label", "string", []),
+    battleEnemyLabel: mod.cwrap("tp_battle_enemy_label", "string", []),
+    battleRunText: mod.cwrap("tp_battle_run_text", "string", []),
+    battleAttackText: mod.cwrap("tp_battle_attack_text", "string", []),
+    battleDodgeText: mod.cwrap("tp_battle_dodge_text", "string", []),
+    battleRestText: mod.cwrap("tp_battle_rest_text", "string", []),
+    battleQuickAttackText: mod.cwrap("tp_battle_quick_attack_text", "string", []),
+    battleHeavyAttackText: mod.cwrap("tp_battle_heavy_attack_text", "string", []),
+    battleRoundLabel: mod.cwrap("tp_battle_round_label", "string", []),
+    battleMessage: mod.cwrap("tp_battle_message", "string", []),
+    battleResultText: mod.cwrap("tp_battle_result_text", "string", []),
+    battleRoundsLine: mod.cwrap("tp_battle_rounds_line", "string", []),
+    battleDamageLine: mod.cwrap("tp_battle_damage_line", "string", []),
+    battleRewardLine: mod.cwrap("tp_battle_reward_line", "string", []),
+    battleCloseChanceText: mod.cwrap("tp_battle_close_chance_text", "string", []),
+    battleCatchOffered: mod.cwrap("tp_battle_catch_offered", "number", []),
+    battleCatchDone: mod.cwrap("tp_battle_catch_done", "number", []),
+    battleCatchTried: mod.cwrap("tp_battle_catch_tried", "number", []),
+    battleCatchSuccess: mod.cwrap("tp_battle_catch_success", "number", []),
+    battleCatchWildText: mod.cwrap("tp_battle_catch_wild_text", "string", []),
+    battleLeaveWildText: mod.cwrap("tp_battle_leave_wild_text", "string", []),
+    battleOkText: mod.cwrap("tp_battle_ok_text", "string", []),
+    battleCaughtOkText: mod.cwrap("tp_battle_caught_ok_text", "string", []),
+    battleEscapedText: mod.cwrap("tp_battle_escaped_text", "string", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

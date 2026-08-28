@@ -80,7 +80,16 @@ Python for everything after that.
    user-supplied `mons/dex_entries_<lang>.txt`) -- tiles show the dex
    number instead of a thumbnail, and detail stops after the type/
    obtained-via page.
-   Still missing from `PetScreen.swift`'s full render(): battle, evolution/
+   The wild-battle system ✅ done too (`web/battle.js` +
+   `core/browser_battle.cpp`, a plain-C++ port of `Sources/Core/TPBattle.mm`
+   over the unmodified `battle.cpp` combat engine) -- wild-encounter prompt,
+   attack/dodge/rest turns, HP bars, win/loss result with the real reward/
+   catch-offer flow. Missing from *this* piece specifically: the wild
+   species' own sprite in battle (falls back to a "?" unless it happens to
+   already be the currently-loaded one) and the catch minigame integration
+   isn't wired to the post-battle catch offer yet, just the plain
+   probability roll.
+   Still missing from `PetScreen.swift`'s full render(): evolution/
    farewell/runaway ceremonies, the stat card, and the rename keyboard.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as

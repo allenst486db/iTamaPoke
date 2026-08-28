@@ -32,6 +32,11 @@ Pet gPet;
 bool gStarted = false;
 }
 
+// browser_battle.cpp's wild-battle glue needs read/write access to this
+// same Pet (level/species/stats, and to apply win/loss/catch results) --
+// this is the one crossing point, rather than a second Pet existing.
+Pet &tp_battle_pet() { return gPet; }
+
 // pet.cpp/battle.cpp raise effects by calling this directly (audio.h's own
 // declaration, same call sites the ESP32 firmware and the iOS port's
 // TPSetSfxHook trampoline both use) -- here it just forwards the id to a JS
