@@ -5,10 +5,11 @@ thin native WKWebView (iOS)/WebView (Android) shell you build and install on
 your own device — not hosted anywhere public. See the root
 [LICENSE](../LICENSE): personal use only, same as the iOS app.
 
-**Status: playable idle-screen MVP.** Egg tap-to-hatch, live stat decay, and
-the four action buttons (feed/play/light/clean) all work against the real
-game logic in an actual browser tab. No sprite art, minigames, dex, battle,
-settings, sound, or save persistence yet -- see the roadmap below.
+**Status: playable idle-screen MVP with persistence.** Egg tap-to-hatch,
+live stat decay, the four action buttons (feed/play/light/clean), and a
+save that survives a reload (IndexedDB) all work against the real game
+logic in an actual browser tab. No sprite art, minigames, dex, battle,
+settings, or sound yet -- see the roadmap below.
 
 ## What's here
 
@@ -70,7 +71,12 @@ Python for everything after that.
 5. Asset loading: local file picker (multi-select, not `webkitdirectory` —
    unreliable on iOS Safari) -> IndexedDB, mirroring the iOS app's
    Documents/mons flow
-6. Save/settings persistence via IndexedDB (mirrors `Preferences.h`'s store)
+6. ~~Save persistence via IndexedDB~~ ✅ done. `tp_export_state()`/
+   `tp_import_state()` (browser_glue.cpp) round-trip `Preferences::store()`
+   as a small binary blob; `web/main.js` writes it to IndexedDB every 15s
+   and on tab hide/close, and loads it before the first tick. Settings
+   (sound mode, language) aren't wired into the UI yet, so there's nothing
+   settings-shaped to persist beyond what the store already carries.
 7. Native shells: a minimal WKWebView Xcode project and a minimal
    Android `WebView` project, each loading `web/` as local bundled assets
    (no server at runtime) and installed only on your own device

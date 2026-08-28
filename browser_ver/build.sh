@@ -38,7 +38,8 @@ em++ -std=c++17 $OPT \
   -s WASM=1 -s MODULARIZE=1 -s EXPORT_NAME=createTPCore \
   -s ENVIRONMENT=web \
   -s ALLOW_MEMORY_GROWTH=1 \
-  -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap"]' \
+  -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","HEAPU8"]' \
+  -s EXPORTED_FUNCTIONS='["_malloc","_free"]' \
   "${EXTRA[@]+"${EXTRA[@]}"}" \
   -o "$OUT.js"
 

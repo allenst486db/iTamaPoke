@@ -177,9 +177,81 @@ canvas.addEventListener("pointerdown", (e) => {
   }
 });
 
+// --- Save persistence ----------------------------------------------------
+//
+// Mirrors browser_glue.cpp's tp_export_state()/tp_import_state(): the WASM
+// side owns the actual key/value store (shim/Preferences.h, an in-memory
+// stand-in for ESP32's NVS flash); this is just the round trip that keeps
+// it alive in the browser across reloads via IndexedDB. Import must happen
+// before the very first tp_tick() call, since that's what triggers
+// Pet::begin() reading the store -- importing later would just be ignored.
+
+const DB_NAME = "itamapoke";
+const STORE_NAME = "save";
+const SAVE_KEY = "state";
+
+function openDb() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, 1);
+    req.onupgradeneeded = () => req.result.createObjectStore(STORE_NAME);
+    req.onsuccess = () => resolve(req.result);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadSave() {
+  try {
+    const db = await openDb();
+    return await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readonly");
+      const req = tx.objectStore(STORE_NAME).get(SAVE_KEY);
+      req.onsuccess = () => resolve(req.result || null);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) {
+    console.warn("[save] load failed, starting fresh:", e);
+    return null;
+  }
+}
+
+async function writeSave(bytes) {
+  try {
+    const db = await openDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).put(bytes, SAVE_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("[save] write failed:", e);
+  }
+}
+
+// Pulls the current store out of wasm memory as a fresh Uint8Array (the
+// pointer tp_export_ptr() returns is only valid until the next export call,
+// and can move if the module's heap grows in between -- copying immediately
+// is what makes this safe to await afterwards).
+function exportStateBytes(mod) {
+  const len = mod.ccall("tp_export_state", "number", [], []);
+  const ptr = mod.ccall("tp_export_ptr", "number", [], []);
+  return mod.HEAPU8.slice(ptr, ptr + len);
+}
+
+function importStateBytes(mod, bytes) {
+  const ptr = mod._malloc(bytes.length);
+  mod.HEAPU8.set(bytes, ptr);
+  mod.ccall("tp_import_state", null, ["number", "number"], [ptr, bytes.length]);
+  mod._free(ptr);
+}
+
+async function saveNow(mod) {
+  await writeSave(exportStateBytes(mod));
+}
+
 createTPCore({
   onSfx(id) { console.log("[sfx]", id); },
-}).then((mod) => {
+}).then(async (mod) => {
   Module = mod;
   fns = {
     isEgg: mod.cwrap("tp_is_egg", "number", []),
@@ -193,6 +265,23 @@ createTPCore({
     name: mod.cwrap("tp_name", "string", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
+
+  const existing = await loadSave();
+  if (existing) {
+    importStateBytes(mod, existing);
+    console.log("[save] loaded", existing.length, "bytes from IndexedDB");
+  } else {
+    console.log("[save] no existing save -- starting fresh");
+  }
+
+  // Periodic autosave, plus on tab hide/close -- pagehide fires reliably on
+  // both a real close and a background/app-switch on mobile Safari, unlike
+  // beforeunload.
+  setInterval(() => saveNow(mod), 15000);
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") saveNow(mod);
+  });
+  window.addEventListener("pagehide", () => saveNow(mod));
 
   function frame(t) {
     mod.ccall("tp_tick", null, ["number"], [t | 0]);
