@@ -483,4 +483,160 @@ const char *tp_ceremony_message() {
   return T(id);
 }
 
+// --- Stat card: Personality / Battle / Medals / Progress pages ----------
+//
+// Ports the matching TPPet.mm accessors -- Daily/Box/Expedition pages
+// aren't ported (see browser_ver/README.md's roadmap): they need
+// pagination/timer/inventory state this pass doesn't add.
+
+namespace {
+StrId personalityNameId(PetPersonality p) {
+  switch (p) {
+    case PERS_PLAYFUL: return S_PERS_PLAYFUL;
+    case PERS_BRAVE: return S_PERS_BRAVE;
+    case PERS_CALM: return S_PERS_CALM;
+    case PERS_LAZY: return S_PERS_LAZY;
+    default: return S_PERS_BALANCED;
+  }
+}
+StrId personalityHintId(PetPersonality p) {
+  switch (p) {
+    case PERS_PLAYFUL: return S_PERS_PLAYFUL_HINT;
+    case PERS_BRAVE: return S_PERS_BRAVE_HINT;
+    case PERS_CALM: return S_PERS_CALM_HINT;
+    case PERS_LAZY: return S_PERS_LAZY_HINT;
+    default: return S_PERS_BALANCED_HINT;
+  }
+}
+} // namespace
+
+EMSCRIPTEN_KEEPALIVE int tp_personality_kind() { return (int)gPet.personality(); }
+EMSCRIPTEN_KEEPALIVE const char *tp_personality_title() { return T(S_PERSONALITY); }
+EMSCRIPTEN_KEEPALIVE const char *tp_personality_name() { return T(personalityNameId(gPet.personality())); }
+EMSCRIPTEN_KEEPALIVE const char *tp_personality_hint() { return T(personalityHintId(gPet.personality())); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_personality_age_line() {
+  static std::string out;
+  char buf[24];
+  snprintf(buf, sizeof(buf), T(S_AGE_DAYS_FMT), (unsigned long)(gPet.ageMinutes / 1440));
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_records_title() { return T(S_RECORDS); }
+EMSCRIPTEN_KEEPALIVE const char *tp_ball_record_label() { return T(S_GAME_BALL); }
+EMSCRIPTEN_KEEPALIVE const char *tp_catch_record_label() { return T(S_GAME_CATCH); }
+EMSCRIPTEN_KEEPALIVE const char *tp_memo_record_label() { return T(S_GAME_MEMO); }
+EMSCRIPTEN_KEEPALIVE const char *tp_clean_record_label() { return T(S_GAME_CLEAN); }
+EMSCRIPTEN_KEEPALIVE const char *tp_type_record_label() { return T(S_GAME_TYPE); }
+EMSCRIPTEN_KEEPALIVE int tp_best_battle_streak() { return gPet.bestBattleStreak; }
+
+EMSCRIPTEN_KEEPALIVE const char *tp_battle_title() { return T(S_BATTLE); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_battle_record_line() {
+  static std::string out;
+  char buf[24];
+  snprintf(buf, sizeof(buf), T(S_WL_FMT), gPet.battleWins, gPet.battleLosses);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_battle_streak_line() {
+  static std::string out;
+  char buf[18];
+  snprintf(buf, sizeof(buf), T(S_BSTREAK_FMT), gPet.battleStreak);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_battle_best_line() {
+  static std::string out;
+  char buf[16];
+  snprintf(buf, sizeof(buf), T(S_BBEST_FMT), gPet.bestBattleStreak);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_wild_battle_text() { return T(S_WILD_BATTLE); }
+EMSCRIPTEN_KEEPALIVE const char *tp_train_button_text() { return T(S_TRAIN_STR); }
+EMSCRIPTEN_KEEPALIVE int tp_atk_stat() { return gPet.atkStat(); }
+EMSCRIPTEN_KEEPALIVE int tp_def_stat() { return gPet.defStat(); }
+EMSCRIPTEN_KEEPALIVE int tp_spe_stat() { return gPet.speStat(); }
+EMSCRIPTEN_KEEPALIVE int tp_weight() { return gPet.weight; }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_stat_label(int index) {
+  static const StrId ids[4] = { S_STAT_ATK, S_STAT_DEF, S_STAT_SPE, S_STAT_WGT };
+  if (index < 0 || index > 3) return "";
+  return T(ids[index]);
+}
+// The training-sack minigame isn't ported, so this always reports 0.
+EMSCRIPTEN_KEEPALIVE int tp_strength_high() { return gPet.strHi; }
+
+EMSCRIPTEN_KEEPALIVE int tp_medal_count() { return MED_COUNT; }
+EMSCRIPTEN_KEEPALIVE
+int tp_has_medal(int i) { return (i >= 0 && i < MED_COUNT && gPet.hasMedal(1 << i)) ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_medal_description(int i) {
+  return (i >= 0 && i < MED_COUNT) ? medalDesc(i) : "";
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_medals_line() {
+  static std::string out;
+  int got = 0;
+  for (int i = 0; i < MED_COUNT; i++) if (gPet.hasMedal(1 << i)) got++;
+  char buf[32];
+  snprintf(buf, sizeof(buf), T(S_MEDALS_FMT), got, MED_COUNT);
+  out = buf;
+  return out.c_str();
+}
+
+EMSCRIPTEN_KEEPALIVE const char *tp_progress_title() { return T(S_PROGRESS); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_level_line() {
+  static std::string out;
+  char buf[16];
+  snprintf(buf, sizeof(buf), T(S_LVL_FMT), gPet.level());
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE int tp_minutes_into_level() { return gPet.ageMinutes % MINUTES_PER_LEVEL; }
+EMSCRIPTEN_KEEPALIVE int tp_minutes_per_level() { return MINUTES_PER_LEVEL; }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_next_level_line() {
+  static std::string out;
+  uint8_t into = gPet.ageMinutes % MINUTES_PER_LEVEL;
+  char buf[40];
+  snprintf(buf, sizeof(buf), T(S_NEXT_LVL_FMT), MINUTES_PER_LEVEL - into, gPet.level() + 1);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_evolution_label() { return T(S_EVO_LABEL); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_evolution_status() {
+  const DexEntry &d = DEX_TBL[gPet.speciesId];
+  if (d.evolvesTo == 0) return T(S_FINAL_FORM);
+  int needed = d.evolveLevel + gPet.careMistakes;
+  if (gPet.level() >= needed) return T(gPet.lowestStat() >= 40 ? S_EVO_READY : S_EVO_BLOCKED);
+  static std::string out;
+  char buf[40];
+  snprintf(buf, sizeof(buf), T(S_EVO_IN_FMT), needed - gPet.level());
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+int tp_evolution_status_kind() {
+  const DexEntry &d = DEX_TBL[gPet.speciesId];
+  if (d.evolvesTo == 0) return 0;
+  int needed = d.evolveLevel + gPet.careMistakes;
+  if (gPet.level() < needed) return 0;
+  return gPet.lowestStat() >= 40 ? 1 : 2;
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_mistakes_line() {
+  static std::string out;
+  char buf[32];
+  snprintf(buf, sizeof(buf), T(S_MISTAKES_FMT), gPet.careMistakes);
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE int tp_care_mistakes() { return gPet.careMistakes; }
+
 } // extern "C"

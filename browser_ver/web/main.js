@@ -570,7 +570,7 @@ function draw() {
     return;
   }
   if (screen === "card") {
-    drawCardProfile(performance.now());
+    drawCard(performance.now());
     return;
   }
   if (screen === "keyboard") {
@@ -798,6 +798,7 @@ document.getElementById("dexBtn").addEventListener("click", () => {
 });
 
 document.getElementById("cardBtn").addEventListener("click", () => {
+  if (screen !== "card") cardPage = 0;
   screen = screen === "card" ? "idle" : "card";
 });
 
@@ -998,6 +999,48 @@ createTPCore({
     farewellQuestion: mod.cwrap("tp_farewell_question", "string", []),
     farewellGoText: mod.cwrap("tp_farewell_go_text", "string", []),
     farewellStayText: mod.cwrap("tp_farewell_stay_text", "string", []),
+
+    personalityKind: mod.cwrap("tp_personality_kind", "number", []),
+    personalityTitle: mod.cwrap("tp_personality_title", "string", []),
+    personalityName: mod.cwrap("tp_personality_name", "string", []),
+    personalityHint: mod.cwrap("tp_personality_hint", "string", []),
+    personalityAgeLine: mod.cwrap("tp_personality_age_line", "string", []),
+    recordsTitle: mod.cwrap("tp_records_title", "string", []),
+    ballRecordLabel: mod.cwrap("tp_ball_record_label", "string", []),
+    catchRecordLabel: mod.cwrap("tp_catch_record_label", "string", []),
+    memoRecordLabel: mod.cwrap("tp_memo_record_label", "string", []),
+    cleanRecordLabel: mod.cwrap("tp_clean_record_label", "string", []),
+    typeRecordLabel: mod.cwrap("tp_type_record_label", "string", []),
+    bestBattleStreak: mod.cwrap("tp_best_battle_streak", "number", []),
+
+    statsBattleTitle: mod.cwrap("tp_battle_title", "string", []),
+    battleRecordLine: mod.cwrap("tp_battle_record_line", "string", []),
+    battleStreakLine: mod.cwrap("tp_battle_streak_line", "string", []),
+    battleBestLine: mod.cwrap("tp_battle_best_line", "string", []),
+    wildBattleText: mod.cwrap("tp_wild_battle_text", "string", []),
+    trainButtonText: mod.cwrap("tp_train_button_text", "string", []),
+    atkStat: mod.cwrap("tp_atk_stat", "number", []),
+    defStat: mod.cwrap("tp_def_stat", "number", []),
+    speStat: mod.cwrap("tp_spe_stat", "number", []),
+    weight: mod.cwrap("tp_weight", "number", []),
+    statLabel: mod.cwrap("tp_stat_label", "string", ["number"]),
+    battleCanStart: mod.cwrap("tp_battle_can_start", "number", []),
+
+    medalCount: mod.cwrap("tp_medal_count", "number", []),
+    hasMedal: mod.cwrap("tp_has_medal", "number", ["number"]),
+    medalDescription: mod.cwrap("tp_medal_description", "string", ["number"]),
+    medalsLine: mod.cwrap("tp_medals_line", "string", []),
+
+    progressTitle: mod.cwrap("tp_progress_title", "string", []),
+    levelLine: mod.cwrap("tp_level_line", "string", []),
+    minutesIntoLevel: mod.cwrap("tp_minutes_into_level", "number", []),
+    minutesPerLevel: mod.cwrap("tp_minutes_per_level", "number", []),
+    nextLevelLine: mod.cwrap("tp_next_level_line", "string", []),
+    evolutionLabel: mod.cwrap("tp_evolution_label", "string", []),
+    evolutionStatus: mod.cwrap("tp_evolution_status", "string", []),
+    evolutionStatusKind: mod.cwrap("tp_evolution_status_kind", "number", []),
+    mistakesLine: mod.cwrap("tp_mistakes_line", "string", []),
+    careMistakes: mod.cwrap("tp_care_mistakes", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

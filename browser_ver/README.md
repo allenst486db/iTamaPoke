@@ -102,9 +102,15 @@ Python for everything after that.
    button and a progress-bar/message screen instead of the halo/ray/spark
    particle animation, which needs `SceneRenderer.swift` ported first to
    have a backdrop worth animating over.
-   Still missing from `PetScreen.swift`'s full render(): the card's other
-   seven pages (personality, daily goals, box, battle record, medals,
-   progress, expeditions).
+   Four more card pages ✅ done -- Personality, Battle (ATK/DEF/SPD/WGT
+   bars, W/L record, a working wild-battle button), Medals, Progress
+   (level bar, evolution status). Page-dot navigation added (tap left/
+   right half of the dot row). Daily goals, Box, and Expedition show a
+   plain "not in the browser build yet" placeholder instead of a blank
+   or broken page -- they need pagination/timer/inventory state this
+   pass didn't add.
+   Still missing from `PetScreen.swift`'s full render(): those three
+   card pages (Daily/Box/Expedition) and the training-sack minigame.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

@@ -1,15 +1,55 @@
-// Stat card (profile page only -- personality/daily/box/battle/medals/
-// progress/expedition aren't ported, see browser_ver/README.md) and the
-// rename keyboard, ported from PetScreen.swift's renderCardProfile /
-// renderKeyboard / keyboardTap.
+// Stat card, ported from PetScreen.swift's renderCard + its eight page
+// functions -- Profile/Personality/Battle/Medals/Progress are ported;
+// Daily/Box/Expedition show a placeholder (see below for why) rather than
+// crashing or silently doing nothing. Also the rename keyboard
+// (renderKeyboard/keyboardTap).
 
+let cardPage = 0;
+const CARD_PAGE_COUNT = 8;
 let nameDraft = "";
 
-function drawCardProfile(now) {
+function drawCard(now) {
   ctx.fillStyle = UI.bgDay;
   ctx.fillRect(0, 0, TP.screen, TP.screen);
-  ctx.textAlign = "center";
 
+  switch (cardPage) {
+    case 0: drawCardProfile(now); break;
+    case 1: drawCardPersonality(); break;
+    case 4: drawCardStats(); break;
+    case 5: drawCardMedals(); break;
+    case 6: drawCardProgress(); break;
+    default: drawCardPlaceholder(); break; // 2 daily, 3 box, 7 expedition
+  }
+
+  const dotsX = TP.cx - (CARD_PAGE_COUNT - 1) * 13;
+  for (let i = 0; i < CARD_PAGE_COUNT; i++) {
+    const cx = dotsX + i * 26;
+    ctx.beginPath();
+    ctx.arc(cx, 382, i === cardPage ? 5 : 4, 0, Math.PI * 2);
+    if (i === cardPage) { ctx.fillStyle = UI.ink; ctx.fill(); }
+    else { ctx.strokeStyle = UI.ink; ctx.lineWidth = 1; ctx.stroke(); }
+  }
+  ctx.fillStyle = UI.track;
+  ctx.textAlign = "center";
+  ctx.font = "12px monospace";
+  ctx.fillText(fns.backHint(), TP.cx, 400);
+}
+
+const CARD_PAGE_NAMES = ["PROFILE", "PERSONALITY", "DAILY", "BOX", "BATTLE", "MEDALS", "PROGRESS", "EXPEDITION"];
+
+function drawCardPlaceholder() {
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(CARD_PAGE_NAMES[cardPage], TP.cx, 160);
+  ctx.fillStyle = UI.track;
+  ctx.font = "13px monospace";
+  ctx.fillText("not in the browser build yet", TP.cx, 190);
+  statusEl.textContent = `Card · ${CARD_PAGE_NAMES[cardPage]} (not ported)`;
+}
+
+function drawCardProfile(now) {
+  ctx.textAlign = "center";
   const head = fns.name();
   ctx.fillStyle = UI.ink;
   ctx.font = head.length <= 11 ? "bold 26px monospace" : "bold 20px monospace";
@@ -57,22 +97,194 @@ function drawCardProfile(now) {
   ctx.fillStyle = UI.track;
   ctx.fillText(fns.renameHint(), TP.cx, 332);
 
-  ctx.fillStyle = UI.track;
-  ctx.font = "12px monospace";
-  ctx.fillText(fns.backHint(), TP.cx, 414);
-
   statusEl.textContent = `Card · ${head} · bond ${bond}`;
 }
 
+function personalityColor(kind) {
+  return { 0: UI.barOK, 1: UI.barWarn, 2: UI.barBad, 3: "#4C98D9", 4: "#B3C8D9" }[kind] || UI.barOK;
+}
+
+function drawPersonalityRecord(x, y, label, value, color) {
+  ctx.fillStyle = UI.white;
+  roundRect(x, y, 118, 34, 8); ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 1;
+  roundRect(x, y, 118, 34, 8); ctx.stroke();
+  ctx.fillStyle = color;
+  ctx.textAlign = "left";
+  ctx.font = "10px monospace";
+  ctx.fillText(label, x + 10, y + 15);
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 14px monospace";
+  ctx.textAlign = "right";
+  ctx.fillText(`${value}`, x + 108, y + 24);
+}
+
+function drawCardPersonality() {
+  const col = personalityColor(fns.personalityKind());
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.personalityTitle(), TP.cx, 50);
+
+  ctx.fillStyle = col;
+  roundRect(62, 86, 342, 70, 16); ctx.fill();
+  ctx.fillStyle = UI.bgDay;
+  ctx.font = "bold 18px monospace";
+  ctx.fillText(fns.personalityName(), TP.cx, 116);
+  ctx.font = "12px monospace";
+  ctx.fillText(fns.personalityHint(), TP.cx, 140);
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "12px monospace";
+  const bond = fns.bond();
+  ctx.fillText(`${fns.bondLabel()} ${bond}`, 62, 200);
+  ctx.fillStyle = UI.track;
+  roundRect(160, 190, 150, 10, 3); ctx.fill();
+  ctx.fillStyle = "#d4527e";
+  roundRect(160, 190, 150 * Math.min(bond, 100) / 100, 10, 3); ctx.fill();
+
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.track;
+  ctx.font = "11px monospace";
+  ctx.fillText(fns.personalityAgeLine(), TP.cx, 246);
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 14px monospace";
+  ctx.fillText(fns.recordsTitle(), TP.cx, 268);
+
+  drawPersonalityRecord(52, 294, fns.ballRecordLabel(), fns.gameHigh(), UI.barOK);
+  drawPersonalityRecord(178, 294, fns.catchRecordLabel(), fns.catchHigh(), UI.barWarn);
+  drawPersonalityRecord(304, 294, fns.memoRecordLabel(), fns.memoHigh(), "#4C98D9");
+  drawPersonalityRecord(52, 334, fns.cleanRecordLabel(), fns.cleanHigh(), UI.barOK);
+  drawPersonalityRecord(178, 334, fns.typeRecordLabel(), fns.typeHigh(), "#F3B7D9");
+  drawPersonalityRecord(304, 334, fns.statsBattleTitle(), fns.bestBattleStreak(), UI.barBad);
+
+  statusEl.textContent = `Card · Personality · ${fns.personalityName()}`;
+}
+
+function drawStatBar(y, label, value, maxBar, color) {
+  ctx.textAlign = "left";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "12px monospace";
+  ctx.fillText(label, 40, y + 15);
+  ctx.textAlign = "right";
+  ctx.fillText(`${value}`, 396, y + 15);
+  ctx.fillStyle = UI.track;
+  roundRect(150, y + 4, 160, 11, 3); ctx.fill();
+  ctx.fillStyle = color;
+  roundRect(150, y + 4, 160 * Math.min(value / maxBar, 1), 11, 3); ctx.fill();
+}
+
+function drawCardStats() {
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.statsBattleTitle(), TP.cx, 54);
+
+  drawStatBar(112, fns.statLabel(0), fns.atkStat(), 260, UI.barBad);
+  drawStatBar(154, fns.statLabel(1), fns.defStat(), 260, "#4C98D9");
+  drawStatBar(196, fns.statLabel(2), fns.speStat(), 260, UI.barWarn);
+  drawStatBar(238, fns.statLabel(3), fns.weight(), 100, "#B3C8D9");
+
+  ctx.textAlign = "left";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "11px monospace";
+  ctx.fillText(fns.battleRecordLine(), 40, 276);
+  ctx.fillText(fns.battleStreakLine(), 176, 276);
+  ctx.fillText(fns.battleBestLine(), 300, 276);
+
+  ctx.fillStyle = "#4C98D9";
+  roundRect(40, 296, 160, 40, 11); ctx.fill();
+  ctx.fillStyle = UI.bgDay;
+  ctx.textAlign = "center";
+  ctx.font = "bold 13px monospace";
+  ctx.fillText(fns.wildBattleText(), 120, 320);
+
+  ctx.fillStyle = UI.barBad;
+  roundRect(216, 296, 160, 40, 11); ctx.fill();
+  ctx.fillStyle = UI.bgDay;
+  ctx.fillText(fns.trainButtonText() + " (n/a)", 296, 320);
+
+  statusEl.textContent = `Card · Battle stats`;
+}
+
+function cardStatsTap(x, y) {
+  if (x >= 40 && x <= 200 && y >= 296 && y <= 336) {
+    if (fns.battleCanStart() !== 0) {
+      Module._tp_battle_start();
+      screen = "battle";
+    }
+  }
+  // The training-sack button (right) has no minigame behind it in this
+  // build yet -- see browser_ver/README.md.
+}
+
+function drawCardMedals() {
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.medalsLine(), TP.cx, 54);
+
+  const count = fns.medalCount();
+  for (let i = 0; i < count; i++) {
+    const x = 28 + (i % 2) * 206, y = 104 + Math.floor(i / 2) * 54;
+    const got = fns.hasMedal(i) !== 0;
+    ctx.fillStyle = got ? UI.barOK : UI.track;
+    roundRect(x, y, 196, 44, 10); ctx.fill();
+    ctx.fillStyle = got ? UI.bgDay : "#84888a";
+    ctx.textAlign = "left";
+    ctx.font = "12px monospace";
+    ctx.fillText((got ? "✓ " : "") + fns.medalDescription(i), x + 12, y + 27);
+  }
+  statusEl.textContent = `Card · ${fns.medalsLine()}`;
+}
+
+function drawCardProgress() {
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.progressTitle(), TP.cx, 50);
+
+  ctx.font = "bold 40px monospace";
+  ctx.fillText(fns.levelLine(), TP.cx, 106);
+
+  const bx = 93, bw = 280, by = 158, bh = 22;
+  ctx.fillStyle = UI.track;
+  roundRect(bx, by, bw, bh, 6); ctx.fill();
+  const fw = (bw - 4) * fns.minutesIntoLevel() / fns.minutesPerLevel();
+  if (fw > 0) { ctx.fillStyle = UI.barOK; roundRect(bx + 2, by + 2, fw, bh - 4, 5); ctx.fill(); }
+  ctx.fillStyle = UI.ink;
+  ctx.font = "13px monospace";
+  ctx.fillText(fns.nextLevelLine(), TP.cx, by + 45);
+
+  ctx.fillStyle = UI.track;
+  ctx.fillText(fns.evolutionLabel(), TP.cx, 236);
+  const kind = fns.evolutionStatusKind();
+  ctx.fillStyle = kind === 1 ? UI.barOK : kind === 2 ? UI.barBad : UI.ink;
+  ctx.font = "bold 14px monospace";
+  ctx.fillText(fns.evolutionStatus(), TP.cx, 260);
+
+  ctx.fillStyle = fns.careMistakes() > 0 ? UI.barBad : UI.ink;
+  ctx.font = "13px monospace";
+  ctx.fillText(fns.mistakesLine(), TP.cx, 316);
+
+  statusEl.textContent = `Card · ${fns.levelLine()}`;
+}
+
 function cardTap(x, y) {
-  // renameHint's own line, per PetScreen.swift's card-tap dispatch for the
-  // profile page.
-  if (y >= 320 && y <= 344) {
+  if (cardPage === 0 && y >= 320 && y <= 344) {
     nameDraft = "";
     screen = "keyboard";
     return;
   }
-  if (y > 400) screen = "idle";
+  if (cardPage === 4) { cardStatsTap(x, y); }
+  if (y >= 370 && y <= 394) {
+    // Page-dot row: tap left half to go back a page, right half forward.
+    if (x < TP.cx) cardPage = (cardPage - 1 + CARD_PAGE_COUNT) % CARD_PAGE_COUNT;
+    else cardPage = (cardPage + 1) % CARD_PAGE_COUNT;
+    return;
+  }
+  if (y > 396) screen = "idle";
 }
 
 // --- Rename keyboard -------------------------------------------------
