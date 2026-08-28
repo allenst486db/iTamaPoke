@@ -343,6 +343,13 @@ void Pet::noteDailyGoal(uint8_t goalType, uint8_t amount) {
 // primer cuidado del dia: avanza la racha y afianza el vinculo
 void Pet::registerCare() {
   if (isEgg() || ceremony != CER_NONE) return;
+  // Independent of the once-a-day streak/bond gate below: level, weight,
+  // evolution form and bond can newly cross a medal threshold on any care
+  // action, not just the first one each day, and checkMedals() used to
+  // live only past that gate -- so a medal earned on someone's 2nd, 3rd,
+  // etc. interaction of the day silently waited until the next calendar
+  // day's first action to actually show up.
+  checkMedals();
   uint32_t d = today();
   if (d == 0 || d == lastCareDay) return;  // sin reloj, o ya conto hoy
   if (lastCareDay == 0 || d == lastCareDay + 1) {
