@@ -432,4 +432,55 @@ EMSCRIPTEN_KEEPALIVE int tp_has_nick() { return gPet.nick[0] ? 1 : 0; }
 EMSCRIPTEN_KEEPALIVE
 void tp_rename(const char *name) { gPet.rename(name); }
 
+// --- Evolution / farewell / runaway ceremonies --------------------------
+//
+// Ports the handful of TPPet.mm accessors PetScreen.swift's evolve-button/
+// ending-button/ceremony drawing reads -- see renderBattle-adjacent
+// comments in web/ceremony.js for what's simplified (no particle FX).
+
+EMSCRIPTEN_KEEPALIVE int tp_wants_evolve() { return gPet.wantEvolveButton() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_wants_farewell() { return gPet.wantFarewellButton() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_can_runaway() { return gPet.canRunawayNow() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_evolving_now() { return gPet.evolving() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE float tp_evolve_progress() { return gPet.evolveT(); }
+EMSCRIPTEN_KEEPALIVE int tp_ceremony() { return gPet.ceremony; } // 0 none,1 farewell,2 runaway,3 release
+EMSCRIPTEN_KEEPALIVE float tp_ceremony_progress() { return gPet.ceremonyT(); }
+
+EMSCRIPTEN_KEEPALIVE void tp_evolve() { gPet.evolve(); }
+EMSCRIPTEN_KEEPALIVE void tp_decline_evolve() { gPet.declineEvolve(); }
+EMSCRIPTEN_KEEPALIVE void tp_decline_farewell() { gPet.declineFarewell(); }
+EMSCRIPTEN_KEEPALIVE void tp_start_farewell() { gPet.startFarewell(); }
+EMSCRIPTEN_KEEPALIVE void tp_start_runaway() { gPet.startRunaway(); }
+
+namespace {
+std::string TPNamedPrompt(StrId id) {
+  const char *nm = gPet.nick[0] ? gPet.nick : dexName(gPet.speciesId);
+  char buf[64];
+  snprintf(buf, sizeof(buf), T(id), nm);
+  return buf;
+}
+} // namespace
+
+EMSCRIPTEN_KEEPALIVE const char *tp_evolve_button_text() { return T(S_EVO_TAP); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_farewell_button_text() {
+  static std::string out; out = TPNamedPrompt(S_FAREWELL_BTN); return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_runaway_button_text() {
+  static std::string out; out = TPNamedPrompt(S_RUNAWAY_BTN); return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_evolve_question() { return T(S_EVO_Q); }
+EMSCRIPTEN_KEEPALIVE const char *tp_evolve_keep_text() { return T(S_EVO_KEEP); }
+EMSCRIPTEN_KEEPALIVE const char *tp_farewell_question() { return T(S_FAR_Q); }
+EMSCRIPTEN_KEEPALIVE const char *tp_farewell_go_text() { return T(S_FAR_GO); }
+EMSCRIPTEN_KEEPALIVE const char *tp_farewell_stay_text() { return T(S_FAR_STAY); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_ceremony_message() {
+  StrId id = gPet.ceremony == CER_FAREWELL ? S_FAREWELL
+           : gPet.ceremony == CER_RUNAWAY  ? S_RUNAWAY
+                                            : S_GOODBYE;
+  return T(id);
+}
+
 } // extern "C"

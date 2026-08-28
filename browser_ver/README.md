@@ -94,10 +94,17 @@ Python for everything after that.
    age info, and a real rename round-tripping through `Pet::rename`. The
    card's other seven pages (personality, daily goals, box, battle record,
    medals, progress, expeditions) aren't ported.
-   Still missing from `PetScreen.swift`'s full render(): evolution/
-   farewell/runaway ceremonies (the game logic behind them -- evolving,
-   the ending states -- already runs correctly server-side; only their
-   animated screens aren't drawn), and the card's other seven pages.
+   Evolution/farewell/runaway ✅ done too (`web/ceremony.js`) -- the
+   evolve/farewell/runaway call-to-action buttons, their confirm dialogs,
+   and the ceremony/evolving screens all work against the real
+   `Pet::evolve`/`startFarewell`/`startRunaway`. Deliberately simplified
+   from `PetScreen.swift`'s `drawEvolveFX`/`drawCeremony`: a plain pulsing
+   button and a progress-bar/message screen instead of the halo/ray/spark
+   particle animation, which needs `SceneRenderer.swift` ported first to
+   have a backdrop worth animating over.
+   Still missing from `PetScreen.swift`'s full render(): the card's other
+   seven pages (personality, daily goals, box, battle record, medals,
+   progress, expeditions).
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

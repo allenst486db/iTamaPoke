@@ -595,6 +595,14 @@ function draw() {
     return;
   }
 
+  // Ceremony/evolving takes over the whole screen, same precedence as
+  // PetScreen.swift's render() (checked before anything else about the
+  // idle scene).
+  if (fns.ceremony() !== 0 || fns.evolvingNow() !== 0) {
+    drawCeremonyOrEvolving(performance.now());
+    return;
+  }
+
   const isEgg = fns.isEgg() !== 0;
   const sleeping = fns.sleeping() !== 0;
   const night = sleeping || isNight();
@@ -674,11 +682,19 @@ function draw() {
     ctx.fillText("Zz", 320, 140);
   }
 
+  // Evolve/farewell/runaway call-to-action, and its confirmation dialog --
+  // same precedence as PetScreen.swift's render(): evolve first, then
+  // runaway, then the voluntary farewell.
+  if (!isEgg) drawEvolveEndingOverlay(performance.now());
+  if (choice !== "none") drawChoiceDialog();
+
   // Wild-encounter prompt, checked once a frame while the idle screen is
   // genuinely the front-most thing -- mirrors PetScreen.swift's
-  // mainScreenReadyForWild gate (no egg/sleeping/other dialog open).
-  Module._tp_battle_check_wild(!isEgg && !sleeping ? 1 : 0);
-  if (fns.wildPromptActive() !== 0) drawWildPrompt();
+  // mainScreenReadyForWild gate (no egg/sleeping/other dialog/CTA open).
+  const wildEligible = !isEgg && !sleeping && choice === "none" &&
+    fns.wantsEvolve() === 0 && fns.canRunaway() === 0 && fns.wantsFarewell() === 0;
+  Module._tp_battle_check_wild(wildEligible ? 1 : 0);
+  if (choice === "none" && fns.wildPromptActive() !== 0) drawWildPrompt();
 
   statusEl.textContent =
     `${fns.name()} Lv${fns.level()} · FUL ${fns.fullness()} JOY ${fns.joy()} ` +
@@ -754,6 +770,11 @@ canvas.addEventListener("pointerdown", (e) => {
     Module._tp_egg_tap();
     return;
   }
+  if (choice !== "none") {
+    choiceDialogTap(x, y);
+    return;
+  }
+  if (evolveEndingTap(x, y)) return;
   if (fns.wildPromptActive() !== 0) {
     wildPromptTap(x, y);
     return;
@@ -961,6 +982,22 @@ createTPCore({
     bondLabel: mod.cwrap("tp_bond_label", "string", []),
     bond: mod.cwrap("tp_bond", "number", []),
     hasNick: mod.cwrap("tp_has_nick", "number", []),
+
+    wantsEvolve: mod.cwrap("tp_wants_evolve", "number", []),
+    wantsFarewell: mod.cwrap("tp_wants_farewell", "number", []),
+    canRunaway: mod.cwrap("tp_can_runaway", "number", []),
+    evolvingNow: mod.cwrap("tp_evolving_now", "number", []),
+    evolveProgress: mod.cwrap("tp_evolve_progress", "number", []),
+    ceremony: mod.cwrap("tp_ceremony", "number", []),
+    ceremonyMessage: mod.cwrap("tp_ceremony_message", "string", []),
+    evolveButtonText: mod.cwrap("tp_evolve_button_text", "string", []),
+    farewellButtonText: mod.cwrap("tp_farewell_button_text", "string", []),
+    runawayButtonText: mod.cwrap("tp_runaway_button_text", "string", []),
+    evolveQuestion: mod.cwrap("tp_evolve_question", "string", []),
+    evolveKeepText: mod.cwrap("tp_evolve_keep_text", "string", []),
+    farewellQuestion: mod.cwrap("tp_farewell_question", "string", []),
+    farewellGoText: mod.cwrap("tp_farewell_go_text", "string", []),
+    farewellStayText: mod.cwrap("tp_farewell_stay_text", "string", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 
