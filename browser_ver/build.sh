@@ -33,6 +33,7 @@ em++ -std=c++17 $OPT \
   -I browser_ver/core/shim \
   browser_ver/core/browser_glue.cpp \
   browser_ver/core/browser_battle.cpp \
+  browser_ver/core/browser_card2.cpp \
   upstream-expanded/pet.cpp \
   upstream-expanded/i18n.cpp \
   upstream-expanded/battle.cpp \

@@ -374,3 +374,21 @@ const TypeGame = {
     return "miss";
   },
 };
+
+// Training sack: 10 seconds of tapping, then the strength it bought.
+// Ports TPSackGame; scoring/high-score live in C++ (browser_card2.cpp's
+// tp_sack_* -- see the Battle-page "TRAIN STRENGTH" button that opens
+// this).
+const SackGame = {
+  shake: 0,
+  start(now) { this.shake = 0; Module._tp_sack_start(now); },
+  step(now) {
+    Module._tp_sack_step(now);
+    if (this.shake > 0) this.shake = Math.max(0, this.shake - 1);
+  },
+  tap(now) {
+    if (Module._tp_sack_is_over() !== 0) return;
+    Module._tp_sack_tap(now);
+    this.shake = 16;
+  },
+};

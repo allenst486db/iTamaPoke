@@ -554,6 +554,50 @@ function drawTypeGame(now) {
   statusEl.textContent = `Type · score ${g.score} · misses ${g.misses}/3`;
 }
 
+// Ports renderSack(): a swinging punching bag, tapped for ten seconds.
+function drawSackGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+
+  if (Module._tp_sack_is_over() !== 0) {
+    ctx.fillStyle = ink;
+    ctx.textAlign = "center";
+    ctx.font = "bold 32px monospace";
+    ctx.fillText(fns.hitsLine(), TP.cx, 160);
+    ctx.fillStyle = UI.barBad;
+    ctx.font = "bold 22px monospace";
+    ctx.fillText(fns.strengthGainLine(), TP.cx, 210);
+    const newHigh = fns.sackNewHigh() !== 0;
+    ctx.fillStyle = newHigh ? UI.barWarn : ink;
+    ctx.font = "13px monospace";
+    ctx.fillText(newHigh && fns.sackHits() > 0 ? fns.newRecordText() : fns.recordLine(fns.strengthHigh2()), TP.cx, 256);
+    if (Module._tp_sack_over_until_reached(now)) screen = "card";
+    statusEl.textContent = `Sack · done · ${fns.sackHits()} hits`;
+    return;
+  }
+
+  const off = SackGame.shake * Math.sin(now * 0.05);
+  const sx = TP.cx + off, top = 86;
+  ctx.fillStyle = ink;
+  ctx.fillRect(TP.cx - 3, 56, 6, top - 56);
+  ctx.fillRect(sx - 4, top - 30, 8, 34);
+  ctx.fillStyle = "#b53a3a";
+  roundRect(sx - 42, top, 84, 150, 26); ctx.fill();
+  ctx.fillStyle = "#7e2828";
+  roundRect(sx - 42, top, 84, 22, 18); ctx.fill();
+  ctx.strokeStyle = ink; ctx.lineWidth = 2;
+  roundRect(sx - 42, top, 84, 150, 26); ctx.stroke();
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 28px monospace";
+  ctx.fillText(`${fns.sackHits()}`, TP.cx, 280);
+
+  statusEl.textContent = `Sack · ${fns.sackHits()} hits`;
+}
+
 function draw() {
   if (!Module) return;
 
@@ -591,6 +635,7 @@ function draw() {
       case 2: MemoGame.step(now); drawMemoGame(now); break;
       case 3: CleanGame.step(now); drawCleanGame(now); break;
       case 4: TypeGame.step(now); drawTypeGame(now); break;
+      case 5: SackGame.step(now); drawSackGame(now); break;
     }
     return;
   }
@@ -685,6 +730,7 @@ function draw() {
   // Evolve/farewell/runaway call-to-action, and its confirmation dialog --
   // same precedence as PetScreen.swift's render(): evolve first, then
   // runaway, then the voluntary farewell.
+  if (!isEgg) drawExpeditionHud();
   if (!isEgg) drawEvolveEndingOverlay(performance.now());
   if (choice !== "none") drawChoiceDialog();
 
@@ -763,6 +809,9 @@ canvas.addEventListener("pointerdown", (e) => {
         }
         break;
       }
+      case 5:
+        SackGame.tap(now);
+        break;
     }
     return;
   }
@@ -1041,6 +1090,61 @@ createTPCore({
     evolutionStatusKind: mod.cwrap("tp_evolution_status_kind", "number", []),
     mistakesLine: mod.cwrap("tp_mistakes_line", "string", []),
     careMistakes: mod.cwrap("tp_care_mistakes", "number", []),
+
+    dailyTitle: mod.cwrap("tp_daily_title", "string", []),
+    dayPhaseLabel: mod.cwrap("tp_day_phase_label", "string", []),
+    dailyGoalCount: mod.cwrap("tp_daily_goal_count", "number", []),
+    doneText: mod.cwrap("tp_done_text", "string", []),
+    dailyGoalComplete: mod.cwrap("tp_daily_goal_complete", "number", ["number"]),
+    dailyGoalLabel: mod.cwrap("tp_daily_goal_label", "string", ["number"]),
+    dailyGoalKind: mod.cwrap("tp_daily_goal_kind", "number", ["number"]),
+    dailyGoalProgress: mod.cwrap("tp_daily_goal_progress", "number", ["number"]),
+    dailyGoalTarget: mod.cwrap("tp_daily_goal_target", "number", ["number"]),
+    dailyRewardLine: mod.cwrap("tp_daily_reward_line", "string", []),
+
+    boxTitle: mod.cwrap("tp_box_title", "string", []),
+    caughtCountLine: mod.cwrap("tp_caught_count_line", "string", []),
+    knownCountLine: mod.cwrap("tp_known_count_line", "string", []),
+    dexGoalLine: mod.cwrap("tp_dex_goal_line", "string", []),
+    noCatchesText: mod.cwrap("tp_no_catches_text", "string", []),
+    raisedMarkText: mod.cwrap("tp_raised_mark_text", "string", []),
+    boxSortLabel: mod.cwrap("tp_box_sort_label", "string", []),
+    pageLine: mod.cwrap("tp_page_line", "string", ["number", "number"]),
+    boxPageCount: mod.cwrap("tp_box_page_count", "number", ["number"]),
+    boxDexAt: mod.cwrap("tp_box_dex_at", "number", ["number"]),
+    caughtCount: mod.cwrap("tp_caught_count", "number", []),
+
+    expeditionTitle: mod.cwrap("tp_expedition_title", "string", []),
+    expeditionReady: mod.cwrap("tp_expedition_ready", "number", []),
+    expeditionActive: mod.cwrap("tp_expedition_active", "number", []),
+    expeditionFoundLine: mod.cwrap("tp_expedition_found_line", "string", []),
+    expeditionClaimText: mod.cwrap("tp_expedition_claim_text", "string", []),
+    expeditionBackInLine: mod.cwrap("tp_expedition_back_in_line", "string", []),
+    expeditionWaitText: mod.cwrap("tp_expedition_wait_text", "string", []),
+    expeditionInventoryFullText: mod.cwrap("tp_expedition_inventory_full_text", "string", []),
+    expeditionNeedEnergyText: mod.cwrap("tp_expedition_need_energy_text", "string", []),
+    expeditionInventoryFull: mod.cwrap("tp_expedition_inventory_full", "number", []),
+    expeditionDurationLabel: mod.cwrap("tp_expedition_duration_label", "string", ["number"]),
+    expeditionCostLabel: mod.cwrap("tp_expedition_cost_label", "string", ["number"]),
+    expeditionCanStart: mod.cwrap("tp_expedition_can_start", "number", ["number"]),
+    inventoryTitle: mod.cwrap("tp_inventory_title", "string", []),
+    expeditionItemLabel: mod.cwrap("tp_expedition_item_label", "string", ["number"]),
+    expeditionItemCount: mod.cwrap("tp_expedition_item_count", "number", ["number"]),
+    expeditionItemColor: mod.cwrap("tp_expedition_item_color", "number", ["number"]),
+    trainChoiceTitle: mod.cwrap("tp_train_choice_title", "string", []),
+    trainStatLabel: mod.cwrap("tp_train_stat_label", "string", ["number"]),
+    trainStatUsable: mod.cwrap("tp_train_stat_usable", "number", ["number"]),
+    trainMaxedText: mod.cwrap("tp_train_maxed_text", "string", []),
+    expeditionHudState: mod.cwrap("tp_expedition_hud_state", "number", []),
+    expeditionHudLabel: mod.cwrap("tp_expedition_hud_label", "string", []),
+
+    hitsLine: mod.cwrap("tp_hits_line", "string", []),
+    strengthGainLine: mod.cwrap("tp_strength_gain_line", "string", []),
+    newRecordText: mod.cwrap("tp_new_record_text", "string", []),
+    recordLine: mod.cwrap("tp_record_line", "string", ["number"]),
+    sackHits: mod.cwrap("tp_sack_hits", "number", []),
+    sackNewHigh: mod.cwrap("tp_sack_new_high", "number", []),
+    strengthHigh2: mod.cwrap("tp_strength_high2", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

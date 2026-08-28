@@ -5,14 +5,18 @@ thin native WKWebView (iOS)/WebView (Android) shell you build and install on
 your own device — not hosted anywhere public. See the root
 [LICENSE](../LICENSE): personal use only, same as the iOS app.
 
-**Status: playable idle-screen MVP with persistence, real sprite art,
-sound, and settings.** Egg tap-to-hatch, live stat decay, the four action
-buttons (feed/play/light/clean), a save that survives a reload
-(IndexedDB), the actual animated TPK2 sprite (picked locally, never
-bundled), the real chip-tune SFX, and a real settings screen (sound mode,
-one of the 7 real UI languages + the partial-Korean mode) all work against
-the real game logic in an actual browser tab. No minigames, dex, or battle
-yet -- see the roadmap below.
+**Status: feature-complete against `PetScreen.swift`'s render().** Egg
+tap-to-hatch, live stat decay, the four action buttons, persistence
+(IndexedDB), the real animated TPK2 sprite, the real chip-tune SFX, a
+real settings screen, all five minigames, the Pokédex, the wild-battle
+system, evolution/farewell/runaway, the rename keyboard, and all eight
+stat card pages (including Daily goals/Box/Expedition and the training
+sack) work against the real C++ game logic in an actual browser tab.
+Native shells (WKWebView/WebView) exist too -- see `native/`. What's
+left is presentation polish, not missing gameplay: no sprite-atlas dex
+thumbnails, no dex-entry text page, and the evolution/ceremony screens
+are a plain progress bar/message rather than the original's particle
+FX -- see the roadmap below for exactly what's simplified where.
 
 ## What's here
 
@@ -105,12 +109,17 @@ Python for everything after that.
    Four more card pages ✅ done -- Personality, Battle (ATK/DEF/SPD/WGT
    bars, W/L record, a working wild-battle button), Medals, Progress
    (level bar, evolution status). Page-dot navigation added (tap left/
-   right half of the dot row). Daily goals, Box, and Expedition show a
-   plain "not in the browser build yet" placeholder instead of a blank
-   or broken page -- they need pagination/timer/inventory state this
-   pass didn't add.
-   Still missing from `PetScreen.swift`'s full render(): those three
-   card pages (Daily/Box/Expedition) and the training-sack minigame.
+   right half of the dot row).
+   The last three card pages ✅ done too (`web/expedition.js`) -- Daily
+   goals (real progress/targets, `ensureDailyGoals`), Box (sortable,
+   paginated, real type-coloured rows), and Expedition (start/claim,
+   the 4-item inventory, the train-item stat-choice modal, all through
+   the real `Pet::startExpedition`/`claimExpedition`/`useExpeditionItem`)
+   -- plus the idle-screen expedition HUD chip. The training-sack
+   minigame ✅ done too (`SackGame` in `web/minigames.js`, opened from the
+   Battle page's "TRAIN STRENGTH" button) -- a 10s tap-fest scored
+   through the real `Pet::trainStrength`.
+   `PetScreen.swift`'s render() is now fully covered.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

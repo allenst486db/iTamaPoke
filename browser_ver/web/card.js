@@ -15,10 +15,12 @@ function drawCard(now) {
   switch (cardPage) {
     case 0: drawCardProfile(now); break;
     case 1: drawCardPersonality(); break;
+    case 2: drawCardDaily(); break;
+    case 3: drawCardBox(); break;
     case 4: drawCardStats(); break;
     case 5: drawCardMedals(); break;
     case 6: drawCardProgress(); break;
-    default: drawCardPlaceholder(); break; // 2 daily, 3 box, 7 expedition
+    case 7: drawCardExpedition(); break;
   }
 
   const dotsX = TP.cx - (CARD_PAGE_COUNT - 1) * 13;
@@ -33,19 +35,6 @@ function drawCard(now) {
   ctx.textAlign = "center";
   ctx.font = "12px monospace";
   ctx.fillText(fns.backHint(), TP.cx, 400);
-}
-
-const CARD_PAGE_NAMES = ["PROFILE", "PERSONALITY", "DAILY", "BOX", "BATTLE", "MEDALS", "PROGRESS", "EXPEDITION"];
-
-function drawCardPlaceholder() {
-  ctx.textAlign = "center";
-  ctx.fillStyle = UI.ink;
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(CARD_PAGE_NAMES[cardPage], TP.cx, 160);
-  ctx.fillStyle = UI.track;
-  ctx.font = "13px monospace";
-  ctx.fillText("not in the browser build yet", TP.cx, 190);
-  statusEl.textContent = `Card · ${CARD_PAGE_NAMES[cardPage]} (not ported)`;
 }
 
 function drawCardProfile(now) {
@@ -203,7 +192,7 @@ function drawCardStats() {
   ctx.fillStyle = UI.barBad;
   roundRect(216, 296, 160, 40, 11); ctx.fill();
   ctx.fillStyle = UI.bgDay;
-  ctx.fillText(fns.trainButtonText() + " (n/a)", 296, 320);
+  ctx.fillText(fns.trainButtonText(), 296, 320);
 
   statusEl.textContent = `Card · Battle stats`;
 }
@@ -214,9 +203,13 @@ function cardStatsTap(x, y) {
       Module._tp_battle_start();
       screen = "battle";
     }
+    return;
   }
-  // The training-sack button (right) has no minigame behind it in this
-  // build yet -- see browser_ver/README.md.
+  if (x >= 216 && x <= 376 && y >= 296 && y <= 336) {
+    gameMode = 5;
+    SackGame.start(performance.now());
+    screen = "game";
+  }
 }
 
 function drawCardMedals() {
@@ -277,7 +270,9 @@ function cardTap(x, y) {
     screen = "keyboard";
     return;
   }
-  if (cardPage === 4) { cardStatsTap(x, y); }
+  if (cardPage === 4) cardStatsTap(x, y);
+  if (cardPage === 3) cardBoxTap(x, y);
+  if (cardPage === 7) cardExpeditionTap(x, y);
   if (y >= 370 && y <= 394) {
     // Page-dot row: tap left half to go back a page, right half forward.
     if (x < TP.cx) cardPage = (cardPage - 1 + CARD_PAGE_COUNT) % CARD_PAGE_COUNT;
