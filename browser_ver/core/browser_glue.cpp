@@ -113,6 +113,26 @@ EMSCRIPTEN_KEEPALIVE void tp_clean() { gPet.clean(); }
 EMSCRIPTEN_KEEPALIVE void tp_caress() { gPet.caress(); }
 EMSCRIPTEN_KEEPALIVE void tp_egg_tap() { gPet.eggTap(); }
 
+// --- Ball minigame ---------------------------------------------------
+//
+// The physics (ball position/velocity, bounce, the creature chasing it)
+// lives entirely in web/minigames.js -- a port of MiniGames.swift's
+// TPBallGame, same as PetScreen.swift's own split, since none of that is
+// game *rule* state Pet needs to know about. Only the score at the end
+// crosses into C++, exactly like GameModel.swift's ball.step
+// onGameOver closure calling pet.playResult(score).
+
+EMSCRIPTEN_KEEPALIVE int tp_game_high() { return gPet.gameHi; }
+
+// Returns 1 if this run set a new record (i.e. score > the record just
+// before this call), matching GameModel.swift's `newHigh` flag.
+EMSCRIPTEN_KEEPALIVE
+int tp_play_result(int score) {
+  int prevHigh = gPet.gameHi;
+  gPet.playResult((uint8_t)score);
+  return score > prevHigh ? 1 : 0;
+}
+
 // --- Settings screen -----------------------------------------------------
 //
 // Language: mirrors TPPet.mm's TPSetLanguage()/TPLanguage() exactly (same

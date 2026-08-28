@@ -63,11 +63,14 @@ Python for everything after that.
 ## Roadmap
 
 1. ~~Verify the C++ core actually compiles and runs as WASM~~ ✅ done
-2. ~~Canvas 2D renderer — idle screen (header, bars, poop, the four action
-   buttons, egg tap-to-hatch, day/night/sleep palette) + settings screen~~
-   ✅ done, `web/main.js`. Still missing from `PetScreen.swift`'s full
-   render(): minigames, the Pokédex, battle, evolution/farewell/runaway
-   ceremonies, the stat card, and the rename keyboard.
+2. Canvas 2D renderer — idle screen (header, bars, poop, the four action
+   buttons, egg tap-to-hatch, day/night/sleep palette) + settings screen
+   ✅ done, `web/main.js`. The Ball minigame ✅ done too (`web/minigames.js`,
+   a port of `MiniGames.swift`'s `TPBallGame` -- physics, tap hit-test,
+   scoring through the same `Pet::playResult`/`gameHi` the iOS build uses).
+   Still missing from `PetScreen.swift`'s full render(): the other four
+   minigames (Catch/Memo/Clean/Type), the Pokédex, battle, evolution/
+   farewell/runaway ceremonies, the stat card, and the rename keyboard.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

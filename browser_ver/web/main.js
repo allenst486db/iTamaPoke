@@ -21,7 +21,7 @@ const UI = {
 // feed / play / light(sleep toggle) / clean.
 const BUTTONS = [
   { x: 140, y: 390, label: "FEED", action: () => Module._tp_feed_berry(0) },
-  { x: 202, y: 404, label: "PLAY", action: () => Module._tp_play() },
+  { x: 202, y: 404, label: "PLAY", action: () => { screen = "gamemenu"; } },
   { x: 264, y: 404, label: "LIGHT", action: () => Module._tp_toggle_light() },
   { x: 326, y: 390, label: "CLEAN", action: () => Module._tp_clean() },
 ];
@@ -33,10 +33,11 @@ const statusEl = document.getElementById("status");
 let Module = null;
 let fns = {};
 
-// idle | settings -- ports PetScreen.swift's `screen` enum, reduced to the
-// two states this MVP has. No swipe gesture yet (see roadmap): the gear
-// button is the only way in and out.
+// idle | settings | gamemenu | game -- ports PetScreen.swift's `screen`
+// enum, reduced to the states this MVP has. No swipe gesture yet (see
+// roadmap): the gear button and the PLAY button are the only ways in.
 let screen = "idle";
+let lastFrameT = 0;
 
 // --- Sprite state ----------------------------------------------------
 //
@@ -207,11 +208,136 @@ function settingsTap(x, y) {
   if (y > 380) screen = "idle";
 }
 
+// Ports drawGameMenu()'s single-tile-so-far subset: only Ball is playable
+// here yet (see roadmap), so this is one tile rather than the five
+// PetScreen.swift draws.
+const BALL_TILE = { x: 133, y: 178, w: 200, h: 110 };
+
+function drawGameMenu() {
+  ctx.fillStyle = UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  ctx.strokeStyle = UI.ink;
+  ctx.lineWidth = 2;
+  roundRect(78, 112, 310, 266, 18);
+  ctx.stroke();
+  ctx.fillStyle = UI.ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText("PLAY", TP.cx, 140);
+
+  ctx.fillStyle = UI.barBad;
+  roundRect(BALL_TILE.x, BALL_TILE.y, BALL_TILE.w, BALL_TILE.h, 14);
+  ctx.fill();
+  ctx.strokeStyle = UI.ink;
+  roundRect(BALL_TILE.x, BALL_TILE.y, BALL_TILE.w, BALL_TILE.h, 14);
+  ctx.stroke();
+  ctx.fillStyle = UI.bgDay;
+  ctx.font = "bold 22px monospace";
+  ctx.fillText("BALL", BALL_TILE.x + BALL_TILE.w / 2, BALL_TILE.y + BALL_TILE.h / 2 - 2);
+  ctx.font = "13px monospace";
+  ctx.fillText(`hi ${fns.gameHigh()}`, BALL_TILE.x + BALL_TILE.w / 2, BALL_TILE.y + BALL_TILE.h / 2 + 22);
+
+  ctx.fillStyle = UI.track;
+  ctx.font = "13px monospace";
+  ctx.fillText("tap outside to close", TP.cx, 410);
+  statusEl.textContent = "Play menu";
+}
+
+function gameMenuTap(x, y) {
+  if (inRect(x, y, { x: BALL_TILE.x, y: BALL_TILE.y, w: BALL_TILE.w, h: BALL_TILE.h })) {
+    BallGame.start();
+    lastFrameT = performance.now();
+    screen = "game";
+    return;
+  }
+  screen = "idle";
+}
+
+// Ports renderBallGame(): the day/night habitat backdrop, score + lives,
+// the creature chasing the ball, the ball itself, and the impact ring --
+// stops short of the falling-poop/weather flourishes SceneRenderer.swift
+// draws, since that renderer isn't ported yet either (see roadmap).
+function drawBallGame(now) {
+  const night = isNight();
+  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  const ink = night ? UI.inkNight : UI.ink;
+
+  if (BallGame.overUntil !== 0) {
+    ctx.fillStyle = ink;
+    ctx.textAlign = "center";
+    ctx.font = "bold 40px monospace";
+    ctx.fillText(`SCORE: ${BallGame.score}`, TP.cx, 170);
+    ctx.font = "bold 20px monospace";
+    ctx.fillStyle = BallGame.newHigh ? UI.barWarn : ink;
+    ctx.fillText(BallGame.newHigh ? "NEW RECORD!" : `record: ${fns.gameHigh()}`, TP.cx, 220);
+    if (now >= BallGame.overUntil) { screen = "idle"; BallGame.running = false; }
+    statusEl.textContent = `Ball · game over · score ${BallGame.score}`;
+    return;
+  }
+
+  ctx.fillStyle = ink;
+  ctx.textAlign = "left";
+  ctx.font = "bold 28px monospace";
+  ctx.fillText(`${BallGame.score}`, 30, 44);
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(180 + i * 28, 104, 6, 0, Math.PI * 2);
+    if (i < 3 - BallGame.misses) { ctx.fillStyle = UI.barBad; ctx.fill(); }
+    else { ctx.strokeStyle = UI.track; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+
+  // The creature chases the ball -- reuses drawPet's sprite/fallback but at
+  // a ground line matching upstream's game-scene y (394, not petGround).
+  if (currentSprite) {
+    const a = currentSprite.actions[TPAct.idle];
+    if (a) {
+      const elapsed = performance.now() - poseStart;
+      const frame = frameIndexAt(a, elapsed, true);
+      const img = frameImageData(currentSprite, TPAct.idle, frame);
+      if (img) {
+        const s = Math.min(spriteScale(currentSprite, a), 3);
+        const w = a.w * s, h = a.h * s;
+        frameCanvas.width = a.w; frameCanvas.height = a.h;
+        frameCtx.putImageData(img, 0, 0);
+        ctx.imageSmoothingEnabled = false;
+        ctx.drawImage(frameCanvas, BallGame.petX - w / 2, 394 - (a.base > 0 ? a.base : a.h) * s, w, h);
+      }
+    }
+  }
+
+  const since = now - BallGame.hitAt;
+  if (BallGame.hitAt !== 0 && since < 260) {
+    const rad = 22 + since / 6;
+    ctx.strokeStyle = "rgb(255,231,159)";
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(BallGame.hitX, BallGame.hitY, rad, 0, Math.PI * 2); ctx.stroke();
+  }
+
+  ctx.font = "24px monospace";
+  ctx.textAlign = "center";
+  ctx.fillText("⚽", BallGame.ballX, BallGame.ballY + 8); // ball emoji stand-in -- TPIcon.play isn't ported to canvas yet
+
+  statusEl.textContent = `Ball · score ${BallGame.score} · misses ${BallGame.misses}/3`;
+}
+
 function draw() {
   if (!Module) return;
 
   if (screen === "settings") {
     drawSettings();
+    return;
+  }
+  if (screen === "gamemenu") {
+    drawGameMenu();
+    return;
+  }
+  if (screen === "game") {
+    const now = performance.now();
+    const dt = now - lastFrameT;
+    lastFrameT = now;
+    BallGame.step(dt, now);
+    drawBallGame(now);
     return;
   }
 
@@ -308,6 +434,14 @@ canvas.addEventListener("pointerdown", (e) => {
 
   if (screen === "settings") {
     settingsTap(x, y);
+    return;
+  }
+  if (screen === "gamemenu") {
+    gameMenuTap(x, y);
+    return;
+  }
+  if (screen === "game") {
+    BallGame.tap(x, y, performance.now());
     return;
   }
   if (fns.isEgg() !== 0) {
@@ -439,6 +573,7 @@ createTPCore({
     language: mod.cwrap("tp_language", "number", []),
     settingsTitle: mod.cwrap("tp_settings_title", "string", []),
     backHint: mod.cwrap("tp_back_hint", "string", []),
+    gameHigh: mod.cwrap("tp_game_high", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 
