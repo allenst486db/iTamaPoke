@@ -144,7 +144,28 @@ function renderEffect(id) {
 
 let audioCtx = null;
 let bufferCache = new Map();
-let soundOn = false; // stays off until the user opts in (autoplay policy + preference)
+
+// Three-level sound mode, mirroring GameModel.swift's TPSoundMode: SILENT
+// mutes both audio and haptic (the Vibration API stand-in for the iOS
+// build's UIImpactFeedbackGenerator -- Safari on iOS doesn't implement it
+// at all, so VIBRATE is silent-but-inert there, same as a phone with
+// System Haptics off would be), VIBRATE only, FULL plays both. Persisted
+// under its own key for the same reason GameModel.swift's fix just
+// applied: a scheme collision would make one mode read back as another.
+const SOUND_SILENT = 0, SOUND_VIBRATE = 1, SOUND_FULL = 2;
+let soundMode = SOUND_SILENT; // starts silent -- browsers block audio before a user gesture anyway
+
+function loadSoundMode() {
+  const v = parseInt(localStorage.getItem("tp_soundmode3") || "0", 10);
+  soundMode = v === 1 || v === 2 ? v : SOUND_SILENT;
+  return soundMode;
+}
+
+function setSoundMode(mode) {
+  soundMode = mode;
+  localStorage.setItem("tp_soundmode3", String(mode));
+  if (mode === SOUND_FULL) ensureCtx();
+}
 
 function ensureCtx() {
   if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -163,8 +184,13 @@ function getBuffer(id) {
   return buf;
 }
 
+// Ports GameModel.swift's emitSfx: haptic (here, Vibration API) whenever
+// the mode isn't SILENT, audio only at FULL -- see the mode comment above.
 function playSfx(id) {
-  if (!soundOn) return;
+  if (soundMode === SOUND_SILENT) return;
+  if (navigator.vibrate) navigator.vibrate(15);
+  if (soundMode !== SOUND_FULL) return;
+
   const ctx = ensureCtx();
   const buf = getBuffer(id);
   if (!buf) return;
@@ -172,9 +198,4 @@ function playSfx(id) {
   src.buffer = buf;
   src.connect(ctx.destination);
   src.start();
-}
-
-function setSoundOn(on) {
-  soundOn = on;
-  if (on) ensureCtx();
 }

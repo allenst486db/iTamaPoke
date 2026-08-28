@@ -5,13 +5,14 @@ thin native WKWebView (iOS)/WebView (Android) shell you build and install on
 your own device — not hosted anywhere public. See the root
 [LICENSE](../LICENSE): personal use only, same as the iOS app.
 
-**Status: playable idle-screen MVP with persistence, real sprite art, and
-sound.** Egg tap-to-hatch, live stat decay, the four action buttons
-(feed/play/light/clean), a save that survives a reload (IndexedDB), the
-actual animated TPK2 sprite (picked locally, never bundled), and the real
-chip-tune SFX all work against the real game logic in an actual browser
-tab. No minigames, dex, battle, or settings screen yet -- see the roadmap
-below.
+**Status: playable idle-screen MVP with persistence, real sprite art,
+sound, and settings.** Egg tap-to-hatch, live stat decay, the four action
+buttons (feed/play/light/clean), a save that survives a reload
+(IndexedDB), the actual animated TPK2 sprite (picked locally, never
+bundled), the real chip-tune SFX, and a real settings screen (sound mode,
+one of the 7 real UI languages + the partial-Korean mode) all work against
+the real game logic in an actual browser tab. No minigames, dex, or battle
+yet -- see the roadmap below.
 
 ## What's here
 
@@ -62,18 +63,20 @@ Python for everything after that.
 ## Roadmap
 
 1. ~~Verify the C++ core actually compiles and runs as WASM~~ ✅ done
-2. ~~Canvas 2D renderer — idle screen only (header, bars, poop, the four
-   action buttons, egg tap-to-hatch, day/night/sleep palette)~~ ✅ done,
-   `web/main.js`. Still missing from `PetScreen.swift`'s full render(): the
-   real sprite art (placeholder "?" for now, see step 4), minigames, the
-   Pokédex, battle, evolution/farewell/runaway ceremonies, the stat card,
-   settings screen, and the rename keyboard.
+2. ~~Canvas 2D renderer — idle screen (header, bars, poop, the four action
+   buttons, egg tap-to-hatch, day/night/sleep palette) + settings screen~~
+   ✅ done, `web/main.js`. Still missing from `PetScreen.swift`'s full
+   render(): minigames, the Pokédex, battle, evolution/farewell/runaway
+   ceremonies, the stat card, and the rename keyboard.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played
    through a plain `AudioContext` (no `AVAudioEngine` equivalent needed).
-   Starts muted (`🔇 Sound off`, top-left) since browsers refuse audio
-   before a user gesture; tap it once to opt in.
+   Gated by the settings screen's sound pill (SILENT/VIBRATE/FULL, same
+   3-level scheme as `GameModel.swift`, `web/audio.js`'s own dedicated
+   `localStorage` key to avoid the raw-value collision bug just fixed on
+   the iOS side) — starts SILENT, since browsers refuse audio before a
+   user gesture; VIBRATE uses the Vibration API where the browser has one.
 4. ~~TPK2 sprite parser in JS~~ ✅ done, `web/sprites.js` — ports
    `TPSprite.swift` (palette, actions, frame-walk, whole-pixel scale)
    exactly, verified against a real `p004.bin` rendering correctly on
@@ -88,13 +91,17 @@ Python for everything after that.
 6. ~~Save persistence via IndexedDB~~ ✅ done. `tp_export_state()`/
    `tp_import_state()` (browser_glue.cpp) round-trip `Preferences::store()`
    as a small binary blob; `web/main.js` writes it to IndexedDB every 15s
-   and on tab hide/close, and loads it before the first tick. Settings
-   (sound mode, language) aren't wired into the UI yet, so there's nothing
-   settings-shaped to persist beyond what the store already carries.
-7. Native shells: a minimal WKWebView Xcode project and a minimal
+   and on tab hide/close, and loads it before the first tick. Language and
+   sound mode persist too now (the language choice through the same store,
+   since `tp_set_language()` calls the real `setLang()`/`setDexNamesKorean()`;
+   sound mode through its own `localStorage` key in `web/audio.js`, not the
+   WASM store, since it's a browser-side toggle with no iOS analogue in
+   `Preferences`).
+7. ~~Settings screen~~ ✅ done, part of step 2 above -- see there.
+8. Native shells: a minimal WKWebView Xcode project and a minimal
    Android `WebView` project, each loading `web/` as local bundled assets
    (no server at runtime) and installed only on your own device
-8. Install guide (+ HTML version) once there's something to install
+9. Install guide (+ HTML version) once there's something to install
 
 ## Why WASM instead of rewriting the game logic in JS
 

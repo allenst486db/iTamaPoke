@@ -33,6 +33,11 @@ const statusEl = document.getElementById("status");
 let Module = null;
 let fns = {};
 
+// idle | settings -- ports PetScreen.swift's `screen` enum, reduced to the
+// two states this MVP has. No swipe gesture yet (see roadmap): the gear
+// button is the only way in and out.
+let screen = "idle";
+
 // --- Sprite state ----------------------------------------------------
 //
 // `currentSprite` is the parsed TPK2 for whatever species is currently
@@ -127,8 +132,88 @@ function drawPet(ink) {
   ctx.drawImage(frameCanvas, x, y, w, h);
 }
 
+// Same 8-slot picker as PetScreen.swift's langCodes/isDexKorean, kept in
+// the same order since it's also the raw index tp_set_language() expects.
+const LANG_CODES = ["ES", "EN", "FR", "DE", "IT", "PT", "KR", "kr"];
+const SND_PILL = { x: 34, y: 296, w: 96, h: 30 };
+const LANG_PILL = { x: 336, y: 296, w: 96, h: 30 };
+const SND_LABELS = ["OFF", "VIB", "ALL"]; // ports soundModeLabel's S_SND_OFF/VIB/FULL order
+
+function inRect(x, y, r) {
+  return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
+}
+
+/// Ports renderSettings(): same title/clock/sound-pill/language-pill/back-hint
+/// layout, minus the clock-setting dial (iOS reads the device clock already,
+/// same as PetScreen.swift's own comment explains -- there's even less to
+/// set here since the browser has no RTC to disagree with).
+function drawSettings() {
+  ctx.fillStyle = UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  ctx.fillStyle = UI.ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 22px monospace";
+  ctx.fillText(fns.settingsTitle(), TP.cx, 52);
+
+  const now = new Date();
+  const clock = `${String(now.getHours()).padStart(2, "0")}:${String(now.getMinutes()).padStart(2, "0")}`;
+  ctx.font = "bold 56px monospace";
+  ctx.fillText(clock, TP.cx, 148);
+  ctx.font = "13px monospace";
+  ctx.fillStyle = UI.track;
+  ctx.fillText(Intl.DateTimeFormat().resolvedOptions().timeZone, TP.cx, 214);
+
+  const full = soundMode === SOUND_FULL;
+  ctx.fillStyle = full ? UI.barOK : UI.white;
+  roundRect(SND_PILL.x, SND_PILL.y, SND_PILL.w, SND_PILL.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = UI.ink;
+  ctx.lineWidth = 2;
+  roundRect(SND_PILL.x, SND_PILL.y, SND_PILL.w, SND_PILL.h, 8);
+  ctx.stroke();
+  ctx.fillStyle = full ? UI.bgDay : UI.ink;
+  ctx.font = "bold 13px monospace";
+  ctx.fillText(SND_LABELS[soundMode], SND_PILL.x + SND_PILL.w / 2, SND_PILL.y + SND_PILL.h / 2 + 5);
+
+  ctx.fillStyle = UI.white;
+  roundRect(LANG_PILL.x, LANG_PILL.y, LANG_PILL.w, LANG_PILL.h, 8);
+  ctx.fill();
+  ctx.strokeStyle = UI.ink;
+  roundRect(LANG_PILL.x, LANG_PILL.y, LANG_PILL.w, LANG_PILL.h, 8);
+  ctx.stroke();
+  ctx.fillStyle = UI.ink;
+  ctx.fillText(`${LANG_CODES[fns.language()]} >`, LANG_PILL.x + LANG_PILL.w / 2, LANG_PILL.y + LANG_PILL.h / 2 + 5);
+
+  ctx.fillStyle = UI.track;
+  ctx.font = "13px monospace";
+  ctx.fillText(fns.backHint(), TP.cx, 414);
+
+  statusEl.textContent = `Settings · sound ${SND_LABELS[soundMode]} · lang ${LANG_CODES[fns.language()]}`;
+}
+
+function settingsTap(x, y) {
+  if (inRect(x, y, SND_PILL)) {
+    const next = (soundMode + 1) % 3; // SILENT -> VIBRATE -> FULL -> SILENT
+    setSoundMode(next);
+    if (next !== SOUND_SILENT) playSfx(18); // "menu" -- audible/haptic confirmation
+    return;
+  }
+  if (inRect(x, y, LANG_PILL)) {
+    const next = (fns.language() + 1) % LANG_CODES.length;
+    Module.ccall("tp_set_language", null, ["number"], [next]);
+    playSfx(0); // "tap"
+    return;
+  }
+  if (y > 380) screen = "idle";
+}
+
 function draw() {
   if (!Module) return;
+
+  if (screen === "settings") {
+    drawSettings();
+    return;
+  }
 
   const isEgg = fns.isEgg() !== 0;
   const sleeping = fns.sleeping() !== 0;
@@ -221,6 +306,10 @@ canvas.addEventListener("pointerdown", (e) => {
   const x = (e.clientX - rect.left) * sx;
   const y = (e.clientY - rect.top) * sy;
 
+  if (screen === "settings") {
+    settingsTap(x, y);
+    return;
+  }
   if (fns.isEgg() !== 0) {
     Module._tp_egg_tap();
     return;
@@ -231,6 +320,10 @@ canvas.addEventListener("pointerdown", (e) => {
       return;
     }
   }
+});
+
+document.getElementById("settingsBtn").addEventListener("click", () => {
+  screen = screen === "settings" ? "idle" : "settings";
 });
 
 // --- Save persistence ----------------------------------------------------
@@ -326,13 +419,7 @@ spriteInput.addEventListener("change", async () => {
   setTimeout(() => { spriteLoadBtn.textContent = "Load sprites…"; }, 2500);
 });
 
-const soundToggle = document.getElementById("soundToggle");
-soundToggle.addEventListener("click", () => {
-  const on = soundToggle.textContent.includes("off");
-  setSoundOn(on);
-  soundToggle.textContent = on ? "🔊 Sound on" : "🔇 Sound off";
-  if (on) playSfx(18); // "menu" -- audible confirmation the toggle worked
-});
+loadSoundMode();
 
 createTPCore({
   onSfx(id) { playSfx(id); },
@@ -349,6 +436,9 @@ createTPCore({
     hygiene: mod.cwrap("tp_hygiene", "number", []),
     level: mod.cwrap("tp_level", "number", []),
     name: mod.cwrap("tp_name", "string", []),
+    language: mod.cwrap("tp_language", "number", []),
+    settingsTitle: mod.cwrap("tp_settings_title", "string", []),
+    backHint: mod.cwrap("tp_back_hint", "string", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

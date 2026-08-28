@@ -113,6 +113,44 @@ EMSCRIPTEN_KEEPALIVE void tp_clean() { gPet.clean(); }
 EMSCRIPTEN_KEEPALIVE void tp_caress() { gPet.caress(); }
 EMSCRIPTEN_KEEPALIVE void tp_egg_tap() { gPet.eggTap(); }
 
+// --- Settings screen -----------------------------------------------------
+//
+// Language: mirrors TPPet.mm's TPSetLanguage()/TPLanguage() exactly (same
+// 8-slot UI index -- 0-5 plain languages, 6 "KR" full Korean, 7 "kr"
+// species-names-only) rather than exposing i18n.h's Lang/gDexNamesKorean
+// directly, so web/main.js's settings screen can reuse the same langCodes
+// table PetScreen.swift's does.
+
+EMSCRIPTEN_KEEPALIVE
+void tp_set_language(uint8_t lang) {
+  if (lang <= 5) {
+    setDexNamesKorean(false);
+    setLang((Lang)lang);
+  } else if (lang == 6) {
+    setDexNamesKorean(true);
+    setLang(LANG_KO);
+  } else if (lang == 7) {
+    setDexNamesKorean(true);
+    setLang(LANG_EN);
+  }
+}
+
+EMSCRIPTEN_KEEPALIVE
+uint8_t tp_language() {
+  if (gLang == LANG_KO) return 6;
+  if (gDexNamesKorean) return 7;
+  return (uint8_t)gLang;
+}
+
+// Localized strings the settings screen needs -- T(id) itself isn't
+// exported since StrId isn't meaningful JS-side; these two cover the only
+// ids PetScreen.swift's renderSettings() actually reads.
+EMSCRIPTEN_KEEPALIVE
+const char *tp_settings_title() { return T(S_SET_TIME); }
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_back_hint() { return T(S_BACK); }
+
 // --- Save persistence --------------------------------------------------
 //
 // Preferences (shim/Preferences.h) is only an in-memory map for the tick
