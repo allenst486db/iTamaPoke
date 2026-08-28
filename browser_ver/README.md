@@ -5,7 +5,10 @@ thin native WKWebView (iOS)/WebView (Android) shell you build and install on
 your own device — not hosted anywhere public. See the root
 [LICENSE](../LICENSE): personal use only, same as the iOS app.
 
-**Status: core proven, renderer/audio/UI not started yet.**
+**Status: playable idle-screen MVP.** Egg tap-to-hatch, live stat decay, and
+the four action buttons (feed/play/light/clean) all work against the real
+game logic in an actual browser tab. No sprite art, minigames, dex, battle,
+settings, sound, or save persistence yet -- see the roadmap below.
 
 ## What's here
 
@@ -56,7 +59,12 @@ Python for everything after that.
 ## Roadmap
 
 1. ~~Verify the C++ core actually compiles and runs as WASM~~ ✅ done
-2. Canvas 2D renderer — port `PetScreen.swift`'s draw calls
+2. ~~Canvas 2D renderer — idle screen only (header, bars, poop, the four
+   action buttons, egg tap-to-hatch, day/night/sleep palette)~~ ✅ done,
+   `web/main.js`. Still missing from `PetScreen.swift`'s full render(): the
+   real sprite art (placeholder "?" for now, see step 4), minigames, the
+   Pokédex, battle, evolution/farewell/runaway ceremonies, the stat card,
+   settings screen, and the rename keyboard.
 3. Web Audio synthesizer — port `TPAudio.swift`'s oscillator/noise tables
 4. TPK2 sprite parser in JS (same format `TPSprite.swift` reads)
 5. Asset loading: local file picker (multi-select, not `webkitdirectory` —

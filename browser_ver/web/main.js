@@ -1,31 +1,203 @@
-// Smoke-test harness only -- proves the WASM core loads and ticks in an
-// actual browser. The real render loop / UI replaces this file later.
-const statusEl = document.getElementById("status");
+// Idle-screen MVP: ports the layout/tap logic of the idle branch of
+// Sources/Shared/PetScreen.swift + the four action buttons -- no sprites,
+// minigames, dex, battle, or settings yet. See browser_ver/README.md.
 
-const Module = {
-  onSfx(id) {
-    console.log("[sfx]", id);
-  },
+const rgb565 = (u16) => {
+  const r = (u16 >> 11) & 0x1f, g = (u16 >> 5) & 0x3f, b = u16 & 0x1f;
+  const r8 = Math.round(r * 255 / 31), g8 = Math.round(g * 255 / 63), b8 = Math.round(b * 255 / 31);
+  return `rgb(${r8},${g8},${b8})`;
 };
 
-createTPCore(Module).then((mod) => {
-  const seed = mod.cwrap("tp_seed_random", null, ["number"]);
-  const tick = mod.cwrap("tp_tick", null, ["number"]);
-  const status = mod.cwrap("tp_debug_status", "string", []);
+// Mirrors TPGraphics.swift's TP/UI enums.
+const TP = { screen: 466, cx: 233, cy: 233, petGround: 304, btnHalf: 26 };
+const UI = {
+  bgDay: rgb565(0xF77C), bgNight: rgb565(0x10C5),
+  ink: rgb565(0x2946), inkNight: rgb565(0xDEFE),
+  track: rgb565(0xDE97), barOK: rgb565(0x5DCD),
+  barWarn: rgb565(0xED07), barBad: rgb565(0xEA87), white: "#fff",
+};
 
-  seed(Date.now() & 0xffffffff);
+// Same four buttons as PetScreen.swift's `Self.buttons`, in the same order:
+// feed / play / light(sleep toggle) / clean.
+const BUTTONS = [
+  { x: 140, y: 390, label: "FEED", action: () => Module._tp_feed_berry(0) },
+  { x: 202, y: 404, label: "PLAY", action: () => Module._tp_play() },
+  { x: 264, y: 404, label: "LIGHT", action: () => Module._tp_toggle_light() },
+  { x: 326, y: 390, label: "CLEAN", action: () => Module._tp_clean() },
+];
 
-  let frames = 0;
-  function loop(now) {
-    tick(now | 0);
-    frames++;
-    if (frames % 30 === 0) {
-      statusEl.textContent = `core status: ${status()}  (tick #${frames}, t=${now | 0}ms)`;
-    }
-    requestAnimationFrame(loop);
+const canvas = document.getElementById("tp");
+const ctx = canvas.getContext("2d");
+const statusEl = document.getElementById("status");
+
+let Module = null;
+let fns = {};
+
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function isNight() {
+  const h = new Date().getHours();
+  return h < 6 || h >= 20;
+}
+
+function drawBar(x, y, label, value) {
+  const bx = x + 48, bw = 100, bh = 15;
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 13px monospace";
+  ctx.textBaseline = "middle";
+  ctx.fillText(label, x, y + bh / 2);
+  ctx.fillStyle = UI.track;
+  roundRect(bx, y, bw, bh, 4);
+  ctx.fill();
+  const fill = value >= 50 ? UI.barOK : (value >= 25 ? UI.barWarn : UI.barBad);
+  const fw = (bw - 4) * value / 100;
+  if (fw > 0) {
+    ctx.fillStyle = fill;
+    roundRect(bx + 2, y + 2, fw, bh - 4, 3);
+    ctx.fill();
   }
-  requestAnimationFrame(loop);
-}).catch((err) => {
-  statusEl.textContent = "WASM load failed: " + err;
-  console.error(err);
+}
+
+function draw() {
+  if (!Module) return;
+
+  const isEgg = fns.isEgg() !== 0;
+  const sleeping = fns.sleeping() !== 0;
+  const night = sleeping || isNight();
+  const panel = night ? UI.bgNight : UI.bgDay;
+  const ink = night ? UI.inkNight : UI.ink;
+
+  ctx.fillStyle = panel;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+
+  // Header
+  ctx.fillStyle = ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 22px monospace";
+  ctx.fillText(fns.name(), TP.cx, 60);
+
+  if (isEgg) {
+    // Simple egg placeholder -- no crack-tap animation yet.
+    ctx.beginPath();
+    ctx.ellipse(TP.cx, TP.petGround - 75, 60, 75, 0, 0, Math.PI * 2);
+    ctx.fillStyle = "#f6f0dc";
+    ctx.fill();
+    ctx.strokeStyle = UI.ink;
+    ctx.lineWidth = 3;
+    ctx.stroke();
+    ctx.font = "16px monospace";
+    ctx.fillStyle = ink;
+    ctx.fillText("tap FEED to hatch (WIP)", TP.cx, TP.petGround + 30);
+    statusEl.textContent = `EGG · ${fns.name()}`;
+    return;
+  }
+
+  // No sprite renderer yet (step 4 of the roadmap): a placeholder mark
+  // standing on the ground line, same spot the real sprite will occupy.
+  ctx.font = "bold 64px monospace";
+  ctx.fillStyle = ink;
+  ctx.fillText("?", TP.cx, TP.petGround - 100);
+  ctx.font = "12px monospace";
+  ctx.fillText("(no sprite loader yet)", TP.cx, TP.petGround - 40);
+
+  // Poop icons
+  const poops = fns.poops();
+  ctx.fillStyle = "#7a5230";
+  for (let i = 0; i < poops; i++) {
+    ctx.beginPath();
+    ctx.arc(36 + i * 46 + 10, 244 + 10, 9, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Bottom panel + bars
+  ctx.fillStyle = panel;
+  ctx.fillRect(0, 312, TP.screen, 154);
+  ctx.textAlign = "left";
+  drawBar(78, 318, "FUL", fns.fullness());
+  drawBar(244, 318, "JOY", fns.joy());
+  drawBar(78, 346, "ENE", fns.energy());
+  drawBar(244, 346, "HYG", fns.hygiene());
+
+  // Buttons
+  for (const b of BUTTONS) {
+    const off = sleeping && b.label !== "LIGHT";
+    if (!sleeping) {
+      ctx.fillStyle = UI.white;
+      roundRect(b.x - TP.btnHalf, b.y - TP.btnHalf, TP.btnHalf * 2, TP.btnHalf * 2, 14);
+      ctx.fill();
+    }
+    ctx.strokeStyle = ink;
+    ctx.lineWidth = 2;
+    roundRect(b.x - TP.btnHalf, b.y - TP.btnHalf, TP.btnHalf * 2, TP.btnHalf * 2, 14);
+    ctx.stroke();
+    if (!off) {
+      ctx.fillStyle = ink;
+      ctx.font = "9px monospace";
+      ctx.textAlign = "center";
+      ctx.fillText(b.label, b.x, b.y + 3);
+    }
+  }
+
+  if (sleeping) {
+    ctx.font = "bold 28px monospace";
+    ctx.fillStyle = UI.inkNight;
+    ctx.textAlign = "left";
+    ctx.fillText("Zz", 320, 140);
+  }
+
+  statusEl.textContent =
+    `${fns.name()} Lv${fns.level()} · FUL ${fns.fullness()} JOY ${fns.joy()} ` +
+    `ENE ${fns.energy()} HYG ${fns.hygiene()}` + (sleeping ? " · sleeping" : "");
+}
+
+canvas.addEventListener("pointerdown", (e) => {
+  if (!Module) return;
+  const rect = canvas.getBoundingClientRect();
+  const sx = TP.screen / rect.width, sy = TP.screen / rect.height;
+  const x = (e.clientX - rect.left) * sx;
+  const y = (e.clientY - rect.top) * sy;
+
+  if (fns.isEgg() !== 0) {
+    Module._tp_egg_tap();
+    return;
+  }
+  for (const b of BUTTONS) {
+    if (Math.abs(x - b.x) < TP.btnHalf && Math.abs(y - b.y) < TP.btnHalf) {
+      b.action();
+      return;
+    }
+  }
+});
+
+createTPCore({
+  onSfx(id) { console.log("[sfx]", id); },
+}).then((mod) => {
+  Module = mod;
+  fns = {
+    isEgg: mod.cwrap("tp_is_egg", "number", []),
+    sleeping: mod.cwrap("tp_sleeping", "number", []),
+    poops: mod.cwrap("tp_poops", "number", []),
+    fullness: mod.cwrap("tp_fullness", "number", []),
+    joy: mod.cwrap("tp_joy", "number", []),
+    energy: mod.cwrap("tp_energy", "number", []),
+    hygiene: mod.cwrap("tp_hygiene", "number", []),
+    level: mod.cwrap("tp_level", "number", []),
+    name: mod.cwrap("tp_name", "string", []),
+  };
+  mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
+
+  function frame(t) {
+    mod.ccall("tp_tick", null, ["number"], [t | 0]);
+    draw();
+    requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
 });

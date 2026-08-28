@@ -75,4 +75,40 @@ const char *tp_debug_status() {
   return out.c_str();
 }
 
+// --- Idle-screen MVP surface -----------------------------------------
+//
+// Minimal getters/actions to drive the browser idle screen (web/main.js):
+// no sprites, minigames, battle, dex, or settings yet -- see
+// browser_ver/README.md's roadmap. Mirrors the handful of Pet fields/calls
+// PetScreen.swift's idle branch and its four action buttons touch.
+
+EMSCRIPTEN_KEEPALIVE int tp_is_egg() { return gPet.isEgg() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_species_id() { return gPet.speciesId; }
+EMSCRIPTEN_KEEPALIVE int tp_fullness() { return gPet.fullness; }
+EMSCRIPTEN_KEEPALIVE int tp_joy() { return gPet.joy; }
+EMSCRIPTEN_KEEPALIVE int tp_energy() { return gPet.energy; }
+EMSCRIPTEN_KEEPALIVE int tp_hygiene() { return gPet.hygiene; }
+EMSCRIPTEN_KEEPALIVE int tp_poops() { return gPet.poops; }
+EMSCRIPTEN_KEEPALIVE int tp_sleeping() { return gPet.sleeping ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_level() { return gPet.level(); }
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_name() {
+  static std::string out;
+  if (gPet.isEgg()) { out = "EGG"; return out.c_str(); }
+  out = gPet.nick[0] ? gPet.nick : dexName(gPet.speciesId);
+  return out.c_str();
+}
+
+// Actions -- each just forwards to the same Pet methods the buttons in
+// TamaPoke.ino / TPPet.mm already call; see pet.h for what each one does
+// to the stats above.
+EMSCRIPTEN_KEEPALIVE void tp_feed_berry(int color) { gPet.feedBerry((uint8_t)color); }
+EMSCRIPTEN_KEEPALIVE void tp_feed_candy() { gPet.feedCandy(); }
+EMSCRIPTEN_KEEPALIVE void tp_play() { gPet.play(); }
+EMSCRIPTEN_KEEPALIVE void tp_toggle_light() { gPet.toggleLight(); }
+EMSCRIPTEN_KEEPALIVE void tp_clean() { gPet.clean(); }
+EMSCRIPTEN_KEEPALIVE void tp_caress() { gPet.caress(); }
+EMSCRIPTEN_KEEPALIVE void tp_egg_tap() { gPet.eggTap(); }
+
 } // extern "C"

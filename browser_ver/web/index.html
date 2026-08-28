@@ -2,17 +2,21 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>iTamaPoke (browser core smoke test)</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>iTamaPoke (browser build)</title>
 <style>
-  body { font-family: ui-monospace, monospace; background: #11162A; color: #F1ECE1; padding: 2rem; }
-  #status { font-size: 1.4rem; margin-top: 1rem; }
+  html, body { margin: 0; height: 100%; background: #10131a; overscroll-behavior: none; }
+  body { display: flex; align-items: center; justify-content: center; }
+  canvas { touch-action: none; image-rendering: pixelated; max-width: 100vw; max-height: 100vh; }
+  #status {
+    position: fixed; left: 0; right: 0; bottom: 0;
+    font: 11px/1.4 -apple-system, system-ui, sans-serif; color: #8a93a6;
+    text-align: center; padding: 4px 0; pointer-events: none;
+  }
 </style>
 </head>
 <body>
-<h1>iTamaPoke — WASM core smoke test</h1>
-<p>Not the game yet — this just proves upstream-expanded/*.cpp is running inside
-the browser via WebAssembly, ticking a fresh egg forward.</p>
+<canvas id="tp" width="466" height="466"></canvas>
 <div id="status">loading…</div>
 <script src="tp_core.js"></script>
 <script src="main.js"></script>
