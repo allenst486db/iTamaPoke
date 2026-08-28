@@ -33,6 +33,28 @@ const statusEl = document.getElementById("status");
 let Module = null;
 let fns = {};
 
+// --- Sprite state ----------------------------------------------------
+//
+// `currentSprite` is the parsed TPK2 for whatever species is currently
+// active, refetched (from IndexedDB, see sprites.js) whenever the species
+// changes -- `loadingDex` guards against a slow load racing a species
+// change and clobbering the wrong sprite in. `poseStart` anchors the idle
+// animation's own clock, mirroring GameModel's `pose.elapsedMs`.
+let currentSprite = null;
+let currentDex = 0;
+let loadingDex = 0;
+let poseStart = 0;
+
+async function ensureSprite(dex) {
+  if (dex === currentDex || dex === loadingDex) return;
+  loadingDex = dex;
+  const sprite = await loadSprite(dex, false);
+  if (loadingDex !== dex) return; // species changed again while awaiting
+  currentSprite = sprite;
+  currentDex = dex;
+  poseStart = performance.now();
+}
+
 function roundRect(x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -64,6 +86,45 @@ function drawBar(x, y, label, value) {
     roundRect(bx + 2, y + 2, fw, bh - 4, 3);
     ctx.fill();
   }
+}
+
+// Scratch canvas for one frame's ImageData -- ctx.drawImage can't take an
+// ImageData directly, so each frame is stamped onto this at native size,
+// then blitted onto the main canvas scaled with smoothing off (same look
+// as TPSprite's `.interpolation(.none)` on iOS).
+const frameCanvas = document.createElement("canvas");
+const frameCtx = frameCanvas.getContext("2d");
+
+/// Draws the idle pose standing on TP.petGround, or the "no sprite loaded"
+/// placeholder when nothing's been picked yet for this species. Ports the
+/// idle branch of PetScreen.swift's drawPet -- no walk/eat/sleep poses or
+/// evolution FX yet, just the one animated action.
+function drawPet(ink) {
+  if (!currentSprite) {
+    ctx.font = "bold 64px monospace";
+    ctx.fillStyle = ink;
+    ctx.fillText("?", TP.cx, TP.petGround - 100);
+    ctx.font = "12px monospace";
+    ctx.fillText("(no sprite loaded for this species)", TP.cx, TP.petGround - 40);
+    return;
+  }
+  const a = currentSprite.actions[TPAct.idle];
+  if (!a) return;
+  const elapsed = performance.now() - poseStart;
+  const frame = frameIndexAt(a, elapsed, true);
+  const img = frameImageData(currentSprite, TPAct.idle, frame);
+  if (!img) return;
+
+  const s = spriteScale(currentSprite, a);
+  const w = a.w * s, h = a.h * s;
+  const x = TP.cx - w / 2;
+  const y = TP.petGround - (a.base > 0 ? a.base : a.h) * s;
+
+  frameCanvas.width = a.w;
+  frameCanvas.height = a.h;
+  frameCtx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(frameCanvas, x, y, w, h);
 }
 
 function draw() {
@@ -100,13 +161,8 @@ function draw() {
     return;
   }
 
-  // No sprite renderer yet (step 4 of the roadmap): a placeholder mark
-  // standing on the ground line, same spot the real sprite will occupy.
-  ctx.font = "bold 64px monospace";
-  ctx.fillStyle = ink;
-  ctx.fillText("?", TP.cx, TP.petGround - 100);
-  ctx.font = "12px monospace";
-  ctx.fillText("(no sprite loader yet)", TP.cx, TP.petGround - 40);
+  ensureSprite(fns.speciesId());
+  drawPet(ink);
 
   // Poop icons
   const poops = fns.poops();
@@ -249,12 +305,34 @@ async function saveNow(mod) {
   await writeSave(exportStateBytes(mod));
 }
 
+// --- Sprite file picker ---------------------------------------------------
+//
+// Local-only, per README's licensing note: files picked here go straight
+// into this browser's own IndexedDB and nowhere else. Re-picking the same
+// dex just overwrites that entry; nothing needs clearing first.
+const spriteLoadBtn = document.getElementById("spriteLoad");
+const spriteInput = document.getElementById("spriteInput");
+spriteLoadBtn.addEventListener("click", () => spriteInput.click());
+spriteInput.addEventListener("change", async () => {
+  const files = Array.from(spriteInput.files || []);
+  spriteInput.value = "";
+  if (files.length === 0) return;
+  spriteLoadBtn.textContent = "Loading…";
+  const n = await importSpriteFiles(files);
+  spriteCache.clear(); // a re-picked file may replace one already parsed
+  currentDex = 0;    // force ensureSprite() to re-fetch for the active species
+  loadingDex = -1;   // ...including one it already (unsuccessfully) tried
+  spriteLoadBtn.textContent = n > 0 ? `Loaded ${n} sprite(s)` : "No p<dex>.bin files found";
+  setTimeout(() => { spriteLoadBtn.textContent = "Load sprites…"; }, 2500);
+});
+
 createTPCore({
   onSfx(id) { console.log("[sfx]", id); },
 }).then(async (mod) => {
   Module = mod;
   fns = {
     isEgg: mod.cwrap("tp_is_egg", "number", []),
+    speciesId: mod.cwrap("tp_species_id", "number", []),
     sleeping: mod.cwrap("tp_sleeping", "number", []),
     poops: mod.cwrap("tp_poops", "number", []),
     fullness: mod.cwrap("tp_fullness", "number", []),

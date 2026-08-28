@@ -5,11 +5,12 @@ thin native WKWebView (iOS)/WebView (Android) shell you build and install on
 your own device — not hosted anywhere public. See the root
 [LICENSE](../LICENSE): personal use only, same as the iOS app.
 
-**Status: playable idle-screen MVP with persistence.** Egg tap-to-hatch,
-live stat decay, the four action buttons (feed/play/light/clean), and a
-save that survives a reload (IndexedDB) all work against the real game
-logic in an actual browser tab. No sprite art, minigames, dex, battle,
-settings, or sound yet -- see the roadmap below.
+**Status: playable idle-screen MVP with persistence and real sprite art.**
+Egg tap-to-hatch, live stat decay, the four action buttons
+(feed/play/light/clean), a save that survives a reload (IndexedDB), and the
+actual animated TPK2 sprite (picked locally, never bundled) all work
+against the real game logic in an actual browser tab. No minigames, dex,
+battle, settings, or sound yet -- see the roadmap below.
 
 ## What's here
 
@@ -67,10 +68,17 @@ Python for everything after that.
    Pokédex, battle, evolution/farewell/runaway ceremonies, the stat card,
    settings screen, and the rename keyboard.
 3. Web Audio synthesizer — port `TPAudio.swift`'s oscillator/noise tables
-4. TPK2 sprite parser in JS (same format `TPSprite.swift` reads)
-5. Asset loading: local file picker (multi-select, not `webkitdirectory` —
-   unreliable on iOS Safari) -> IndexedDB, mirroring the iOS app's
-   Documents/mons flow
+4. ~~TPK2 sprite parser in JS~~ ✅ done, `web/sprites.js` — ports
+   `TPSprite.swift` (palette, actions, frame-walk, whole-pixel scale)
+   exactly, verified against a real `p004.bin` rendering correctly on
+   canvas. Only the idle pose animates so far; walk/eat/sleep/hurt/etc. are
+   parsed but not yet drawn anywhere — that's step 2's remaining scope, not
+   this one's.
+5. ~~Asset loading~~ ✅ done, same file: a local multi-file picker
+   (`accept=".bin" multiple`, not `webkitdirectory` — unreliable on iOS
+   Safari) into IndexedDB, mirroring the iOS app's Documents/mons flow.
+   Sprites are never bundled or fetched by this code — picked locally,
+   stored locally, same as the iOS build's own rule (LICENSE/NOTICE).
 6. ~~Save persistence via IndexedDB~~ ✅ done. `tp_export_state()`/
    `tp_import_state()` (browser_glue.cpp) round-trip `Preferences::store()`
    as a small binary blob; `web/main.js` writes it to IndexedDB every 15s
