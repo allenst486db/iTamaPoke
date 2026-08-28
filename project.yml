@@ -16,6 +16,14 @@ settings:
     SWIFT_VERSION: "5.9"
     CLANG_CXX_LANGUAGE_STANDARD: "c++17"
     CLANG_CXX_LIBRARY: "libc++"
+    # Was never set anywhere in this project -- meant TPBattle.mm's
+    # _rewardLineCache (an NSString ivar assigned an autoreleased string in
+    # -finish) got no retain at all, so it could dangle once the autorelease
+    # pool drained and crash (EXC_BAD_ACCESS) reading it back in
+    # PetScreen.swift's renderBattle a frame or two later -- only on a wild-
+    # battle win with a nonzero stat reward, since the zero-reward path
+    # assigns the literal `@""` instead, which never needs deallocating.
+    CLANG_ENABLE_OBJC_ARC: YES
     # Upstream firmware C++ is vendored verbatim; it is not warning-clean by
     # Xcode's standards and we do not want to patch it (keeps submodule bumps free).
     GCC_WARN_INHIBIT_ALL_WARNINGS: YES
@@ -23,6 +31,11 @@ settings:
     # after editing. Must be globally unique for a free Apple ID to sign it.
     DEVELOPMENT_TEAM: ""
     CODE_SIGN_STYLE: Automatic
+    # Xcode's own implicit $(TARGET_NAME) default for this stopped resolving
+    # once SDKROOT was made explicit below (surfaced as "Multiple commands
+    # produce '.../.app'" -- the empty PRODUCT_NAME collapses both targets'
+    # product paths to a bare ".app"). Spelling it out here is the fix.
+    PRODUCT_NAME: "$(TARGET_NAME)"
 
 targets:
   # ---------------------------------------------------------------- iOS app
@@ -73,6 +86,11 @@ targets:
           - $(SRCROOT)/upstream
         TARGETED_DEVICE_FAMILY: "1,2"
         GENERATE_INFOPLIST_FILE: NO
+        # XcodeGen only auto-fills SDKROOT when a project has a single
+        # platform; this one has iOS + watchOS, so it's needed explicitly
+        # here or the generated project has no SDKROOT at all and Xcode's
+        # destination picker falls back to "My Mac".
+        SDKROOT: iphoneos
 
   # ------------------------------------------------------------ watchOS app
   # Single-target watchOS app (watchOS 7+ style), embedded in the iOS app so a
@@ -120,3 +138,4 @@ targets:
           - $(SRCROOT)/upstream
         TARGETED_DEVICE_FAMILY: "4"
         GENERATE_INFOPLIST_FILE: NO
+        SDKROOT: watchos
