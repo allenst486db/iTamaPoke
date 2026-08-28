@@ -828,16 +828,23 @@ struct PetScreen: View {
         ctx.gfxText(clock, TP.cx - 105, 120, 7, UI.ink)
         ctx.gfxTextCentered(TimeZone.current.identifier, 210, 2, UI.track)
 
-        // Four levels now (OFF/LOW/MED/FULL), not a switch -- the fork's own
-        // sound modes, which gate which effects still play at LOW. See
-        // upstream-expanded/README.md.
-        let snd = model.soundEnabled
+        // Three levels (SILENT/VIBRATE/FULL). Each gets its own pill fill --
+        // VIBRATE used to share SILENT's plain-white fill and differ only in
+        // its label text, which read as "nothing happened" when cycling off
+        // FULL, since the eye catches the fill colour before the text.
         let s = Self.sndPill
-        ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, snd ? UI.barOK : UI.white)
+        let sndFill: UInt16
+        let sndTextColor: UInt16
+        switch model.soundMode {
+        case .full:    sndFill = UI.barOK;   sndTextColor = UI.bgDay
+        case .vibrate: sndFill = UI.barWarn; sndTextColor = UI.bgDay
+        case .silent:  sndFill = UI.white;   sndTextColor = UI.ink
+        }
+        ctx.fillRoundRect(s.minX, s.minY, s.width, s.height, 8, sndFill)
         ctx.drawRoundRect(s.minX, s.minY, s.width, s.height, 8, UI.ink)
         let sl = model.pet.soundModeLabel(model.soundMode.rawValue)
         ctx.gfxText(sl, s.minX + (s.width - ctx.gfxTextWidth(sl, 2)) / 2,
-                    TP.textTop(centeredOn: s.midY, size: 2), 2, snd ? UI.bgDay : UI.ink)
+                    TP.textTop(centeredOn: s.midY, size: 2), 2, sndTextColor)
 
         let l = Self.langPill
         ctx.fillRoundRect(l.minX, l.minY, l.width, l.height, 8, UI.white)
