@@ -12,11 +12,13 @@ real settings screen, all five minigames, the Pokédex, the wild-battle
 system, evolution/farewell/runaway, the rename keyboard, and all eight
 stat card pages (including Daily goals/Box/Expedition and the training
 sack) work against the real C++ game logic in an actual browser tab.
-Native shells (WKWebView/WebView) exist too -- see `native/`. What's
-left is presentation polish, not missing gameplay: no sprite-atlas dex
-thumbnails, no dex-entry text page, and the evolution/ceremony screens
-are a plain progress bar/message rather than the original's particle
-FX -- see the roadmap below for exactly what's simplified where.
+Native shells (WKWebView/WebView) exist too -- see `native/`. Dex grid
+tiles now show the real sprite once you've picked it, and the dex
+detail screen has a real second page for user-supplied dex-entry text
+(`Load dex text…`, same local-file-picker pattern as sprites). What's
+left is presentation polish, not missing gameplay: the evolution/
+ceremony screens are a plain progress bar/message rather than the
+original's particle FX -- see the roadmap below.
 
 ## What's here
 
@@ -79,11 +81,17 @@ Python for everything after that.
    gap, not a logic one; the underlying hit-tests were verified directly.
    The Pokédex grid + detail ✅ done too (`web/dex.js`, a Dex button next
    to Settings) -- real registered/caught state, filters, pagination, and
-   type chips from `DEX_TBL`, minus the sprite-atlas thumbnails (`TPThumbs`)
-   and the dex-entry text page (`TPDexEntryText`, which reads a
-   user-supplied `mons/dex_entries_<lang>.txt`) -- tiles show the dex
-   number instead of a thumbnail, and detail stops after the type/
-   obtained-via page.
+   type chips from `DEX_TBL`. Grid tiles show the real TPK2 sprite once
+   it's been picked locally (falls back to the dex number otherwise --
+   `TPThumbs`' own packed sprite-atlas format isn't parsed, so this reuses
+   whichever full sprite the user already loaded rather than a separate
+   thumbnail asset). The dex-entry text page is done too (`web/dexentry.js`,
+   a `Load dex text…` button next to the sprite one) -- ports
+   `TPDexEntryText`'s `<dex>|<text>` file format and per-language lookup,
+   picked locally and kept in this browser's own IndexedDB, same
+   never-bundled rule as sprites; word-wrap is plain `measureText` rather
+   than `TPDexEntryText.wrap`'s real per-language/character-mode wrapping,
+   which is close enough for the Latin-script text these files hold.
    The wild-battle system ✅ done too (`web/battle.js` +
    `core/browser_battle.cpp`, a plain-C++ port of `Sources/Core/TPBattle.mm`
    over the unmodified `battle.cpp` combat engine) -- wild-encounter prompt,

@@ -759,7 +759,7 @@ canvas.addEventListener("pointerdown", (e) => {
     return;
   }
   if (screen === "dex") {
-    if (dexScreen === "detail") dexDetailTap(); else dexGridTap(x, y);
+    if (dexScreen === "detail") dexDetailTap(x, y); else dexGridTap(x, y);
     return;
   }
   if (screen === "battle") {
@@ -942,6 +942,23 @@ spriteInput.addEventListener("change", async () => {
   loadingDex = -1;   // ...including one it already (unsuccessfully) tried
   spriteLoadBtn.textContent = n > 0 ? `Loaded ${n} sprite(s)` : "No p<dex>.bin files found";
   setTimeout(() => { spriteLoadBtn.textContent = "Load sprites…"; }, 2500);
+});
+
+// --- Dex entry text file picker -------------------------------------------
+//
+// Same local-only rule as sprites -- picked files go into this browser's
+// own IndexedDB and nowhere else. See dexentry.js.
+const dexEntryLoadBtn = document.getElementById("dexEntryLoad");
+const dexEntryInput = document.getElementById("dexEntryInput");
+dexEntryLoadBtn.addEventListener("click", () => dexEntryInput.click());
+dexEntryInput.addEventListener("change", async () => {
+  const files = Array.from(dexEntryInput.files || []);
+  dexEntryInput.value = "";
+  if (files.length === 0) return;
+  dexEntryLoadBtn.textContent = "Loading…";
+  const n = await importDexEntryFiles(files);
+  dexEntryLoadBtn.textContent = n > 0 ? `Loaded ${n} language(s)` : "No dex_entries_<lang>.txt found";
+  setTimeout(() => { dexEntryLoadBtn.textContent = "Load dex text…"; }, 2500);
 });
 
 loadSoundMode();
