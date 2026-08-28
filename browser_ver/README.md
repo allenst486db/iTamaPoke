@@ -98,9 +98,13 @@ Python for everything after that.
    WASM store, since it's a browser-side toggle with no iOS analogue in
    `Preferences`).
 7. ~~Settings screen~~ ✅ done, part of step 2 above -- see there.
-8. Native shells: a minimal WKWebView Xcode project and a minimal
-   Android `WebView` project, each loading `web/` as local bundled assets
-   (no server at runtime) and installed only on your own device
+8. ~~Native shells~~ ✅ done, `native/` — a WKWebView `View` to drop into a
+   new Xcode target and a minimal Android Studio project, both loading
+   `web/` from local files (no server, no network permission). See
+   `native/README.md` for the exact setup steps; the iOS half is a target
+   you add by hand in Xcode rather than a second `.xcodeproj`, since
+   hand-writing a correct `project.pbxproj` from scratch is far riskier
+   than Xcode's own "New Target" wizard.
 9. Install guide (+ HTML version) once there's something to install
 
 ## Why WASM instead of rewriting the game logic in JS
