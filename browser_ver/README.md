@@ -73,9 +73,15 @@ Python for everything after that.
    `battleTypeEffectPct` distractor filter). Emoji glyphs (ball, food/berry
    icons, dirt bubbles) don't render in every environment -- a font-fallback
    gap, not a logic one; the underlying hit-tests were verified directly.
-   Still missing from `PetScreen.swift`'s full render(): the Pokédex,
-   battle, evolution/farewell/runaway ceremonies, the stat card, and the
-   rename keyboard.
+   The Pokédex grid + detail ✅ done too (`web/dex.js`, a Dex button next
+   to Settings) -- real registered/caught state, filters, pagination, and
+   type chips from `DEX_TBL`, minus the sprite-atlas thumbnails (`TPThumbs`)
+   and the dex-entry text page (`TPDexEntryText`, which reads a
+   user-supplied `mons/dex_entries_<lang>.txt`) -- tiles show the dex
+   number instead of a thumbnail, and detail stops after the type/
+   obtained-via page.
+   Still missing from `PetScreen.swift`'s full render(): battle, evolution/
+   farewell/runaway ceremonies, the stat card, and the rename keyboard.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played

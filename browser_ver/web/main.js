@@ -561,6 +561,10 @@ function draw() {
     drawSettings();
     return;
   }
+  if (screen === "dex") {
+    if (dexScreen === "detail") drawDexDetail(); else drawDexGrid();
+    return;
+  }
   if (screen === "gamemenu") {
     drawGameMenu();
     return;
@@ -674,6 +678,10 @@ canvas.addEventListener("pointerdown", (e) => {
     settingsTap(x, y);
     return;
   }
+  if (screen === "dex") {
+    if (dexScreen === "detail") dexDetailTap(); else dexGridTap(x, y);
+    return;
+  }
   if (screen === "gamemenu") {
     gameMenuTap(x, y);
     return;
@@ -726,6 +734,12 @@ canvas.addEventListener("pointerdown", (e) => {
 
 document.getElementById("settingsBtn").addEventListener("click", () => {
   screen = screen === "settings" ? "idle" : "settings";
+});
+
+document.getElementById("dexBtn").addEventListener("click", () => {
+  if (screen === "dex") { screen = "idle"; return; }
+  dexScreen = "grid";
+  screen = "dex";
 });
 
 // --- Save persistence ----------------------------------------------------
@@ -846,6 +860,15 @@ createTPCore({
     memoHigh: mod.cwrap("tp_memo_high", "number", []),
     cleanHigh: mod.cwrap("tp_clean_high", "number", []),
     typeHigh: mod.cwrap("tp_type_high", "number", []),
+    dexCount: mod.cwrap("tp_dex_count", "number", []),
+    dexRegistered: mod.cwrap("tp_dex_registered", "number", ["number"]),
+    dexCaught: mod.cwrap("tp_dex_caught", "number", ["number"]),
+    dexShiny: mod.cwrap("tp_dex_shiny", "number", ["number"]),
+    dexName: mod.cwrap("tp_dex_name", "string", ["number"]),
+    dexType1: mod.cwrap("tp_dex_type1", "number", ["number"]),
+    dexType2: mod.cwrap("tp_dex_type2", "number", ["number"]),
+    registeredCount: mod.cwrap("tp_registered_count", "number", []),
+    caughtCount: mod.cwrap("tp_caught_count", "number", []),
   };
   mod.ccall("tp_seed_random", null, ["number"], [Date.now() & 0xffffffff]);
 

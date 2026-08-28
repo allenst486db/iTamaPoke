@@ -189,6 +189,34 @@ int tp_type_effect_pct(int attacker, int defender) {
   return (int)battleTypeEffectPct((uint8_t)attacker, (uint8_t)defender, TYPE_NONE);
 }
 
+// --- Pokedex grid + detail ---------------------------------------------
+//
+// Mirrors PetScreen.swift's renderGalleryGrid/renderGalleryDetail, minus
+// the sprite-atlas thumbnails (TPThumbs) and the dex-entry text page
+// (TPDexEntryText, which reads a user-supplied mons/dex_entries_<lang>.txt
+// -- not ported yet, see roadmap): this is name/number/type/obtained-via
+// only, same data Pet::isRegistered/isCaught and DEX_TBL already carry.
+
+EMSCRIPTEN_KEEPALIVE int tp_dex_count() { return DEX_COUNT; }
+EMSCRIPTEN_KEEPALIVE int tp_dex_registered(int dex) { return gPet.isRegistered((int16_t)dex) ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_dex_caught(int dex) { return gPet.isCaught((int16_t)dex) ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_dex_shiny(int dex) { return gPet.isShinyRegistered((int16_t)dex) ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_registered_count() { return gPet.registeredCount(); }
+EMSCRIPTEN_KEEPALIVE int tp_caught_count() { return gPet.caughtCount(); }
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_dex_name(int dex) {
+  if (dex < 1 || dex > DEX_COUNT) return "";
+  return dexName((int16_t)dex);
+}
+
+EMSCRIPTEN_KEEPALIVE int tp_dex_type1(int dex) {
+  return (dex >= 1 && dex <= DEX_COUNT) ? DEX_TBL[dex].type1 : 0;
+}
+EMSCRIPTEN_KEEPALIVE int tp_dex_type2(int dex) {
+  return (dex >= 1 && dex <= DEX_COUNT) ? DEX_TBL[dex].type2 : 0;
+}
+
 // --- Settings screen -----------------------------------------------------
 //
 // Language: mirrors TPPet.mm's TPSetLanguage()/TPLanguage() exactly (same
