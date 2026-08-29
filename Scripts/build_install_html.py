@@ -63,7 +63,7 @@ CONTENT = f'''
           <div class="cd"><div class="t">경로 A · 무료</div><div class="d">Sideloadly/AltStore로 사이드로딩. 7일마다 재서명 필요. 애플워치 앱은 없음.</div></div>
           <div class="cd"><div class="t">경로 B · 유료</div><div class="d">Apple Developer 계정($99/년)으로 서명 — 재서명 걱정 없음, 애플워치도 가능.</div></div>
           <div class="cd"><div class="t">경로 C · Xcode 빌드</div><div class="d">맥 + Xcode 필요. 스프라이트를 빌드에 바로 넣을 수 있고, 애플워치 연결이 가장 안정적.</div></div>
-          <div class="cd"><div class="t">경로 D · 브라우저 빌드</div><div class="d">iOS/워치 앱과 별개인 웹 버전. 설치 앱 없이 브라우저(또는 직접 만든 네이티브 셸)에서 실행 — 공개 배포는 안 함, 자기 기기에서만.</div></div>
+          <div class="cd"><div class="t">경로 D · 브라우저 빌드</div><div class="d">iOS/워치 앱과 별개인 웹 버전. 목적은 본인 폰/태블릿에 앱으로 설치하는 것 — 네이티브 셸로 감싸서, 공개 배포는 안 함.</div></div>
         </div>
       </section>
 
@@ -131,46 +131,58 @@ CONTENT = f'''
 
       <section>
         <div class="sec-head"><span class="sec-num">5</span><p class="kicker">Path D</p></div>
-        <h2>경로 D — 브라우저 빌드</h2>
-        <p><code>browser_ver/</code>는 같은 게임 로직을 WebAssembly로 컴파일해서 브라우저(또는 그걸 감싼 얇은 네이티브 앱)에서 돌리는 완전히 별도의 빌드입니다. iOS/워치 앱과 세이브 데이터를 공유하지 않고, <strong>공개 배포하지 않습니다</strong> — 본인 기기에서 빌드해서 본인만 씁니다(<a href="../LICENSE">LICENSE</a> 참고).</p>
+        <h2>경로 D — 브라우저 빌드, 본인 폰/태블릿에 설치</h2>
+        <p><code>browser_ver/</code>는 같은 게임 로직을 WebAssembly로 컴파일해서 웹페이지에서 돌리는 완전히 별도의 빌드입니다. iOS/워치 앱과 세이브 데이터를 공유하지 않고, <strong>공개 배포하지 않습니다</strong>(<a href="../LICENSE">LICENSE</a> 참고). <strong>이 경로의 목적은 본인 iPhone/iPad나 안드로이드 기기에 실제 앱으로 설치하는 것</strong>이지 컴퓨터 브라우저에서만 쓰는 게 아닙니다 — 딱 한 번 컴퓨터에서 빌드해야 하는 건 맞지만(iOS 셸은 Mac, 안드로이드는 아무 OS나), 그 결과물은 이후 폰 안에서만 온전히 실행됩니다.</p>
 
-        <div class="termwin">
-          <div class="termbar"><span class="dots"></span><span class="tt">Terminal</span></div>
-          <pre class="term"><span class="c"># Emscripten SDK가 필요합니다 (한 번만)</span>
+        <div class="method">
+          <div class="m-head"><span class="m-badge">1</span><h3 style="margin:0">웹 코어 빌드 (컴퓨터에서, 한 번만)</h3></div>
+          <div class="termwin">
+            <div class="termbar"><span class="dots"></span><span class="tt">Terminal</span></div>
+            <pre class="term"><span class="c"># Emscripten SDK가 필요합니다 (한 번만)</span>
 <span class="k">git</span> clone --depth 1 https://github.com/emscripten-core/emsdk.git
 <span class="k">cd</span> emsdk &amp;&amp; ./emsdk install latest &amp;&amp; ./emsdk activate latest
 <span class="k">source</span> ./emsdk_env.sh
 <span class="k">cd</span> /path/to/iTamaPoke
 
 <span class="c"># 코어 빌드 -&gt; browser_ver/web/tp_core.{{js,wasm}}</span>
-<span class="k">browser_ver/build.sh</span>
-
-<span class="c"># 로컬 서버로 열기 (file://는 안 됨 — WASM 스트리밍 로드 때문)</span>
-<span class="k">cd</span> browser_ver/web &amp;&amp; python3 -m http.server 8123</pre>
+<span class="k">browser_ver/build.sh</span></pre>
+          </div>
+          <p style="font-size:.9rem;color:var(--ink-2)"><code>emsdk</code>는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면 <a href="https://github.com/astral-sh/python-build-standalone">astral-sh/python-build-standalone</a>의 이식용 빌드로 <code>emsdk.py</code>만 실행하면 됩니다(그 뒤로는 Emscripten 자체 Python을 씁니다).</p>
         </div>
-        <p style="font-size:.9rem;color:var(--ink-2)"><code>emsdk</code>는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면 <a href="https://github.com/astral-sh/python-build-standalone">astral-sh/python-build-standalone</a>의 이식용 빌드로 <code>emsdk.py</code>만 실행하면 됩니다(그 뒤로는 Emscripten 자체 Python을 씁니다).</p>
 
         <div class="method">
-          <div class="m-head"><span class="m-badge">1</span><h3 style="margin:0">스프라이트 넣기 (자세히)</h3></div>
-          <p class="m-desc">iOS처럼 파일 앱에 넣는 게 아니라, <strong>브라우저 화면 안에서 직접 파일을 고릅니다.</strong></p>
+          <div class="m-head"><span class="m-badge">2</span><h3 style="margin:0">폰에 올리기 — 네이티브 셸</h3></div>
+          <p class="m-desc"><code>browser_ver/native/</code>에 다 준비돼 있습니다. <strong>iOS/iPadOS</strong>: Xcode에서 <code>TamaPoke.xcodeproj</code> 열기 → File → New → Target… → iOS App → <code>browser_ver/native/ios/WebShellApp.swift</code>와 그 폴더의 <code>Info.plist</code>를 새 타깃에 드래그 → <code>browser_ver/web</code> 폴더 전체를 <strong>폴더 참조로</strong>(파란 폴더 아이콘, 그룹 아님) 드래그 → 연결된 본인 iPhone/iPad에서 빌드·실행(본체 앱과 동일). <strong>안드로이드</strong>: <code>browser_ver/native/android/</code>를 Android Studio에서 바로 열기 → <code>browser_ver/web/</code>을 <code>app/src/main/assets/web/</code>에 복사 → 연결된 본인 폰에서 실행. 둘 다 서버 없이 로컬 파일만 읽습니다. 자세한 절차는 <code>browser_ver/native/README.md</code>.</p>
+          <div class="note ok"><span class="lbl">여기까지 하면</span><p>폰에 앱으로 설치된 상태입니다. 아래 스프라이트·도감 설명문은 컴퓨터 브라우저에서든 설치된 앱 안에서든 똑같이, 한 번씩만 직접 골라 넣으면 됩니다.</p></div>
+        </div>
+
+        <div class="method">
+          <div class="m-head"><span class="m-badge">3</span><h3 style="margin:0">컴퓨터에서 미리 보기 (선택, 이 경로의 목적은 아님)</h3></div>
+          <div class="termwin">
+            <div class="termbar"><span class="dots"></span><span class="tt">Terminal</span></div>
+            <pre class="term"><span class="c"># 로컬 서버로 열기 (file://는 안 됨 — WASM 스트리밍 로드 때문)</span>
+<span class="k">cd</span> browser_ver/web &amp;&amp; python3 -m http.server 8123
+<span class="c"># 그 다음 컴퓨터 브라우저에서 http://localhost:8123</span></pre>
+          </div>
+        </div>
+
+        <div class="method">
+          <div class="m-head"><span class="m-badge">4</span><h3 style="margin:0">스프라이트 넣기 (자세히)</h3></div>
+          <p class="m-desc">iOS처럼 파일 앱에 넣는 게 아니라, <strong>앱 화면 안에서 직접 파일을 고릅니다.</strong></p>
           <ol style="padding-left:1.2rem;color:var(--ink-2);font-size:.92rem;line-height:1.7">
-            <li>컴퓨터에서 <code>Scripts/fetch_sprites.sh</code>로 <code>.bin</code> 파일들을 받습니다 — Path C의 <code>fetch_assets.sh</code>와 같은 스크립트, 결과물도 동일한 <code>p&lt;도감번호&gt;.bin</code>/<code>ps&lt;도감번호&gt;.bin</code>(이로치) 파일들입니다.</li>
-            <li>브라우저 화면 우측 상단의 <strong>"Load sprites…"</strong> 버튼을 누릅니다.</li>
+            <li>아무 컴퓨터에서 <code>Scripts/fetch_sprites.sh</code>로 <code>.bin</code> 파일들을 받습니다 — Path C의 <code>fetch_assets.sh</code>와 같은 스크립트, 결과물도 동일한 <code>p&lt;도감번호&gt;.bin</code>/<code>ps&lt;도감번호&gt;.bin</code>(이로치) 파일들입니다.</li>
+            <li>그 파일들을 실제로 앱을 쓸 기기로 옮깁니다 — 같은 컴퓨터면 이미 거기 있는 거고, 2단계에서 만든 네이티브 셸이 깔린 폰이라면 AirDrop·케이블·클라우드 드라이브 등 파일 옮기는 아무 방법이나 쓰면 됩니다(경로 A의 5단계에서 iOS 앱에 스프라이트 넣는 것과 같은 원리).</li>
+            <li>앱 화면 우측 상단의 <strong>"Load sprites…"</strong> 버튼을 누릅니다.</li>
             <li>파일 선택 창에서 받아둔 <code>.bin</code> 파일들을 <strong>전부 다중 선택</strong>해서 엽니다 — 폴더째 드래그가 아니라 파일 여러 개를 직접 골라야 합니다(iOS Safari가 폴더 선택을 불안정하게 지원해서 일부러 이 방식을 씀).</li>
-            <li>고른 파일은 이 브라우저의 <strong>IndexedDB</strong>(로컬 저장소)에 저장되고, 다음에 같은 브라우저로 열 때도 그대로 남아 있습니다 — 매번 다시 고를 필요 없습니다.</li>
+            <li>고른 파일은 그 기기의 <strong>IndexedDB</strong>(로컬 저장소)에 저장되고, 다음에 열 때도 그대로 남아 있습니다 — 매번 다시 고를 필요 없습니다.</li>
             <li>다른 파일을 다시 고르면 같은 도감번호 파일은 덮어씌워집니다. 별도로 지울 필요 없이 새로 고르기만 하면 됩니다.</li>
           </ol>
-          <div class="note ok"><span class="lbl">기기 갈아탈 때</span><p>브라우저를 바꾸거나(사파리→크롬), 시크릿/프라이빗 모드로 열거나, 사이트 데이터를 지우면 IndexedDB도 같이 비워집니다 — 그때는 "Load sprites…"로 다시 골라주면 됩니다. 파일 자체는 로컬 컴퓨터에 그대로 있으니 다시 고르기만 하면 되고, 인터넷 어디로도 업로드되지 않습니다.</p></div>
+          <div class="note ok"><span class="lbl">기기 갈아탈 때</span><p>브라우저를 바꾸거나(사파리→크롬), 시크릿/프라이빗 모드로 열거나, 사이트 데이터를 지우면 IndexedDB도 같이 비워집니다 — 그때는 "Load sprites…"로 다시 골라주면 됩니다. <code>.bin</code> 파일 자체는 원래 있던 곳에 그대로 있으니 다시 고르기만 하면 되고, 인터넷 어디로도 업로드되지 않습니다.</p></div>
         </div>
 
         <div class="method">
-          <div class="m-head"><span class="m-badge">2</span><h3 style="margin:0">도감 설명문 넣기 (선택)</h3></div>
+          <div class="m-head"><span class="m-badge">5</span><h3 style="margin:0">도감 설명문 넣기 (선택)</h3></div>
           <p class="m-desc"><code>Scripts/fetch_dex_entries.sh</code>로 받은 <code>dex_entries_&lt;언어&gt;.txt</code> 파일을, 화면의 <strong>"Load dex text…"</strong> 버튼으로 똑같이 다중 선택해서 넣습니다. 도감 상세화면 두 번째 페이지(점 두 개 중 오른쪽)에 나타납니다.</p>
-        </div>
-
-        <div class="method">
-          <div class="m-head"><span class="m-badge">3</span><h3 style="margin:0">앱처럼 쓰고 싶다면 — 네이티브 셸</h3></div>
-          <p class="m-desc">브라우저 탭 대신 진짜 앱처럼 쓰고 싶으면 <code>browser_ver/native/</code>를 봅니다 — iOS는 Xcode에 새 타깃을 추가해서 넣는 소스 코드, 안드로이드는 바로 열 수 있는 Gradle 프로젝트입니다. 둘 다 서버 없이 로컬 파일만 읽고, 자세한 절차는 <code>browser_ver/native/README.md</code>에 있습니다.</p>
         </div>
 
         <div class="note warn"><span class="lbl">iOS/워치 앱과는 별개</span><p>세이브 데이터, 스프라이트, 도감 설명문 전부 iOS 앱과 공유되지 않습니다 — 완전히 독립된 빌드입니다. 게임 로직(수치·확률·진화 조건 등)은 동일한 C++ 코드를 그대로 컴파일한 것이라 100% 같습니다.</p></div>
