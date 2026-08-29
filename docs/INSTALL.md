@@ -275,6 +275,9 @@ cd /path/to/iTamaPoke
 
 # Build the core -> browser_ver/web/tp_core.{js,wasm}
 bash browser_ver/build.sh
+
+# Build xcode project file
+xcodegen generate
 ```
 
 `emsdk` needs Python 3.10+; if your system Python is older, a portable
