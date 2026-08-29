@@ -233,15 +233,24 @@ xcodegen generate
 
 ### 1. 웹 코어 빌드 (컴퓨터에서, 한 번만)
 
+**필수조건**: 이미 이 저장소를 clone했습니다 (경로 C와 동일 —
+`git clone --recurse-submodules <URL>` 후 `cd iTamaPoke`). 아래 경로는 모두 iTamaPoke
+폴더 기준입니다.
+
 ```bash
 # 최초 1회: Emscripten SDK 설치
+# (iTamaPoke 폴더 밖 어디든, 또는 안 어디든 상관없음)
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-cd emsdk && ./emsdk install latest && ./emsdk activate latest
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
 source ./emsdk_env.sh
+
+# iTamaPoke 저장소 폴더로 돌아가기 (clone한 그 폴더)
 cd /path/to/iTamaPoke
 
 # 코어 빌드 -> browser_ver/web/tp_core.{js,wasm}
-browser_ver/build.sh
+bash browser_ver/build.sh
 ```
 
 `emsdk`는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면

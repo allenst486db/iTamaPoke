@@ -248,15 +248,24 @@ installs and runs entirely on your phone afterward.
 
 ### 1. Build the web core (on your computer, once)
 
+**Prerequisite:** you've already cloned this repository (same as Path C —
+`git clone --recurse-submodules <URL>` and `cd iTamaPoke`). All paths below
+are relative to the iTamaPoke folder.
+
 ```bash
 # One-time: install the Emscripten SDK
+# (clone it anywhere outside or inside the iTamaPoke folder, either works)
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-cd emsdk && ./emsdk install latest && ./emsdk activate latest
+cd emsdk
+./emsdk install latest
+./emsdk activate latest
 source ./emsdk_env.sh
+
+# Go back to the iTamaPoke repository folder (wherever you cloned it)
 cd /path/to/iTamaPoke
 
 # Build the core -> browser_ver/web/tp_core.{js,wasm}
-browser_ver/build.sh
+bash browser_ver/build.sh
 ```
 
 `emsdk` needs Python 3.10+; if your system Python is older, a portable
