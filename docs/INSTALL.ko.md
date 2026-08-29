@@ -231,22 +231,30 @@ xcodegen generate
 빌드해야 하는 건 맞지만(iOS 셸은 Mac, 안드로이드는 아무 OS나), 그 결과물은
 이후 폰 안에서만 온전히 실행됩니다.
 
-### 1. 웹 코어 빌드 (컴퓨터에서, 한 번만)
+### 준비: 먼저 이 저장소를 clone하세요
 
-**필수조건**: 이미 이 저장소를 clone했습니다 (경로 C와 동일 —
-`git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke` 후 `cd iTamaPoke`). 아래 경로는 모두 iTamaPoke
-폴더 기준입니다.
+아직 하지 않았다면(경로 C를 따라갔거나 처음 시작하는 경우) 저장소를 clone하세요:
+
+```bash
+git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke
+cd iTamaPoke
+```
+
+아래 단계의 경로는 모두 iTamaPoke 폴더 기준입니다. 경로 C를 이미 따라갔다면 이 부분을
+건너뛰고 바로 1단계로 가셔도 됩니다.
+
+### 1. 웹 코어 빌드 (컴퓨터에서, 한 번만)
 
 ```bash
 # 최초 1회: Emscripten SDK 설치
-# (iTamaPoke 폴더 밖 어디든, 또는 안 어디든 상관없음)
+# (iTamaPoke 폴더 밖 어디든 설치하세요)
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git
 cd emsdk
 ./emsdk install latest
 ./emsdk activate latest
 source ./emsdk_env.sh
 
-# iTamaPoke 저장소 폴더로 돌아가기 (clone한 그 폴더)
+# iTamaPoke 저장소 폴더로 돌아가기
 cd /path/to/iTamaPoke
 
 # 코어 빌드 -> browser_ver/web/tp_core.{js,wasm}
@@ -266,11 +274,11 @@ Gradle 프로젝트. 둘 다 `browser_ver/web/`을 앱 안에 로컬 파일로 �
 읽습니다 — 서버 없음, 네트워크 권한 없음, 설치 끝나면 컴퓨터에 남는 것도
 없습니다. 자세한 절차는 `browser_ver/native/README.md`, 요약하면:
 
-- **iOS/iPadOS**: Xcode에서 `TamaPoke.xcodeproj` 열기 → File → New →
-  Target… → iOS App → `browser_ver/native/ios/WebShellApp.swift`와 이
-  폴더의 `Info.plist`를 새 타깃에 드래그 → `browser_ver/web` 폴더 전체를
-  **폴더 참조로**(파란 폴더 아이콘, 그룹 아님) 드래그 → 연결된 본인
-  iPhone/iPad에서 빌드 및 실행 (본체 앱과 동일한 방식).
+- **iOS/iPadOS**: 루트 폴더의 `TamaPoke.xcodeproj`는 git clone에 포함되어 있습니다.
+  Xcode에서 이 파일을 열기 → File → New → Target… → iOS App → 
+  `browser_ver/native/ios/WebShellApp.swift`와 이 폴더의 `Info.plist`를 새 타깃에 드래그 → 
+  `browser_ver/web` 폴더 전체를 **폴더 참조로**(파란 폴더 아이콘, 그룹 아님) 드래그 → 
+  연결된 본인 iPhone/iPad에서 빌드 및 실행 (본체 앱과 동일한 방식).
 - **안드로이드**: `browser_ver/native/android/`를 Android Studio에서 바로
   열기 → `browser_ver/web/`을 `app/src/main/assets/web/`에 복사 → 연결된
   본인 폰에서 실행.
