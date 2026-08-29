@@ -235,14 +235,18 @@ xcodegen generate
 
 ---
 
-## Path D — Browser build (separate from the iOS/watchOS app)
+## Path D — Browser build, installed on your own phone/tablet
 
 `browser_ver/` compiles the same C++ game logic to WebAssembly and runs it
-in a plain web page instead of an iOS app — no App Store, no sideloading,
-no 7-day expiry. It doesn't share save data, sprites, or dex text with the
-iOS app; it's a fully separate build. Per this repo's own
-[LICENSE](../LICENSE), it's meant to be built and used on your own
-device(s), never hosted anywhere public.
+in a web page — no App Store, no sideloading, no 7-day expiry. It doesn't
+share save data, sprites, or dex text with the iOS app; it's a fully
+separate build. **The point of this path is to get it running as an app on
+your own iPhone/iPad or Android device**, not just in a desktop browser —
+that needs a computer (Mac for the iOS shell, any OS for Android) to
+*build* it once, same as the iOS app itself needs Xcode, but the result
+installs and runs entirely on your phone afterward.
+
+### 1. Build the web core (on your computer, once)
 
 ```bash
 # One-time: install the Emscripten SDK
@@ -253,10 +257,6 @@ cd /path/to/iTamaPoke
 
 # Build the core -> browser_ver/web/tp_core.{js,wasm}
 browser_ver/build.sh
-
-# Serve it locally (not file:// -- the WASM load needs a real origin)
-cd browser_ver/web && python3 -m http.server 8123
-# then open http://localhost:8123 in a browser
 ```
 
 `emsdk` needs Python 3.10+; if your system Python is older, a portable
@@ -265,15 +265,51 @@ build from
 works fine just to run `emsdk.py` (Emscripten uses its own bundled Python
 after that).
 
+### 2. Put it on your phone: a native shell, not a browser tab
+
+`browser_ver/native/` has everything for this — a minimal **WKWebView**
+(iOS/iPadOS) shell you drop into a new Xcode target, and a ready-to-open
+**WebView** (Android) Gradle project. Both load `browser_ver/web/` as
+local files bundled *inside* the app itself — no server running anywhere,
+no network permission, nothing left on a computer once it's installed.
+Full step-by-step in `browser_ver/native/README.md`; short version:
+
+- **iOS/iPadOS**: open `TamaPoke.xcodeproj` in Xcode → File → New → Target…
+  → iOS App → drag in `browser_ver/native/ios/WebShellApp.swift` and this
+  folder's `Info.plist` → drag the whole `browser_ver/web` folder into the
+  target **as a folder reference** (blue folder icon, not a group) → build
+  and run on your connected iPhone/iPad, same as the main app.
+- **Android**: open `browser_ver/native/android/` directly in Android
+  Studio → copy `browser_ver/web/` into `app/src/main/assets/web/` → run
+  on your connected phone.
+
+That's the app on your device. Everything below (sprites, dex text) is
+picked once inside that installed app, exactly like on a desktop browser.
+
+### Quick preview on your computer (optional, not the point of this path)
+
+If you just want to click around before wrapping it in a native shell:
+
+```bash
+# Serve it locally (not file:// -- the WASM load needs a real origin)
+cd browser_ver/web && python3 -m http.server 8123
+# then open http://localhost:8123 in a desktop browser
+```
+
 ### Adding sprites (in detail)
 
 The browser build has no Files app to drop files into — instead, **you
 pick the files directly inside the page itself**:
 
-1. On your computer, run `Scripts/fetch_sprites.sh` (same script Path C
+1. On a computer, run `Scripts/fetch_sprites.sh` (same script Path C
    uses) to get `.bin` files — one per species, named `p<dex>.bin`
    (normal) and `ps<dex>.bin` (shiny).
-2. In the browser page, click **"Load sprites…"** (top right).
+2. Get those `.bin` files onto the device you're actually running the app
+   on. If that's the same computer, they're already there. If it's your
+   phone/tablet running the native shell from step 2 above, get them onto
+   it however you'd move any file — AirDrop, cable, a cloud drive app —
+   same as moving sprites onto the iOS app in Path A step 5.
+3. In the app, tap **"Load sprites…"** (top right).
 3. In the file picker, **select every `.bin` file you want at once** —
    multi-select, not a folder drag. (Deliberately not a folder picker:
    iOS Safari's folder-select is unreliable, so this build always uses a
@@ -295,13 +331,6 @@ Same idea, a second button: run `Scripts/fetch_dex_entries.sh` to get
 `dex_entries_<lang>.txt`, then click **"Load dex text…"** and multi-select
 the file(s). It shows up on the dex detail screen's second page (tap the
 right-hand page dot).
-
-### Making it feel like an app instead of a browser tab
-
-See `browser_ver/native/README.md` for a minimal WKWebView (iOS) shell
-you drop into a new Xcode target, and a ready-to-open Android Studio
-project for a WebView shell — both load `browser_ver/web/` from local
-files, no server, installed only on your own device.
 
 ---
 
