@@ -194,7 +194,7 @@ If this isn't your own fork, change `PRODUCT_BUNDLE_IDENTIFIER` in
 Path B above).
 
 ```bash
-git clone --recurse-submodules <this repository's URL>
+git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke
 cd iTamaPoke
 brew install xcodegen
 Scripts/fetch_sprites.sh all      # or a few dex numbers instead of "all"
@@ -249,7 +249,7 @@ installs and runs entirely on your phone afterward.
 ### 1. Build the web core (on your computer, once)
 
 **Prerequisite:** you've already cloned this repository (same as Path C —
-`git clone --recurse-submodules <URL>` and `cd iTamaPoke`). All paths below
+`git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke` and `cd iTamaPoke`). All paths below
 are relative to the iTamaPoke folder.
 
 ```bash

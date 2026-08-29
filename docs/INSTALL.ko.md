@@ -183,7 +183,7 @@ C(Xcode로 워치와 직접 연결해 빌드)를 이용하세요 — 무료 계�
 먼저 바꾸세요(위 경로 B와 같은 이유입니다).
 
 ```bash
-git clone --recurse-submodules <이 저장소 주소>
+git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke
 cd iTamaPoke
 brew install xcodegen
 Scripts/fetch_sprites.sh all      # "all" 대신 도감 번호 몇 개만 써도 됨
@@ -234,7 +234,7 @@ xcodegen generate
 ### 1. 웹 코어 빌드 (컴퓨터에서, 한 번만)
 
 **필수조건**: 이미 이 저장소를 clone했습니다 (경로 C와 동일 —
-`git clone --recurse-submodules <URL>` 후 `cd iTamaPoke`). 아래 경로는 모두 iTamaPoke
+`git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke` 후 `cd iTamaPoke`). 아래 경로는 모두 iTamaPoke
 폴더 기준입니다.
 
 ```bash
