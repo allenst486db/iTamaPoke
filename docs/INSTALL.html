@@ -321,7 +321,7 @@
 
     <div class="titlebar">
       <div class="traffic"><i class="r"></i><i class="y"></i><i class="g"></i></div>
-      <div class="tb-title">설치 가이드 — iTamaPoke v0.8.0</div>
+      <div class="tb-title">설치 가이드 — iTamaPoke v0.8.4</div>
       <button type="button" class="toc-btn" aria-label="목차 토글">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M2 8h12M2 12h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>
       </button>
@@ -330,7 +330,7 @@
     <div class="content">
 
       <header>
-        <p class="eyebrow">INSTALL GUIDE · v0.8.0</p>
+        <p class="eyebrow">INSTALL GUIDE · v0.8.4</p>
         <h1>iTamaPoke 설치 가이드</h1>
         <p class="lede">코딩 지식 없이도 따라올 수 있게 쓴 설치 안내입니다. 세 가지 경로 중 본인 상황에 맞는 걸 고르세요.</p>
       </header>
@@ -415,16 +415,21 @@
 
         <div class="method">
           <div class="m-head"><span class="m-badge">1</span><h3 style="margin:0">웹 코어 빌드 (컴퓨터에서, 한 번만)</h3></div>
+          <p class="m-desc" style="font-size:.9rem;margin-bottom:.8rem"><strong>필수조건:</strong> 이미 이 저장소를 clone했습니다 (경로 C와 동일 — <code>git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke</code> 후 <code>cd iTamaPoke</code>).</p>
           <div class="termwin">
             <div class="termbar"><span class="dots"></span><span class="tt">Terminal</span></div>
-            <pre class="term"><span class="c"># Emscripten SDK가 필요합니다 (한 번만)</span>
+            <pre class="term"><span class="c"># 최초 1회: Emscripten SDK 설치</span>
 <span class="k">git</span> clone --depth 1 https://github.com/emscripten-core/emsdk.git
-<span class="k">cd</span> emsdk &amp;&amp; ./emsdk install latest &amp;&amp; ./emsdk activate latest
+<span class="k">cd</span> emsdk
+./emsdk install latest
+./emsdk activate latest
 <span class="k">source</span> ./emsdk_env.sh
+
+<span class="c"># iTamaPoke 저장소 폴더로 돌아가기</span>
 <span class="k">cd</span> /path/to/iTamaPoke
 
 <span class="c"># 코어 빌드 -&gt; browser_ver/web/tp_core.{js,wasm}</span>
-<span class="k">browser_ver/build.sh</span></pre>
+<span class="k">bash</span> browser_ver/build.sh</pre>
           </div>
           <p style="font-size:.9rem;color:var(--ink-2)"><code>emsdk</code>는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면 <a href="https://github.com/astral-sh/python-build-standalone">astral-sh/python-build-standalone</a>의 이식용 빌드로 <code>emsdk.py</code>만 실행하면 됩니다(그 뒤로는 Emscripten 자체 Python을 씁니다).</p>
         </div>
@@ -499,7 +504,7 @@
       </section>
 
       <footer>
-        작성 기준: iTamaPoke v0.8.0. 한국어 원본 문서: <a href="INSTALL.ko.md">INSTALL.ko.md</a>. 게임 조작법은 <a href="GAMEPLAY.html">게임 설명서</a> 참고.
+        작성 기준: iTamaPoke v0.8.4. 한국어 원본 문서: <a href="INSTALL.ko.md">INSTALL.ko.md</a>. 게임 조작법은 <a href="GAMEPLAY.html">게임 설명서</a> 참고.
       </footer>
 
     </div>
