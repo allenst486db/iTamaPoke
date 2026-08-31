@@ -1262,7 +1262,17 @@ createTPCore({
   window.addEventListener("pagehide", () => saveNow(mod));
 
   function frame(t) {
-    mod.ccall("tp_tick", null, ["number"], [t | 0]);
+    // Frozen while a decision dialog (evolve/farewell) is up -- tp_tick's
+    // gPet.update() is a real-time catch-up loop keyed off millis(), so
+    // stats keep decaying for as long as the page is open, dialog or not.
+    // A stat sitting just above the evolve threshold when the dialog opened
+    // could tick below it in the few seconds it takes to read "Evolve?" and
+    // tap the button, so the confirm tap would silently fail against a
+    // *now*-too-low stat even though every bar still looked fine when the
+    // button was pressed. Skipping tp_tick() here doesn't erase that decay,
+    // just defers it to resume the instant the dialog closes -- mirrors
+    // PetScreen.swift's fix, same reasoning.
+    if (choice === "none") mod.ccall("tp_tick", null, ["number"], [t | 0]);
     draw();
     requestAnimationFrame(frame);
   }

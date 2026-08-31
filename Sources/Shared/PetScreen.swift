@@ -155,7 +155,20 @@ struct PetScreen: View {
         .ignoresSafeArea()
         .onAppear { model.start() }
         .onReceive(ticker) { _ in
-            model.tick()
+            // Frozen while a decision dialog (evolve/farewell) is up. Pet::tick()
+            // is a real-time catch-up loop keyed off millis() -- stats keep
+            // decaying for as long as the app sits open, dialog or not, which
+            // meant a stat sitting just above the evolve threshold when the
+            // dialog opened could tick below it in the few seconds it takes to
+            // read "Evolve?" and tap the button: the confirm tap would then
+            // silently fail against a *now*-too-low stat, even though every bar
+            // still looked fine (or clearly full) when the button was pressed.
+            // Skipping tick() here doesn't erase that decay, just defers it to
+            // resume the instant the dialog closes -- same "time stops" rule
+            // Pet::tick() already applies to farewell/evolve ceremonies
+            // (`if (ceremony != CER_NONE) return`), extended to cover the
+            // decision dialog that precedes them too.
+            if choice == .none { model.tick() }
             // Both result cards dismiss themselves, as upstream's do — otherwise
             // the screen sits on the score with no way back.
             if screen == .game, gameMode == 0, model.ball.overUntil != 0, model.millis > model.ball.overUntil {
