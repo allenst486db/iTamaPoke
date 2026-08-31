@@ -629,6 +629,11 @@ int tp_evolution_status_kind() {
   if (gPet.level() < needed) return 0;
   return gPet.lowestStat() >= 40 ? 1 : 2;
 }
+// Whether tapping "Evolve" right now would actually go through -- unlike
+// tp_wants_evolve (level-gated only, so the button can appear before the
+// pet is truly ready), this also requires all 4 care stats at 40+ and the
+// pet awake, the same live check gPet.evolve() itself makes.
+EMSCRIPTEN_KEEPALIVE int tp_can_evolve_now() { return gPet.canEvolveNow() ? 1 : 0; }
 EMSCRIPTEN_KEEPALIVE
 const char *tp_mistakes_line() {
   static std::string out;

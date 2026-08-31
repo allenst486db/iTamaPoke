@@ -79,12 +79,33 @@ function drawChoiceDialog() {
   ctx.fillText(isEvolve ? fns.evolveButtonText() : fns.farewellGoText(), TP.cx, 254);
   ctx.fillStyle = isEvolve ? UI.ink : UI.white;
   ctx.fillText(isEvolve ? fns.evolveKeepText() : fns.farewellStayText(), TP.cx, 306);
+
+  // The evolve CTA can appear as soon as the level requirement is met
+  // (see tp_wants_evolve), before all 4 care stats are actually at 40+ --
+  // tapping "Evolve" while that's still true used to just silently do
+  // nothing and close the dialog, no indication why. Surface the same
+  // ready/blocked line the Progress page shows, in the gap between the
+  // Keep button (ends y 322) and the dialog's own bottom edge (y 344),
+  // matching PetScreen.swift's drawChoiceDialog fix.
+  if (isEvolve && fns.evolutionStatusKind() === 2) {
+    ctx.fillStyle = UI.barWarn;
+    ctx.font = "12px monospace";
+    ctx.fillText(fns.evolutionStatus(), TP.cx, 332);
+  }
 }
 
 function choiceDialogTap(x, y) {
   if (x >= 93 && x <= 373 && y >= 226 && y <= 270) {
-    if (choice === "evolve") Module._tp_evolve();
-    else Module._tp_start_farewell();
+    if (choice === "evolve") {
+      // tp_evolve() itself already no-ops when a stat has dropped back
+      // under 40 (or the pet fell asleep) since the button first appeared
+      // -- give an explicit "denied" cue in that case rather than letting
+      // the dialog just vanish with nothing happening.
+      if (fns.canEvolveNow() !== 0) Module._tp_evolve();
+      else playSfx(7); // deny
+    } else {
+      Module._tp_start_farewell();
+    }
     choice = "none";
     return;
   }

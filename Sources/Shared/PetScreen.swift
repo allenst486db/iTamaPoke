@@ -503,6 +503,15 @@ struct PetScreen: View {
             ctx.fillRoundRect(bx, y, bw, bh, 4, UI.track)
             let fw = (bw - 4) * CGFloat(value) / 100
             if fw > 0 { ctx.fillRoundRect(bx + 2, y + 2, fw, bh - 4, 3, fill) }
+            // A tick at the 40 mark -- canEvolveNow's actual threshold for
+            // all four of these. Without it there's no way to tell by eye
+            // whether a bar sitting in the yellow 25-49 band (one colour the
+            // whole way) has crossed 40 or not, which read as "my bars all
+            // look fine, why won't it evolve" even when one genuinely
+            // hadn't. The tick is neutral, not tied to the fill colour, so
+            // it stays visible whether the bar reads under or over it.
+            let tickX = bx + 2 + (bw - 4) * 0.4
+            ctx.fillRect(tickX, y - 2, 2, bh + 4, ink)
         }
     }
 

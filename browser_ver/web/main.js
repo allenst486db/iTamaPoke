@@ -1183,6 +1183,7 @@ createTPCore({
     evolutionLabel: mod.cwrap("tp_evolution_label", "string", []),
     evolutionStatus: mod.cwrap("tp_evolution_status", "string", []),
     evolutionStatusKind: mod.cwrap("tp_evolution_status_kind", "number", []),
+    canEvolveNow: mod.cwrap("tp_can_evolve_now", "number", []),
     mistakesLine: mod.cwrap("tp_mistakes_line", "string", []),
     careMistakes: mod.cwrap("tp_care_mistakes", "number", []),
 
