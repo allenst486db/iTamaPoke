@@ -1,6 +1,6 @@
 # Install guide (no coding knowledge needed)
 
-[한국어](INSTALL.ko.md) · with screenshots: [Install guide (HTML)](INSTALL.html)
+[한국어](INSTALL.ko.md)
 
 This assumes nothing except that you can download a file and follow steps.
 If a term isn't explained inline, it's explained the first time it comes up.
@@ -128,6 +128,12 @@ README](../README.md#sprites). Add them like this:
    — without it, the Pokédex screen shows nothing.
 7. Fully close the iTamaPoke app (swipe it away in the app switcher) and
    reopen it. The creature should now appear instead of a placeholder.
+
+<img src="img/dex-detail.png" alt="Pokedex detail confirming art, dex entry and cry are installed" width="220">
+
+*What it looks like once sprites (and optionally dex text/cries, next)
+are correctly installed — portrait, type chips, and the cry-playback button
+all present on the dex detail screen.*
 
 Want dex entries and cries too? Both are optional and go in the same `mons`
 folder — see [README "Pokédex entries"](../README.md#pokédex-entries) and
@@ -275,16 +281,27 @@ cd /path/to/iTamaPoke
 
 # Build the core -> browser_ver/web/tp_core.{js,wasm}
 bash browser_ver/build.sh
-
-# Build xcode project file
-xcodegen generate
 ```
 
-`emsdk` needs Python 3.10+; if your system Python is older, a portable
-build from
-[astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)
-works fine just to run `emsdk.py` (Emscripten uses its own bundled Python
-after that).
+`emsdk` needs Python 3.10+. Check first:
+
+```bash
+python3 --version
+```
+
+If that's already 3.10 or newer, you're set — skip ahead. If it's older
+(macOS's own bundled `/usr/bin/python3` is commonly 3.9), install a current
+one the normal way instead of hunting for a workaround:
+
+- **macOS**: `brew install python@3.11` (or any newer 3.x)
+- **Windows**: the installer from [python.org](https://www.python.org/downloads/)
+- **Linux**: your distro's package manager (e.g. `apt install python3.11`)
+
+Then either put that Python first on your `PATH` for this terminal session,
+or run `emsdk install`/`emsdk activate` explicitly through it (e.g.
+`/opt/homebrew/opt/python@3.11/bin/python3 ./emsdk install latest`) instead
+of the plain `./emsdk install latest` above. Once installed and activated,
+`source ./emsdk_env.sh` still works the same either way.
 
 ### 2. Put it on your phone: a native shell, not a browser tab
 

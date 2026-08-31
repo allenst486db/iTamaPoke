@@ -19,10 +19,8 @@ New here? Start with one of these:
 
 | | |
 |---|---|
-| 🎮 [How to play](docs/GAMEPLAY.md) | What the game actually does, page by page |
-| 🖼️ [How to play — screenshots](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/GAMEPLAY.html) | Same guide, illustrated with real screenshots (captured in English mode) |
-| 📲 [Install guide](docs/INSTALL.md) | Step-by-step, no coding knowledge assumed — **works on both Mac and Windows now** |
-| 🖼️ [Install guide — screenshots](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/INSTALL.html) | Same guide, illustrated with real screenshots |
+| 🎮 [How to play](docs/GAMEPLAY.md) | What the game actually does, page by page, with real screenshots |
+| 📲 [Install guide](docs/INSTALL.md) | Step-by-step, no coding knowledge assumed, with real screenshots — **works on both Mac and Windows now** |
 | 🛠️ [Xcode build guide](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/xcode_build_guide.html) | Building and installing straight from Xcode, illustrated (Korean only) |
 | 🍎 [Free vs. paid Apple account](docs/DEV_ACCOUNT.md) | Which install path is right for you |
 

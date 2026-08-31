@@ -1,6 +1,6 @@
 # 설치 가이드 (코딩 지식 불필요)
 
-[English](INSTALL.md) · 스크린샷과 함께 보려면 [설치 가이드(HTML)](INSTALL.html)
+[English](INSTALL.md)
 
 파일을 다운로드하고 단계를 따라할 수 있다는 것 외엔 아무것도 필요 없습니다.
 설명 없이 나오는 용어는 처음 등장할 때 바로 설명합니다.
@@ -121,6 +121,11 @@ ID로 먼저 서명해줍니다. 둘 중 하나를 고르세요:
    없으면 도감 화면이 텅 비어 보입니다.
 7. iTamaPoke 앱을 완전히 종료(앱 전환기에서 위로 스와이프)했다가 다시
    엽니다. 이제 플레이스홀더 대신 캐릭터가 보여야 합니다.
+
+<img src="img/dex-detail.png" alt="스프라이트·도감 설명문·울음소리가 정상 설치된 도감 상세화면" width="220">
+
+*정상 설치됐을 때 도감 상세화면 — 초상화·타입·울음소리 재생 버튼이 전부
+나옵니다(도감 설명문·울음소리는 다음 단계, 선택사항).*
 
 도감 설명문과 울음소리도 넣고 싶다면 같은 `mons` 폴더 안에 넣으면 됩니다 —
 [README "도감 설명문"](../README.ko.md#도감-설명문), [README
@@ -259,15 +264,26 @@ cd /path/to/iTamaPoke
 
 # 코어 빌드 -> browser_ver/web/tp_core.{js,wasm}
 bash browser_ver/build.sh
-
-# xcode 프로젝트 생성
-xcodegen generate
 ```
 
-`emsdk`는 Python 3.10+가 필요합니다 — 시스템 Python이 더 오래됐다면
-[astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)의
-이식용 빌드로 `emsdk.py`만 실행하면 됩니다(그 이후로는 Emscripten 자체
-번들 Python을 씁니다).
+`emsdk`는 Python 3.10+가 필요합니다. 먼저 확인하세요:
+
+```bash
+python3 --version
+```
+
+이미 3.10 이상이면 그냥 넘어가면 됩니다. 더 오래됐다면(macOS 기본
+`/usr/bin/python3`는 보통 3.9입니다) 낯선 우회 방법을 찾기보다 그냥 최신
+버전을 정상적으로 설치하세요:
+
+- **macOS**: `brew install python@3.11` (또는 3.x 최신 아무거나)
+- **Windows**: [python.org](https://www.python.org/downloads/)에서 설치 프로그램
+- **Linux**: 배포판 패키지 매니저(예: `apt install python3.11`)
+
+설치 후에는 그 Python을 이 터미널 세션의 `PATH` 맨 앞에 두거나, 위
+`./emsdk install latest` 대신 그 Python으로 직접 실행하면 됩니다(예:
+`/opt/homebrew/opt/python@3.11/bin/python3 ./emsdk install latest`).
+`source ./emsdk_env.sh`는 어느 쪽이든 그대로 동작합니다.
 
 ### 2. 폰에 올리기: 브라우저 탭이 아니라 네이티브 셸
 

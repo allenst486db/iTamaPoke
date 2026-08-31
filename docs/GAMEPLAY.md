@@ -12,12 +12,12 @@ source, [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)
 repository. Sections below say so where it matters; see the main
 [README](../README.md#status) for the attribution.
 
-[한국어](GAMEPLAY.ko.md) · with screenshots: [Gameplay guide (HTML)](GAMEPLAY.html)
+[한국어](GAMEPLAY.ko.md)
 
 > This describes the iPhone/Watch app. There's also a separate **browser
 > build** (`browser_ver/`) running the same C++ game logic in a web page —
 > same rules, a different screen; see [INSTALL "Path
-> D"](INSTALL.md#path-d--browser-build-separate-from-the-ioswatchos-app) to
+> D"](INSTALL.md#path-d--browser-build-installed-on-your-own-phonetablet) to
 > build it.
 
 ---
@@ -39,9 +39,15 @@ The creature wanders your home screen on its own, following a day/night sky
 that tracks the real time on your device. Nothing about it needs your
 attention constantly — this is designed to be checked in on, not stared at.
 
+<img src="img/idle-full.png" alt="Idle screen with all four stats above 70%" width="220"> <img src="img/idle-low.png" alt="Idle screen with stats depleted" width="220">
+
+*All four bars above 70% (left) vs. neglected — red bars, poop piling up, a
+tired pose (right).*
+
 - **Swipe up** — the eight-page stat card (see below).
 - **Swipe left** — the Pokédex: every species you've raised or seen, as a
   thumbnail grid, filterable to All/Raised/Caught.
+  <br><img src="img/dex-list.png" alt="Pokedex grid filtered to RAISED" width="200">
 - **Swipe down** — settings (language, sound).
 - **Tap** the creature — a short reaction.
 - **Hold** the creature for a few seconds — asks whether you want to let it
@@ -79,15 +85,22 @@ hardware draws, not a generic wash effect.
 
 The feed-row play icon opens a menu of five minigames — tap a tile to start:
 
+<img src="img/play-menu.png" alt="Play menu with five minigame tiles" width="220">
+
 - **Ball** — catch/bounce timing game, raises happiness and bond.
+  <br><img src="img/ball-game.png" alt="BALL minigame with a bouncing ball" width="180">
 - **Catch** — tap a moving target before it (or your patience) runs out;
   missing counts against you the same as letting it expire. *Expanded fork.*
+  <br><img src="img/catch-game.png" alt="CATCH minigame score screen" width="180">
 - **Memo** — a Simon-style pad sequence that grows one step every round you
   get right. *Expanded fork.*
+  <br><img src="img/memo-game.png" alt="MEMO minigame with four colour pads" width="180">
 - **Clean** — scrub dirt spots that keep popping up before three slip past.
   *Expanded fork.*
+  <br><img src="img/clean-game.png" alt="CLEAN minigame with dirt patches to tap" width="180">
 - **Type** — a quick type-effectiveness quiz: pick which of three types beats
   the one shown before the clock runs out. *Expanded fork.*
+  <br><img src="img/type-game.png" alt="TYPE minigame with type-matchup choices" width="180">
 
 Separately, the **training sack** (reached from the stat card's Battle page,
 not the play menu) is a hit-the-target timing game that raises the battle
@@ -137,6 +150,11 @@ what you're holding before sending the creature out again.
 ## The stat card (8 pages)
 
 Swipe up from idle, then swipe left/right between pages:
+
+<img src="img/statcard-profile.png" alt="Stat card profile page" width="220">
+
+*Page 1, Profile — name, level, STREAK/BOND, BERRY/AGE. Tap the name to open
+the rename keyboard.*
 
 1. **Profile** — name, level, hunger/happiness/hygiene bars.
 2. **Personality** *(Expanded fork)* — a trait (Balanced/Playful/Brave/
@@ -205,6 +223,11 @@ screen's sound pill cycles through three levels — **ALL** (sound + haptic),
 **VIB** (haptic only, no sound at all), and **OFF** (neither) — rather than
 a plain on/off switch.
 
+<img src="img/settings.png" alt="Settings screen with sound mode and language pill" width="220">
+
+*Settings — SET TIME, sound mode (shown here as VIB), and the language pill
+(8 slots: ES/EN/FR/DE/IT/PT/KR/kr).*
+
 The dex detail screen's cry-preview button is the one exception — it plays an
 actual audio file, not a synthesized effect, and only plays at all when the
 sound mode above is set to ALL (VIB and OFF both skip it, since it has no
@@ -212,6 +235,11 @@ haptic to fall back to). Tapping the button itself makes no separate SFX,
 so it doesn't overlap the cry. A species with no cry file installed simply
 has no button. See [README "Cries"](../README.md#cries) for how to install
 them.
+
+<img src="img/dex-detail.png" alt="Pokedex detail with the cry-playback button" width="220">
+
+*Dex detail page 1 — number/name/type chips, portrait, the cry-playback
+button, and RAISED/CAUGHT marks. Page 2 is the dex entry text below.*
 
 ## Dex entries and language
 
