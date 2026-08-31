@@ -604,16 +604,29 @@ struct PetScreen: View {
         ctx.gfxTextCentered(keep, TP.textTop(centeredOn: k.midY, size: 2), 2, keepInk)
 
         // The evolve CTA can appear as soon as the level requirement is met
-        // (see wantsEvolveButton), before all 4 care stats are actually at
-        // 40+ -- tapping "Evolve" here while that's still true used to just
-        // silently do nothing and close the dialog, with no indication why.
-        // Surface the same ready/blocked line the Progress card shows, so a
-        // blocked attempt is explained instead of silently swallowed. Drawn
-        // in the gap between the Keep button (ends y 320) and the dialog's
-        // own bottom edge (y 344), not above the buttons -- that spot
-        // overlapped the action button's own top edge.
-        if choice == .evolve, pet.evolutionStatusKind == 2 {
-            ctx.gfxTextCentered(pet.evolutionStatus, 326, 1, UI.barWarn)
+        // (see wantsEvolveButton), before all 4 care stats -- or "awake" --
+        // are actually satisfied, so tapping "Evolve" here can still fail.
+        // A vague "blocked" line wasn't enough to actually diagnose a real
+        // report of this happening with bars that *looked* full: there's no
+        // numeric readout anywhere in the app, only bar length/colour, and
+        // colour only breaks at 50/25 -- nothing marks 40 specifically. So
+        // spell out the literal blocking value(s) instead of a generic
+        // message, in the gap between the Keep button (ends y 320) and the
+        // dialog's own bottom edge (y 344).
+        if choice == .evolve, !pet.canEvolveNow {
+            var reasons: [String] = []
+            if pet.sleeping { reasons.append("sleeping") }
+            let stats: [(String, UInt8)] = [
+                (TPBarLabel(0), pet.fullness), (TPBarLabel(1), pet.joy),
+                (TPBarLabel(2), pet.energy),   (TPBarLabel(3), pet.hygiene),
+            ]
+            for (label, value) in stats where value < 40 {
+                reasons.append("\(label) \(value)")
+            }
+            let line = reasons.isEmpty
+                ? pet.evolutionStatus  // level not actually met yet (S_EVO_IN_FMT)
+                : reasons.joined(separator: "  ")
+            ctx.gfxTextCentered(line, 326, 1, UI.barWarn)
         }
     }
 

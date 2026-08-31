@@ -81,16 +81,24 @@ function drawChoiceDialog() {
   ctx.fillText(isEvolve ? fns.evolveKeepText() : fns.farewellStayText(), TP.cx, 306);
 
   // The evolve CTA can appear as soon as the level requirement is met
-  // (see tp_wants_evolve), before all 4 care stats are actually at 40+ --
-  // tapping "Evolve" while that's still true used to just silently do
-  // nothing and close the dialog, no indication why. Surface the same
-  // ready/blocked line the Progress page shows, in the gap between the
-  // Keep button (ends y 322) and the dialog's own bottom edge (y 344),
-  // matching PetScreen.swift's drawChoiceDialog fix.
-  if (isEvolve && fns.evolutionStatusKind() === 2) {
+  // (see tp_wants_evolve), before all 4 care stats -- or "awake" -- are
+  // actually satisfied, so tapping "Evolve" here can still fail. A vague
+  // "blocked" line wasn't enough to actually diagnose a real report of this
+  // happening with bars that *looked* full: there's no numeric readout
+  // anywhere, only bar length/colour, and colour only breaks at 50/25 --
+  // nothing marks 40 specifically. Spell out the literal blocking value(s)
+  // instead, in the gap between the Keep button (ends y 322) and the
+  // dialog's own bottom edge (y 344), matching PetScreen.swift's fix.
+  if (isEvolve && fns.canEvolveNow() === 0) {
+    const reasons = [];
+    if (fns.sleeping() !== 0) reasons.push("sleeping");
+    const stats = [["FUL", fns.fullness()], ["JOY", fns.joy()],
+                    ["ENE", fns.energy()], ["HYG", fns.hygiene()]];
+    for (const [label, value] of stats) if (value < 40) reasons.push(`${label} ${value}`);
+    const line = reasons.length ? reasons.join("  ") : fns.evolutionStatus();
     ctx.fillStyle = UI.barWarn;
     ctx.font = "12px monospace";
-    ctx.fillText(fns.evolutionStatus(), TP.cx, 332);
+    ctx.fillText(line, TP.cx, 332);
   }
 }
 
