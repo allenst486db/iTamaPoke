@@ -516,15 +516,6 @@ struct PetScreen: View {
             ctx.fillRoundRect(bx, y, bw, bh, 4, UI.track)
             let fw = (bw - 4) * CGFloat(value) / 100
             if fw > 0 { ctx.fillRoundRect(bx + 2, y + 2, fw, bh - 4, 3, fill) }
-            // A tick at the 40 mark -- canEvolveNow's actual threshold for
-            // all four of these. Without it there's no way to tell by eye
-            // whether a bar sitting in the yellow 25-49 band (one colour the
-            // whole way) has crossed 40 or not, which read as "my bars all
-            // look fine, why won't it evolve" even when one genuinely
-            // hadn't. The tick is neutral, not tied to the fill colour, so
-            // it stays visible whether the bar reads under or over it.
-            let tickX = bx + 2 + (bw - 4) * 0.4
-            ctx.fillRect(tickX, y - 2, 2, bh + 4, ink)
         }
     }
 
@@ -604,29 +595,16 @@ struct PetScreen: View {
         ctx.gfxTextCentered(keep, TP.textTop(centeredOn: k.midY, size: 2), 2, keepInk)
 
         // The evolve CTA can appear as soon as the level requirement is met
-        // (see wantsEvolveButton), before all 4 care stats -- or "awake" --
-        // are actually satisfied, so tapping "Evolve" here can still fail.
-        // A vague "blocked" line wasn't enough to actually diagnose a real
-        // report of this happening with bars that *looked* full: there's no
-        // numeric readout anywhere in the app, only bar length/colour, and
-        // colour only breaks at 50/25 -- nothing marks 40 specifically. So
-        // spell out the literal blocking value(s) instead of a generic
-        // message, in the gap between the Keep button (ends y 320) and the
-        // dialog's own bottom edge (y 344).
-        if choice == .evolve, !pet.canEvolveNow {
-            var reasons: [String] = []
-            if pet.sleeping { reasons.append("sleeping") }
-            let stats: [(String, UInt8)] = [
-                (TPBarLabel(0), pet.fullness), (TPBarLabel(1), pet.joy),
-                (TPBarLabel(2), pet.energy),   (TPBarLabel(3), pet.hygiene),
-            ]
-            for (label, value) in stats where value < 40 {
-                reasons.append("\(label) \(value)")
-            }
-            let line = reasons.isEmpty
-                ? pet.evolutionStatus  // level not actually met yet (S_EVO_IN_FMT)
-                : reasons.joined(separator: "  ")
-            ctx.gfxTextCentered(line, 326, 1, UI.barWarn)
+        // (see wantsEvolveButton), before all 4 care stats are actually at
+        // 40+ -- tapping "Evolve" here while that's still true used to just
+        // silently do nothing and close the dialog, with no indication why.
+        // Surface the same ready/blocked line the Progress card shows, so a
+        // blocked attempt is explained instead of silently swallowed. Drawn
+        // in the gap between the Keep button (ends y 320) and the dialog's
+        // own bottom edge (y 344), not above the buttons -- that spot
+        // overlapped the action button's own top edge.
+        if choice == .evolve, pet.evolutionStatusKind == 2 {
+            ctx.gfxTextCentered(pet.evolutionStatus, 326, 1, UI.barWarn)
         }
     }
 
