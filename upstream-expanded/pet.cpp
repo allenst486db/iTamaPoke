@@ -752,8 +752,13 @@ uint8_t Pet::applyMemoResult(uint8_t rounds) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t gain = rounds / 2;
   if (gain > 10) gain = 10;
+  gain = (uint8_t)(gain * 5 / 2);  // DEF gain from this minigame x2.5
+  uint8_t before = trDef;
   uint8_t v = trDef + gain;
   trDef = v > 100 ? 100 : v;
+  gain = (uint8_t)(trDef - before);  // shown gain = what actually landed,
+                                      // not the pre-cap value (see
+                                      // trainStrength/applyTypeResult)
   joy = clamp100(joy + 5 + (rounds > 8 ? 18 : rounds * 2));
   energy = dropTo(energy, 6 + rounds / 2, 5);
   fullness = dropTo(fullness, 3, 5);

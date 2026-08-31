@@ -25,11 +25,18 @@ struct PetScreen: View {
     /// Mirrors the .ino's file-scope `feedMenuUntil`: a deadline in ms.
     @State private var feedMenuUntil: UInt64 = 0
 
-    /// Mirrors `choiceKind` / `choiceUntil`: which decision dialog is open, and
-    /// when it gives up waiting. Upstream lets both lapse after 12s.
+    /// Mirrors `choiceKind`: which decision dialog (evolve/farewell) is open.
+    /// Upstream also has a `choiceUntil` 12s auto-dismiss; dropped here on
+    /// purpose -- evolving/leaving the pet is exactly the kind of decision a
+    /// player should be able to take their time on, and the silent timeout
+    /// was indistinguishable from a broken button: read the dialog for more
+    /// than 12s (translating it, hesitating, anything), tap "Evolve", and by
+    /// then the dialog had already closed itself with no evolve, no
+    /// feedback, nothing -- even with every stat well above the 40
+    /// threshold. Tapping anywhere outside the two buttons still closes the
+    /// dialog immediately, so walking away without deciding is still fine.
     private enum Choice { case none, evolve, farewell }
     @State private var choice: Choice = .none
-    @State private var choiceUntil: UInt64 = 0
 
     /// Which screen is up. Upstream keeps these as separate `*Open` booleans;
     /// one enum makes the "only one at a time" rule structural.
@@ -149,9 +156,6 @@ struct PetScreen: View {
         .onAppear { model.start() }
         .onReceive(ticker) { _ in
             model.tick()
-            // Upstream drops the dialog once choiceUntil passes, so an unanswered
-            // question does not wedge the screen.
-            if choice != .none, model.millis > choiceUntil { choice = .none }
             // Both result cards dismiss themselves, as upstream's do — otherwise
             // the screen sits on the score with no way back.
             if screen == .game, gameMode == 0, model.ball.overUntil != 0, model.millis > model.ball.overUntil {
@@ -571,21 +575,24 @@ struct PetScreen: View {
         ctx.drawRoundRect(73, 156, 320, 188, 16, UI.ink)
         ctx.gfxTextCentered(question, 176, 2, UI.ink)
 
-        // The evolve CTA can appear as soon as the level requirement is met
-        // (see wantsEvolveButton), before all 4 care stats are actually at
-        // 40+ -- tapping "Evolve" here while that's still true used to just
-        // silently do nothing and close the dialog, with no indication why.
-        // Surface the same ready/blocked line the Progress card shows, so a
-        // blocked attempt is explained instead of silently swallowed.
-        if choice == .evolve, pet.evolutionStatusKind == 2 {
-            ctx.gfxTextCentered(pet.evolutionStatus, 202, 1, UI.barWarn)
-        }
-
         let a = TP.choiceAction, k = TP.choiceKeep
         ctx.fillRoundRect(a.minX, a.minY, a.width, a.height, 12, actFill)
         ctx.gfxTextCentered(act, TP.textTop(centeredOn: a.midY, size: 2), 2, actInk)
         ctx.fillRoundRect(k.minX, k.minY, k.width, k.height, 12, keepFill)
         ctx.gfxTextCentered(keep, TP.textTop(centeredOn: k.midY, size: 2), 2, keepInk)
+
+        // The evolve CTA can appear as soon as the level requirement is met
+        // (see wantsEvolveButton), before all 4 care stats are actually at
+        // 40+ -- tapping "Evolve" here while that's still true used to just
+        // silently do nothing and close the dialog, with no indication why.
+        // Surface the same ready/blocked line the Progress card shows, so a
+        // blocked attempt is explained instead of silently swallowed. Drawn
+        // in the gap between the Keep button (ends y 320) and the dialog's
+        // own bottom edge (y 344), not above the buttons -- that spot
+        // overlapped the action button's own top edge.
+        if choice == .evolve, pet.evolutionStatusKind == 2 {
+            ctx.gfxTextCentered(pet.evolutionStatus, 326, 1, UI.barWarn)
+        }
     }
 
     // MARK: - Evolution and ceremony animations
@@ -2775,14 +2782,12 @@ struct PetScreen: View {
         // are drawn over the scene, above the bottom panel.
         if pet.wantsEvolveButton, TP.evoBtn.contains(p) {
             choice = .evolve
-            choiceUntil = model.millis + 12000
             return
         }
         if TP.farBtn.contains(p) {
             if pet.canRunawayNow { pet.startRunaway(); return }
             if pet.wantsFarewellButton {
                 choice = .farewell
-                choiceUntil = model.millis + 12000
                 return
             }
         }
