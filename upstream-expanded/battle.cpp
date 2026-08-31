@@ -175,7 +175,18 @@ bool finished(const BattleRuntime &battle) {
 bool winner(const BattleRuntime &battle) {
   if (battle.enemyHp == 0) return true;
   if (battle.playerHp == 0) return false;
-  return battle.playerHp >= battle.enemyHp;
+  // Round-limit timeout: neither side reached 0 HP, so fall back to who's
+  // faring better. Comparing raw HP here was a bug -- player and enemy max
+  // HP scale differently with level/def, so a mon with a much bigger max HP
+  // pool could "win" on raw numbers while actually having a much smaller
+  // fraction of its own bar left. Compare each side's remaining HP as a
+  // permille (1/1000) of its own max instead, so it matches what the HP
+  // bars on screen actually show.
+  uint32_t playerPermille = battle.playerMaxHp > 0
+      ? (uint32_t)battle.playerHp * 1000 / battle.playerMaxHp : 0;
+  uint32_t enemyPermille = battle.enemyMaxHp > 0
+      ? (uint32_t)battle.enemyHp * 1000 / battle.enemyMaxHp : 0;
+  return playerPermille >= enemyPermille;
 }
 
 bool isAttackAction(BattleAction action) {

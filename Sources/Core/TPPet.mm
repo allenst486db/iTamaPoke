@@ -119,6 +119,7 @@ static const DexEntry *TPDexEntry(int16_t dex);
 
 // --- decision gates ----------------------------------------------------
 - (BOOL)wantsEvolveButton   { return gPet.wantEvolveButton(); }
+- (BOOL)canEvolveNow        { return gPet.canEvolveNow(); }
 - (BOOL)wantsFarewellButton { return gPet.wantFarewellButton(); }
 - (BOOL)canRunawayNow       { return gPet.canRunawayNow(); }
 

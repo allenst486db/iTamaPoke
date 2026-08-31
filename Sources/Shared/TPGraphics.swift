@@ -49,6 +49,20 @@ enum TP {
     static let releaseYes = CGRect(x: 118, y: 252, width: 100, height: 52)
     static let releaseNo = CGRect(x: 248, y: 252, width: 100, height: 52)
 
+    /// The stat/info card's "tap: back" hint at the bottom of every page
+    /// (drawn at y 400 by renderCard) -- the only spot a tap should close
+    /// the card from. It used to be the whole page below the buttons that
+    /// closed on any tap, which made it too easy to lose your place on the
+    /// card (e.g. mid-battle-launch) with a stray tap. Generously sized for
+    /// touch (and watch) even though the label itself is short.
+    static let cardBackHint = CGRect(x: 66, y: 388, width: 334, height: 32)
+    /// Same idea for the Pokédex detail view's own back hint (renderGalleryDetail,
+    /// drawn at y 424) -- narrowing "any tap closes this" down to just this
+    /// label also means a near-miss on the cry button (drawCryButton, small
+    /// and close by, worst on watch) just does nothing instead of bouncing
+    /// you all the way back out to the grid.
+    static let galleryDetailBackHint = CGRect(x: 66, y: 412, width: 334, height: 32)
+
     /// Height of one `gfxText` line box at `size` — measured via
     /// `resolve(_:).measure(in:)` (a fixed `Text("Hg8")` at each size,
     /// screenshotted through a throwaway debug readout on the Settings

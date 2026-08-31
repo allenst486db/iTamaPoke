@@ -35,6 +35,13 @@ struct PetScreen: View {
     /// one enum makes the "only one at a time" rule structural.
     private enum Screen { case idle, gallery, card, sack, keyboard, settings, game, battle }
     @State private var screen: Screen = .idle
+    /// Where to go back to when the current wild battle closes -- `.card`
+    /// when it was launched from the Battle stat page, `.idle` when it came
+    /// from the idle-screen wild-encounter prompt. Battle used to always
+    /// hard-reset to `.idle`, which dropped you out of the stat card you
+    /// were on for no reason (the training-sack minigame already returns to
+    /// `.card` correctly; battle just never did).
+    @State private var battleReturnScreen: Screen = .idle
     @State private var galleryPage = 0
     /// Which page of the starter picker is showing. Thirteen starters do not
     /// fit on one screen; see renderStarterSelect.
@@ -563,6 +570,16 @@ struct PetScreen: View {
         ctx.fillRoundRect(73, 156, 320, 188, 16, UI.white)
         ctx.drawRoundRect(73, 156, 320, 188, 16, UI.ink)
         ctx.gfxTextCentered(question, 176, 2, UI.ink)
+
+        // The evolve CTA can appear as soon as the level requirement is met
+        // (see wantsEvolveButton), before all 4 care stats are actually at
+        // 40+ -- tapping "Evolve" here while that's still true used to just
+        // silently do nothing and close the dialog, with no indication why.
+        // Surface the same ready/blocked line the Progress card shows, so a
+        // blocked attempt is explained instead of silently swallowed.
+        if choice == .evolve, pet.evolutionStatusKind == 2 {
+            ctx.gfxTextCentered(pet.evolutionStatus, 202, 1, UI.barWarn)
+        }
 
         let a = TP.choiceAction, k = TP.choiceKeep
         ctx.fillRoundRect(a.minX, a.minY, a.width, a.height, 12, actFill)
@@ -1823,9 +1840,6 @@ struct PetScreen: View {
 
         drawBattleHpBar(ctx, x: 28, y: 110, cur: b.playerHp, max: b.playerMaxHp, color: UI.barOK)
         drawBattleHpBar(ctx, x: 288, y: 110, cur: b.enemyHp, max: b.enemyMaxHp, color: UI.barBad)
-        if b.wildAlreadyCaught {
-            ctx.drawIcon(TPIcon.food, 258, 108, scale: 1)   // small "already caught" marker
-        }
         let pet = model.pet
         ctx.gfxText(pet.typeText(forDex: pet.speciesId), 28, 130, 1, pet.typeColor(forDex: pet.speciesId))
         let enemyType = pet.typeText(forDex: b.wildDex)
@@ -1834,6 +1848,13 @@ struct PetScreen: View {
         if !b.resolved {
             ctx.fillRoundRect(188, 102, 90, 32, 9, UI.track)
             ctx.gfxTextCentered2(b.runText, 188, 90, TP.textTop(centeredOn: 102 + 16, size: 2), 2, UI.bgDay)
+        }
+        if b.wildAlreadyCaught {
+            // Drawn after the (resolved-gated) RUN button box so the marker
+            // isn't painted over and hidden by it while the battle is still
+            // in progress -- it used to only become visible once the battle
+            // resolved and the RUN button stopped being drawn.
+            ctx.drawIcon(TPIcon.food, 258, 108, scale: 1)   // small "already caught" marker
         }
 
         drawBattleSprite(ctx, dex: pet.speciesId, x: 142, now: now)
@@ -1927,7 +1948,7 @@ struct PetScreen: View {
             }
             if p.x >= 118, p.x <= 348, p.y >= 392, p.y <= 454 {
                 b.close()
-                screen = .idle
+                screen = battleReturnScreen
             }
             return
         }
@@ -1939,7 +1960,7 @@ struct PetScreen: View {
         }
         if p.x >= 184, p.x <= 282, p.y >= 100, p.y <= 136 {
             b.close()
-            screen = .idle
+            screen = battleReturnScreen
             return
         }
         if p.x >= 46, p.x <= 174, p.y >= 344, p.y <= 428 {
@@ -2039,6 +2060,12 @@ struct PetScreen: View {
         // rather than adding a StrId for all six just to fix this one word.
         ctx.gfxTextCentered(Self.isDexKorean(Int(TPLanguage())) ? "도감" : "POKEDEX", 22, 3, UI.ink)
         ctx.gfxTextCentered(pet.raisedCaughtLine, 56, 1, UI.ink)
+        // The whole title strip (y<46, see galleryTap) already closes the
+        // grid on tap -- it just had no visible affordance saying so, unlike
+        // every other screen's "tap: back" hint, so it read as if the dex
+        // grid simply had no way back at all. A small "<" in the corner
+        // reuses that existing hit area instead of needing a new button.
+        ctx.gfxText("<", 20, 14, 2, UI.ink)
 
         let filters = [pet.filterAllText, pet.raisedMarkText, pet.caughtMarkText]
         for i in 0..<3 {
@@ -2531,11 +2558,14 @@ struct PetScreen: View {
 
     /// Port of upstream's card tap handler: the name area renames on page 0,
     /// the sort button/page arrows work the box on page 3, the train button
-    /// opens the sack on page 4, and — this is the part that was missing —
-    /// anywhere else just closes the card. Upstream's is a plain
-    /// `else { cardOpen = false; }`, not a swipe requirement; without it the
-    /// only way out was `onSwipeV`, which needs an 80px vertical drag and reads
-    /// as "you have to swipe, tapping the hint text does nothing."
+    /// opens the sack on page 4, and tapping the "tap: back" hint at the
+    /// bottom (TP.cardBackHint) closes the card -- swiping up (onSwipeV)
+    /// still works too. Upstream's is a plain `else { cardOpen = false; }`
+    /// covering the *whole* rest of the page, which read as "tap: back" being
+    /// decorative while the entire card was secretly one big close button --
+    /// a stray tap anywhere (mid-swipe, reading a page, right before hitting
+    /// the wild-battle button) closed it. Narrowing the hit area to the hint
+    /// itself keeps the discoverable tap-to-close affordance without that.
     private func cardTap(_ p: CGPoint) {
         if cardPage == 0, p.y < 84 {
             screen = .keyboard
@@ -2561,6 +2591,7 @@ struct PetScreen: View {
         }
         if cardPage == 4, TP.wildBattleBtn.contains(p) {
             guard TPBattle.shared.canStart else { screen = .idle; return }
+            battleReturnScreen = .card
             screen = .battle
             TPBattle.shared.start()
             return
@@ -2576,14 +2607,17 @@ struct PetScreen: View {
             return
         }
         if cardPage == 7 { expeditionCardTap(p); return }
-        screen = .idle
+        if TP.cardBackHint.contains(p) { screen = .idle }
     }
 
     private func galleryTap(_ p: CGPoint) {
         if galleryDetail != 0 {
             // The cry button is the one tappable thing inside the detail
-            // view -- everywhere else, tapping still means "back to the
-            // grid", so this has to come before that catch-all.
+            // view; the back hint (TP.galleryDetailBackHint) is the only
+            // spot that closes it. Used to be "everywhere else" -- on a
+            // small screen (watch especially) a near-miss on the cry button
+            // used to bounce you all the way back out to the grid instead
+            // of just not hitting the button.
             if galleryDetailPage == 0, Self.cryButtonRect.contains(p),
                TPCryPlayer.shared.hasCry(dex: galleryDetail) {
                 // No tap SFX here on purpose -- it would overlap the cry
@@ -2591,8 +2625,10 @@ struct PetScreen: View {
                 TPCryPlayer.shared.play(dex: galleryDetail)
                 return
             }
-            TPCryPlayer.shared.stop()
-            galleryDetail = 0
+            if TP.galleryDetailBackHint.contains(p) {
+                TPCryPlayer.shared.stop()
+                galleryDetail = 0
+            }
             return
         }
         if p.y < 46 {                    // the header is the way out
@@ -2654,6 +2690,7 @@ struct PetScreen: View {
         if TPBattle.shared.wildPromptActive {
             if p.x >= 93, p.x <= 373, p.y >= 226, p.y <= 270 {
                 TPBattle.shared.acceptWildPrompt()
+                battleReturnScreen = .idle
                 screen = .battle
             } else if p.x >= 93, p.x <= 373, p.y >= 278, p.y <= 322 {
                 TPBattle.shared.dismissWildPrompt()
@@ -2691,7 +2728,16 @@ struct PetScreen: View {
         // and closes either way — same as upstream.
         if choice != .none {
             if TP.choiceAction.contains(p) {
-                if choice == .evolve { pet.evolve() } else { pet.startFarewell() }
+                if choice == .evolve {
+                    // pet.evolve() itself already no-ops when a stat has
+                    // dropped back under 40 (or the pet fell asleep) since
+                    // the button first appeared -- give an explicit "denied"
+                    // cue in that case rather than letting the dialog just
+                    // vanish with nothing happening.
+                    if pet.canEvolveNow { pet.evolve() } else { model.playSfx(.deny) }
+                } else {
+                    pet.startFarewell()
+                }
             } else if TP.choiceKeep.contains(p) {
                 if choice == .evolve { pet.declineEvolve() } else { pet.declineFarewell() }
             }

@@ -787,8 +787,11 @@ uint8_t Pet::applyTypeResult(uint8_t score) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t gain = score / 4;
   if (gain > 10) gain = 10;
+  uint8_t before = trAtk;
   uint8_t v = trAtk + gain;
   trAtk = v > 100 ? 100 : v;
+  gain = (uint8_t)(trAtk - before);  // shown gain = what actually landed, not
+                                      // the pre-cap value (see trainStrength)
   joy = clamp100((int)joy + 4 + (score > 12 ? 18 : score));
   energy = dropTo(energy, 5 + score / 3, 8);
   fullness = dropTo(fullness, 2, 5);
@@ -940,8 +943,14 @@ uint8_t Pet::trainStrength(uint16_t hits) {
   if (ceremony != CER_NONE || isEgg()) return 0;
   uint8_t gain = hits / 4;          // ~4 golpes = 1 punto de entrenamiento
   if (gain > 18) gain = 18;         // tope por sesion: la FUE se forja a fuego lento
+  uint8_t before = trAtk;
   uint8_t v = trAtk + gain;
   trAtk = v > 100 ? 100 : v;
+  gain = (uint8_t)(trAtk - before);  // el gain mostrado = lo realmente ganado,
+                                      // no el bruto antes de topar en 100 --
+                                      // si no, "FUE +18" se mostraba aunque el
+                                      // ataque casi no subiera por estar ya
+                                      // cerca del limite
   energy = dropTo(energy, 12, 5);   // cansa
   fullness = dropTo(fullness, 5, 5);
   int burn = (int)weight - hits / 3;  // tambien quema peso

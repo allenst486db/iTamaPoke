@@ -311,6 +311,11 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 
 // --- decision gates (a button appears; the player taps it) -------------
 @property (nonatomic, readonly) BOOL wantsEvolveButton;
+/// Whether tapping "Evolve" right now would actually go through: unlike
+/// wantsEvolveButton (level-gated only, so the CTA can appear before the
+/// pet is truly ready), this also requires all 4 care stats at 40+ and the
+/// pet awake -- the same live check -evolve itself makes.
+@property (nonatomic, readonly) BOOL canEvolveNow;
 @property (nonatomic, readonly) BOOL wantsFarewellButton;
 @property (nonatomic, readonly) BOOL canRunawayNow;
 
