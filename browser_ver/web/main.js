@@ -1,6 +1,5 @@
-// Idle-screen MVP: ports the layout/tap logic of the idle branch of
-// Sources/Shared/PetScreen.swift + the four action buttons -- no sprites,
-// minigames, dex, battle, or settings yet. See browser_ver/README.md.
+// Ports Sources/Shared/PetScreen.swift's render()/input handling to a plain
+// 2D canvas. See browser_ver/README.md for build status.
 
 const rgb565 = (u16) => {
   const r = (u16 >> 11) & 0x1f, g = (u16 >> 5) & 0x3f, b = u16 & 0x1f;
@@ -33,9 +32,7 @@ const statusEl = document.getElementById("status");
 let Module = null;
 let fns = {};
 
-// idle | settings | gamemenu | game -- ports PetScreen.swift's `screen`
-// enum, reduced to the states this MVP has. No swipe gesture yet (see
-// roadmap): the gear button and the PLAY button are the only ways in.
+// idle | settings | gamemenu | game -- ports PetScreen.swift's `screen` enum.
 let screen = "idle";
 let lastFrameT = 0;
 
@@ -747,13 +744,7 @@ function draw() {
     `ENE ${fns.energy()} HYG ${fns.hygiene()}` + (sleeping ? " · sleeping" : "");
 }
 
-canvas.addEventListener("pointerdown", (e) => {
-  if (!Module) return;
-  const rect = canvas.getBoundingClientRect();
-  const sx = TP.screen / rect.width, sy = TP.screen / rect.height;
-  const x = (e.clientX - rect.left) * sx;
-  const y = (e.clientY - rect.top) * sy;
-
+function handleTap(x, y) {
   if (screen === "settings") {
     settingsTap(x, y);
     return;
@@ -802,9 +793,9 @@ canvas.addEventListener("pointerdown", (e) => {
         break;
       }
       case 4: {
-        const choice = TypeGame.choiceAt(x, y);
-        if (choice >= 0) {
-          const r = TypeGame.tap(choice, now);
+        const typeChoice = TypeGame.choiceAt(x, y);
+        if (typeChoice >= 0) {
+          const r = TypeGame.tap(typeChoice, now);
           playSfx(r === "hit" ? 30 : 31); // effective / weakHit
         }
         break;
@@ -834,22 +825,108 @@ canvas.addEventListener("pointerdown", (e) => {
       return;
     }
   }
-});
+}
 
-document.getElementById("settingsBtn").addEventListener("click", () => {
-  screen = screen === "settings" ? "idle" : "settings";
-});
+// Whether a drag should be read as a swipe at all -- ports PetScreen.swift's
+// `swipeAllowed`. A stray drag mid-minigame (or a second finger landing
+// during a tap, which SwiftUI/the DOM can both report as a large jump) must
+// not be read as "swipe out of the game."
+function swipeAllowed() {
+  if (screen === "game" || screen === "battle" || screen === "gamemenu") return false;
+  return choice === "none" && fns.wildPromptActive() === 0;
+}
 
-document.getElementById("dexBtn").addEventListener("click", () => {
-  if (screen === "dex") { screen = "idle"; return; }
-  dexScreen = "grid";
-  screen = "dex";
-});
+// Ports PetScreen.swift's onSwipe (horizontal): from idle, any horizontal
+// swipe opens the dex; on the dex/card, it turns pages; dir 1 = swiped
+// right, -1 = swiped left (left advances, matching upstream).
+function onSwipe(dir) {
+  if (screen === "card") {
+    cardPage = ((dir > 0 ? cardPage - 1 : cardPage + 1) + CARD_PAGE_COUNT) % CARD_PAGE_COUNT;
+    return;
+  }
+  if (screen === "idle") {
+    if (fns.isEgg() !== 0 || choice !== "none") return;
+    dexScreen = "grid";
+    dexPage = 0;
+    dexFilter = 0;
+    screen = "dex";
+    return;
+  }
+  if (screen !== "dex") return;
+  if (dexScreen === "detail") {
+    dexDetailPage = Math.min(Math.max(dexDetailPage + (dir > 0 ? -1 : 1), 0), 1);
+    return;
+  }
+  const pages = dexPageCount();
+  const next = dexPage - dir;
+  if (next < 0) { screen = "idle"; return; }
+  dexPage = Math.min(next, pages - 1);
+}
 
-document.getElementById("cardBtn").addEventListener("click", () => {
-  if (screen !== "card") cardPage = 0;
-  screen = screen === "card" ? "idle" : "card";
+// Ports PetScreen.swift's onSwipeV (vertical): dir 1 = swiped down (opens
+// settings from idle), -1 = swiped up (opens the stat card from idle,
+// closes it if already open).
+function onSwipeV(dir) {
+  if (!swipeAllowed()) return;
+  if (screen === "dex") {
+    dexScreen = "grid";
+    screen = "idle";
+    return;
+  }
+  if (screen === "card") {
+    if (dir < 0) screen = "idle"; // up closes
+    return;
+  }
+  if (screen === "settings") {
+    screen = "idle";
+    return;
+  }
+  if (screen !== "idle" || choice !== "none") return;
+  if (dir > 0) { // down: settings
+    screen = "settings";
+    return;
+  }
+  if (fns.isEgg() !== 0) return; // up: the stat card
+  screen = "card";
+  cardPage = 0;
+}
+
+// Pointer-drag gesture recognizer, mirroring PetScreen.swift's
+// DragGesture(minimumDistance: 0) + onGesture(from:to:predicted:): classify
+// the release point against the *start* point as a swipe past a distance-
+// and-direction threshold, a plain tap if it barely moved, or nothing (a
+// stray ambiguous drag) otherwise -- rather than firing on pointerdown,
+// which would make every swipe also register as a tap on whatever sits
+// under the finger's starting point.
+let dragStart = null;
+function toScreenSpace(clientX, clientY) {
+  const rect = canvas.getBoundingClientRect();
+  const sx = TP.screen / rect.width, sy = TP.screen / rect.height;
+  return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
+}
+canvas.addEventListener("pointerdown", (e) => {
+  if (!Module) return;
+  dragStart = toScreenSpace(e.clientX, e.clientY);
 });
+canvas.addEventListener("pointerup", (e) => {
+  if (!Module || !dragStart) return;
+  const from = dragStart;
+  dragStart = null;
+  const to = toScreenSpace(e.clientX, e.clientY);
+  if (!swipeAllowed()) {
+    handleTap(from.x, from.y);
+    return;
+  }
+  const dx = to.x - from.x, dy = to.y - from.y;
+  if (Math.abs(dx) > 80 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+    onSwipe(dx > 0 ? 1 : -1);
+  } else if (Math.abs(dy) > 80 && Math.abs(dy) > Math.abs(dx) * 1.4) {
+    onSwipeV(dy > 0 ? 1 : -1);
+  } else if (Math.abs(dx) < 40 && Math.abs(dy) < 40) {
+    handleTap(from.x, from.y);
+  }
+});
+canvas.addEventListener("pointercancel", () => { dragStart = null; });
 
 // --- Save persistence ----------------------------------------------------
 //

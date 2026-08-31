@@ -279,7 +279,12 @@ function cardTap(x, y) {
     else cardPage = (cardPage + 1) % CARD_PAGE_COUNT;
     return;
   }
-  if (y > 396) screen = "idle";
+  // Only the "tap: back" hint itself closes the card now (also swipe up,
+  // see main.js's onSwipeV) -- it used to be the entire rest of the page
+  // below the buttons, same bug as PetScreen.swift's cardTap had (see its
+  // own comment): any stray tap while reading a page, or mid-swipe, closed
+  // the whole card.
+  if (x >= 66 && x <= 400 && y >= 388 && y <= 420) screen = "idle";
 }
 
 // --- Rename keyboard -------------------------------------------------

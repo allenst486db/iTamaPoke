@@ -330,5 +330,7 @@ function dexDetailTap(x, y) {
     dexDetailPage = x < TP.cx ? 0 : 1;
     return;
   }
-  dexScreen = "grid";
+  // Only the "tap: back" hint (drawn at y 424) closes the detail view now,
+  // not the whole rest of the screen -- same reasoning as cardTap's fix.
+  if (x >= 66 && x <= 400 && y >= 412 && y <= 444) dexScreen = "grid";
 }

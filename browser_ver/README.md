@@ -18,6 +18,10 @@ screen has a real second page for user-supplied dex-entry text, and
 evolution/farewell/runaway now draw the real halo/ray/spark/rain/heart
 particle FX rather than a plain progress bar -- `PetScreen.swift`'s
 render() is fully covered end to end, gameplay and presentation both.
+Navigation is real swipe gestures now too (up/down/left for the stat
+card/settings/dex, matching the iOS app), not the floating HTML buttons
+earlier stages used as a placeholder -- see "known gaps" below for what's
+still genuinely different from the iOS app rather than just a stand-in.
 
 ## What's here
 
@@ -78,8 +82,8 @@ Python for everything after that.
    `battleTypeEffectPct` distractor filter). Emoji glyphs (ball, food/berry
    icons, dirt bubbles) don't render in every environment -- a font-fallback
    gap, not a logic one; the underlying hit-tests were verified directly.
-   The Pokédex grid + detail ✅ done too (`web/dex.js`, a Dex button next
-   to Settings) -- real registered/caught state, filters, pagination, and
+   The Pokédex grid + detail ✅ done too (`web/dex.js`, swipe left from idle,
+   same as the iOS app) -- real registered/caught state, filters, pagination, and
    type chips from `DEX_TBL`. Grid tiles show the real TPK2 sprite once
    it's been picked locally (falls back to the dex number otherwise --
    `TPThumbs`' own packed sprite-atlas format isn't parsed, so this reuses
@@ -101,7 +105,7 @@ Python for everything after that.
    isn't wired to the post-battle catch offer yet, just the plain
    probability roll.
    The stat card's profile page + rename keyboard ✅ done too
-   (`web/card.js`, a Card button next to Dex) -- streak, bond bar, berry/
+   (`web/card.js`, swipe up from idle) -- streak, bond bar, berry/
    age info, and a real rename round-tripping through `Pet::rename`. The
    card's other seven pages (personality, daily goals, box, battle record,
    medals, progress, expeditions) aren't ported.
@@ -130,6 +134,17 @@ Python for everything after that.
    Battle page's "TRAIN STRENGTH" button) -- a 10s tap-fest scored
    through the real `Pet::trainStrength`.
    `PetScreen.swift`'s render() is now fully covered.
+   The *input* model has since caught up to match too -- earlier stages got
+   the content ported but not the gestures, so Settings/Dex/Card lived
+   behind three floating HTML buttons bolted on top of the canvas, and
+   there was no swipe at all. Those are gone now: `web/main.js` recognizes
+   real swipes (a pointerdown/pointerup drag classified the same way
+   `PetScreen.swift`'s `onGesture`/`onSwipe`/`onSwipeV` does -- distance and
+   direction thresholds, same up/down/left/right mapping) so swipe up opens
+   the stat card, down opens settings, left opens the dex, exactly like the
+   iOS app -- no HTML chrome, no button that doesn't exist on a real device.
+   The two file pickers (`Load sprites…`/`Load dex text…`) stay as actual
+   buttons since they have no iOS equivalent to match in the first place.
 3. ~~Web Audio synthesizer~~ ✅ done, `web/audio.js` — same 39-effect note
    table, four waveforms, LFSR noise, and anti-click envelope as
    `TPAudio.swift`, rendered into an `AudioBuffer` per effect and played
@@ -167,7 +182,23 @@ Python for everything after that.
    you add by hand in Xcode rather than a second `.xcodeproj`, since
    hand-writing a correct `project.pbxproj` from scratch is far riskier
    than Xcode's own "New Target" wizard.
-9. Install guide (+ HTML version) once there's something to install
+9. ~~Install guide~~ ✅ done -- see `docs/INSTALL.md`/`.ko.md`'s "Path D".
+
+## Known gaps from the iOS app
+
+Everything above is ported faithfully; a few things genuinely aren't there
+yet, rather than being a stand-in for something ported elsewhere:
+
+- **Dex cry playback.** The iOS app's dex detail screen has a
+  cry-preview button (see `GAMEPLAY.md`'s "Sound" section) -- nothing
+  plays or loads audio files for this in the browser build yet. No fetch
+  script output for it is read, no button is drawn.
+- **Wild battle's opponent sprite** falls back to a "?" unless the wild
+  species happens to already be the one you last loaded (see the Roadmap's
+  wild-battle entry above) -- the iOS app always shows the real sprite.
+- **The post-battle catch offer** rolls the real probability but isn't
+  wired to the catch minigame's own timing/skill mechanic yet, just a
+  straight roll.
 
 ## Why WASM instead of rewriting the game logic in JS
 

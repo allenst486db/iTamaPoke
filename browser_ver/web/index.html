@@ -13,7 +13,7 @@
     font: 11px/1.4 -apple-system, system-ui, sans-serif; color: #8a93a6;
     text-align: center; padding: 4px 0; pointer-events: none;
   }
-  #spriteLoad, #dexEntryLoad, #settingsBtn, #dexBtn, #cardBtn {
+  #spriteLoad, #dexEntryLoad {
     position: fixed; top: 8px;
     font: 11px -apple-system, system-ui, sans-serif;
     background: #1c2030; color: #cdd4e0; border: 1px solid #333a4d;
@@ -21,19 +21,13 @@
   }
   #spriteLoad { right: 8px; }
   #dexEntryLoad { right: 8px; top: 42px; }
-  #settingsBtn { left: 8px; }
-  #dexBtn { left: 96px; }
-  #cardBtn { left: 176px; }
-  #spriteLoad:active, #dexEntryLoad:active, #settingsBtn:active, #dexBtn:active, #cardBtn:active { background: #262b3f; }
+  #spriteLoad:active, #dexEntryLoad:active { background: #262b3f; }
   #spriteInput, #dexEntryInput { display: none; }
 </style>
 </head>
 <body>
 <canvas id="tp" width="466" height="466"></canvas>
 <div id="status">loading…</div>
-<button id="settingsBtn" type="button">⚙️ Settings</button>
-<button id="dexBtn" type="button">📖 Dex</button>
-<button id="cardBtn" type="button">🪪 Card</button>
 <button id="spriteLoad" type="button">Load sprites…</button>
 <input id="spriteInput" type="file" accept=".bin" multiple>
 <button id="dexEntryLoad" type="button">Load dex text…</button>
