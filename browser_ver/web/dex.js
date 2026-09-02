@@ -235,6 +235,8 @@ function drawDexDetail() {
     drawDexEntryPage(dex, known);
   }
 
+  if (dexDetailPage === 0 && known) drawCryButton(dex);
+
   // Two page dots -- tap either to switch pages, matching PetScreen.swift's
   // portrait/dex-entry split.
   const dotsX = TP.cx - 13;
@@ -251,6 +253,58 @@ function drawDexDetail() {
   ctx.fillText("tap: back", TP.cx, 424);
 
   statusEl.textContent = `Dex detail · #${dex} ${known ? fns.dexName(dex) : "???"}`;
+}
+
+// Port of PetScreen.swift's drawCryButton/cryButtonRect: a capsule that
+// fills with the POKeDEX masthead's own red as the clip plays, sitting
+// between the portrait and the page dots. Hidden entirely when this species
+// has no cry file installed -- same guard as the tap handler's.
+// Computed on call, not at load: dex.js is parsed before main.js, where TP
+// is defined, so a top-level `TP.cx` here would throw during script load
+// (and leave this const permanently in its temporal dead zone).
+function cryBtnRect() {
+  return { x: TP.cx - 75, y: 326, w: 150, h: 20 };
+}
+
+function drawCryButton(dex) {
+  if (!hasCry(dex)) return;
+  const r = cryBtnRect(), radius = r.h / 2;
+  ctx.fillStyle = UI.white;
+  roundRect(r.x, r.y, r.w, r.h, radius);
+  ctx.fill();
+  ctx.strokeStyle = UI.ink;
+  ctx.lineWidth = 1;
+  roundRect(r.x, r.y, r.w, r.h, radius);
+  ctx.stroke();
+
+  const progress = cryProgress(dex);
+  if (progress !== null && progress > 0) {
+    ctx.fillStyle = "rgb(216,31,38)";  // the masthead red, as on iOS
+    roundRect(r.x + 2, r.y + 2, (r.w - 4) * progress, r.h - 4, radius - 2);
+    ctx.fill();
+  }
+
+  // The icon gets its own circle at the capsule's left end rather than
+  // sitting directly on the (sometimes red) track, so it stays legible
+  // whether or not the gauge has reached that far yet.
+  const icx = r.x + radius, icy = r.y + r.h / 2;
+  const playing = progress !== null;
+  ctx.beginPath();
+  ctx.arc(icx, icy, radius - 2, 0, Math.PI * 2);
+  ctx.fillStyle = playing ? "rgb(216,31,38)" : UI.ink;
+  ctx.fill();
+  ctx.fillStyle = UI.white;
+  if (playing) {                       // pause bars
+    ctx.fillRect(icx - 4, icy - 5, 3, 10);
+    ctx.fillRect(icx + 1, icy - 5, 3, 10);
+  } else {                             // play triangle
+    ctx.beginPath();
+    ctx.moveTo(icx - 3, icy - 5);
+    ctx.lineTo(icx - 3, icy + 5);
+    ctx.lineTo(icx + 5, icy);
+    ctx.closePath();
+    ctx.fill();
+  }
 }
 
 // Port of drawDexEntry(): a bordered text box, shrink-and-wrap. Simplified
@@ -324,11 +378,27 @@ function dexGridTap(x, y) {
 }
 
 function dexDetailTap(x, y) {
+  // Cry capsule, page 0 only and only for a species with a file installed
+  // -- tapping it again while it plays stops it, as on iOS.
+  const known = fns.dexRegistered(dexDetailDex) !== 0 || fns.dexCaught(dexDetailDex) !== 0;
+  const cb = cryBtnRect();
+  if (dexDetailPage === 0 && known && hasCry(dexDetailDex) &&
+      x >= cb.x && x <= cb.x + cb.w &&
+      y >= cb.y - 6 && y <= cb.y + cb.h + 6) {
+    if (cryProgress(dexDetailDex) !== null) stopCry();
+    else playCry(dexDetailDex);
+    return;
+  }
   if (y >= 388 && y <= 412) {
-    dexDetailPage = x < TP.cx ? 0 : 1;
+    const next = x < TP.cx ? 0 : 1;
+    if (next !== 0) stopCry();  // leaving page 0 -- its button goes with it
+    dexDetailPage = next;
     return;
   }
   // Only the "tap: back" hint (drawn at y 424) closes the detail view now,
   // not the whole rest of the screen -- same reasoning as cardTap's fix.
-  if (x >= 66 && x <= 400 && y >= 412 && y <= 444) dexScreen = "grid";
+  if (x >= 66 && x <= 400 && y >= 412 && y <= 444) {
+    stopCry();
+    dexScreen = "grid";
+  }
 }

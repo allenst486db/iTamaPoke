@@ -1042,7 +1042,23 @@ dexEntryInput.addEventListener("change", async () => {
   setTimeout(() => { dexEntryLoadBtn.textContent = "Load dex text…"; }, 2500);
 });
 
+const cryLoadBtn = document.getElementById("cryLoad");
+const cryInput = document.getElementById("cryInput");
+cryLoadBtn.addEventListener("click", () => cryInput.click());
+cryInput.addEventListener("change", async () => {
+  const files = Array.from(cryInput.files || []);
+  cryInput.value = "";
+  if (files.length === 0) return;
+  cryLoadBtn.textContent = "Loading…";
+  const n = await importCryFiles(files);
+  cryLoadBtn.textContent = n > 0 ? `Loaded ${n} cry file(s)` : "No psnd<dex>.m4a files found";
+  setTimeout(() => { cryLoadBtn.textContent = "Load cries…"; }, 2500);
+});
+
 loadSoundMode();
+// Which species have a cry installed, so the dex detail's play control knows
+// synchronously whether to draw itself at all.
+refreshCryIndex();
 
 createTPCore({
   onSfx(id) { playSfx(id); },

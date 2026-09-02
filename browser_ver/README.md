@@ -189,13 +189,18 @@ Python for everything after that.
 Everything above is ported faithfully; a few things genuinely aren't there
 yet, rather than being a stand-in for something ported elsewhere:
 
-- **Dex cry playback.** The iOS app's dex detail screen has a
-  cry-preview button (see `GAMEPLAY.md`'s "Sound" section) -- nothing
-  plays or loads audio files for this in the browser build yet. No fetch
-  script output for it is read, no button is drawn. This is the one
-  remaining gap.
+Nothing outstanding: the three entries this list used to carry are all
+resolved below.
 
 Fixed since this list was written:
+
+- ~~**Dex cry playback.**~~ Ported, in `cry.js`: a "Load cries…" picker
+  (same local-file/IndexedDB pattern as sprites and dex text, never
+  bundled or fetched), decoded through the AudioContext audio.js already
+  stands up rather than a second audio graph, and the same capsule control
+  PetScreen.swift draws -- play/pause icon, masthead-red gauge filling as
+  the clip runs, hidden entirely for a species with no file installed, and
+  muted unless the sound mode is full, matching TPCry.swift's own guard.
 
 - ~~**Wild battle's opponent sprite** falls back to a "?" unless the wild
   species happens to already be the one you last loaded.~~ The opponent now

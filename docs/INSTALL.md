@@ -372,6 +372,18 @@ Same idea, a second button: run `Scripts/fetch_dex_entries.sh` to get
 the file(s). It shows up on the dex detail screen's second page (tap the
 right-hand page dot).
 
+### Adding cries (optional)
+
+A third button, same pattern: run `Scripts/fetch_cries.sh` (needs `ffmpeg`
+on the computer you run it from — see the README's "Cries") to get
+`psnd<dex>.m4a`, then click **"Load cries…"** and multi-select them. A play
+capsule then appears on the dex detail screen's first page, under the
+portrait; tapping it plays that species' cry and fills the capsule as it
+goes, tapping again stops it. Species you haven't loaded a file for simply
+don't show the button. Cries follow the sound setting: they're muted unless
+sound is set to full (vibrate-only and silent both mute them), the same
+rule the iOS app uses.
+
 ---
 
 ## Troubleshooting
