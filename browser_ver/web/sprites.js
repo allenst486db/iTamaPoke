@@ -212,3 +212,33 @@ async function loadSprite(dex, shiny) {
   spriteCache.set(cacheKey, sprite);
   return sprite;
 }
+
+// Synchronous peek at what loadSprite() has already parsed, for draw paths
+// that can't await (the canvas render loop). Returns the sprite, `null` if
+// it was looked up and no local file existed, or `undefined` if it has
+// never been asked for -- callers use that third state to decide whether to
+// kick off a load, since re-requesting a known-missing species every frame
+// would hammer IndexedDB for nothing.
+function cachedSprite(dex, shiny) {
+  return spriteCache.get(`${dex}:${shiny ? 1 : 0}`);
+}
+
+// The draw-loop-friendly form of loadSprite(): returns whatever is parsed
+// *right now* (null if nothing is, yet or ever) and kicks off the load
+// once in the background. `spriteLoading` is what keeps a per-frame caller
+// -- the dex grid redraws 16 tiles every frame -- from refiring the same
+// IndexedDB lookup while one is already in flight. Shared by the dex grid,
+// the dex detail portrait and the wild-battle opponent, which all need the
+// same "show it as soon as it's there, never block the frame" behaviour.
+const spriteLoading = new Set();
+
+function spriteFor(dex, shiny = false) {
+  const cached = cachedSprite(dex, shiny);
+  if (cached !== undefined) return cached;
+  const key = `${dex}:${shiny ? 1 : 0}`;
+  if (!spriteLoading.has(key)) {
+    spriteLoading.add(key);
+    loadSprite(dex, shiny).finally(() => spriteLoading.delete(key));
+  }
+  return null;
+}

@@ -192,13 +192,38 @@ yet, rather than being a stand-in for something ported elsewhere:
 - **Dex cry playback.** The iOS app's dex detail screen has a
   cry-preview button (see `GAMEPLAY.md`'s "Sound" section) -- nothing
   plays or loads audio files for this in the browser build yet. No fetch
-  script output for it is read, no button is drawn.
-- **Wild battle's opponent sprite** falls back to a "?" unless the wild
-  species happens to already be the one you last loaded (see the Roadmap's
-  wild-battle entry above) -- the iOS app always shows the real sprite.
-- **The post-battle catch offer** rolls the real probability but isn't
-  wired to the catch minigame's own timing/skill mechanic yet, just a
-  straight roll.
+  script output for it is read, no button is drawn. This is the one
+  remaining gap.
+
+Fixed since this list was written:
+
+- ~~**Wild battle's opponent sprite** falls back to a "?" unless the wild
+  species happens to already be the one you last loaded.~~ The opponent now
+  loads its own sprite: `sprites.js`'s `spriteFor()` is a draw-loop-safe
+  lookup (sync peek at what's parsed, lazy background load, in-flight guard)
+  that the battle screen, the dex grid and the dex detail portrait all share.
+  Still falls back to "?" for a species whose `.bin` hasn't been picked
+  locally, same as everywhere else in this build.
+- ~~**The dex detail portrait**~~ drew a 🐾 emoji for every known species,
+  even though the grid tiles beside it were already showing real art. Now
+  draws the species' own sprite through the same shared lookup.
+- ~~**The post-battle catch offer** ... isn't wired to the catch minigame's
+  own timing/skill mechanic yet, just a straight roll.~~ This was never a
+  gap against iOS: `TPBattle.mm`'s `-tryCatch` is the same straight roll
+  (`arc4random_uniform(100)` into `tryCatchWild`/`tryRespectCatchWild`), and
+  `tp_battle_try_catch()` mirrors it call for call. Removed rather than
+  fixed, since there was nothing to fix.
+
+## Rebuild after pulling
+
+`tp_core.js`/`tp_core.wasm` are gitignored build artifacts, so a `git pull`
+updates the JS and the C++ *sources* but leaves your compiled core alone.
+When a change adds or renames an export, JS pulled from git can end up
+calling into a core built before it existed -- `cwrap` binds lazily, so it
+fails at the call, not at load (that is what a stale core looks like: one
+screen throwing rather than the page failing to start). Re-run
+`browser_ver/build.sh` after pulling anything that touched
+`upstream-expanded/` or `browser_ver/core/`.
 
 ## Why WASM instead of rewriting the game logic in JS
 

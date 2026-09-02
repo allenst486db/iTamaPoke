@@ -14,10 +14,21 @@ function drawBattleHpBar(x, y, cur, max, color) {
 }
 
 // Reuses the idle sprite loader/frame-walker already loaded for the raised
-// species; a wild species with no locally-picked sprite falls back to a
-// silhouette placeholder, same spirit as drawPetFallback.
+// species. The wild side used to always fall back to the "?" placeholder
+// unless the opponent happened to be the same species you're raising --
+// `currentSprite` only ever holds the *active* pet. Now it also consults
+// what sprites.js has already parsed, and kicks off a load for anything it
+// hasn't seen yet, so the opponent shows its real sprite from the second
+// frame onwards (the first draw after a species is first requested still
+// shows "?" for the moment the IndexedDB read takes). `undefined` means
+// never requested; `null` means requested and no local file exists, which
+// stays on "?" without re-requesting every frame.
+function battleSprite(dex) {
+  return dex === currentDex ? currentSprite : spriteFor(dex, false);
+}
+
 function drawBattleSprite(dex, x, now) {
-  const sprite = dex === currentDex ? currentSprite : null;
+  const sprite = battleSprite(dex);
   if (!sprite) {
     ctx.font = "bold 40px monospace";
     ctx.fillStyle = "#98a0b0";

@@ -5,22 +5,12 @@
 // locally for that species (see dexThumbFor below), falling back to the
 // dex number for anything not picked yet.
 
-// Cache of dex -> parsed sprite (or null once confirmed there's none saved
-// for it), plus a load state so drawDexGrid's per-frame pass doesn't refire
-// the same async IndexedDB lookup 16x a frame while it's in flight.
-const dexThumbCache = new Map();
-const dexThumbLoading = new Set();
-
+// Was a second cache+in-flight-guard of its own; that's sprites.js's
+// spriteFor() now, shared with the wild-battle opponent so there's one
+// copy of the "sync peek, lazy load, don't refire" rule rather than two
+// that can drift.
 function dexThumbFor(dex) {
-  if (dexThumbCache.has(dex)) return dexThumbCache.get(dex);
-  if (!dexThumbLoading.has(dex)) {
-    dexThumbLoading.add(dex);
-    loadSprite(dex, false).then((s) => {
-      dexThumbCache.set(dex, s || null);
-      dexThumbLoading.delete(dex);
-    });
-  }
-  return null;
+  return spriteFor(dex, false);
 }
 
 // Static idle-pose frame at a fixed box size -- grid thumbnails don't
@@ -218,11 +208,19 @@ function drawDexDetail() {
       }
     }
 
-    // Sprite (reuses the idle-pose renderer already loaded for the active
-    // species; a species other than the raised one shows the fallback "?").
-    ctx.font = "bold 56px monospace";
-    ctx.fillStyle = known ? UI.ink : "#c8ccd4";
-    ctx.fillText(known ? "🐾" : "?", TP.cx, 280);
+    // Portrait: the species' own sprite once it's been picked locally. This
+    // used to be a 🐾 emoji for every known species regardless -- the grid
+    // tiles right next door were already drawing real art via dexThumbFor,
+    // so the detail view was the odd one out. Falls back to the same "?"
+    // the grid uses when there's no local file for this species.
+    const portrait = known ? dexThumbFor(dex) : null;
+    if (portrait) {
+      drawDexThumb(portrait, TP.cx - 60, 200, 120);
+    } else {
+      ctx.font = "bold 56px monospace";
+      ctx.fillStyle = known ? UI.ink : "#c8ccd4";
+      ctx.fillText("?", TP.cx, 280);
+    }
 
     ctx.font = "bold 15px monospace";
     if (registered) {

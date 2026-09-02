@@ -1015,6 +1015,10 @@ spriteInput.addEventListener("change", async () => {
   spriteLoadBtn.textContent = "Loading…";
   const n = await importSpriteFiles(files);
   spriteCache.clear(); // a re-picked file may replace one already parsed
+  spriteLoading.clear(); // ...and an in-flight lookup must not block the refetch:
+                     // spriteFor() skips species whose key is still in here, so a
+                     // load that was mid-air during the import would otherwise
+                     // leave that species stuck on its fallback until a reload
   currentDex = 0;    // force ensureSprite() to re-fetch for the active species
   loadingDex = -1;   // ...including one it already (unsuccessfully) tried
   spriteLoadBtn.textContent = n > 0 ? `Loaded ${n} sprite(s)` : "No p<dex>.bin files found";
