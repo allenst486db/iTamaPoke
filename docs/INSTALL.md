@@ -16,20 +16,25 @@ If a term isn't explained inline, it's explained the first time it comes up.
 ```
 Do you have a paid Apple Developer account ($99/year)?
 │
-├─ No (most people) ─────────────────────────► Path A: Free install
-│                                                (Mac or Windows, ~15 min)
+├─ No (most people) ─┬─ Don't want to re-sign every 7 days,
+│                    │  or just want the easiest route ───► Path D: Browser build
+│                    │                                       (any computer, ~10 min,
+│                    │                                       never expires, no coding)
+│                    │
+│                    └─ Want it as a real iOS app ─────────► Path A: Free install
+│                                                            (Mac or Windows, ~15 min,
+│                                                            renew every 7 days)
 │
-└─ Yes ──────────────────────────────────────► Path B: Signed install
-                                                 (Mac or Windows, ~10 min,
-                                                 no re-signing ever)
+└─ Yes ────────────────────────────────────────────────────► Path B: Signed install
+                                                             (~10 min, no re-signing ever)
 ```
 
 There's also **Path C**, building it yourself with Xcode — only relevant if
 you already have a Mac with Xcode and want to bake sprites directly into the
-app instead of adding them afterward — and **Path D**, a separate browser
-build (`browser_ver/`) that runs the same game logic in a web page or a
-thin native shell instead of the iOS/watchOS app, if that's what you're
-after.
+app instead of adding them afterward. **Path D** is a separate browser
+build (`browser_ver/`) that runs the same game logic, with the same
+screens, in a web page. It needs no Mac, no developer account and no
+sideloading tool, so **if this is your first time, start with Path D.**
 
 ---
 
@@ -241,148 +246,217 @@ xcodegen generate
 
 ---
 
-## Path D — Browser build, installed on your own phone/tablet
+## Path D — Browser build (no Mac, no developer account, no coding)
 
-`browser_ver/` compiles the same C++ game logic to WebAssembly and runs it
-in a web page — no App Store, no sideloading, no 7-day expiry. It doesn't
-share save data, sprites, or dex text with the iOS app; it's a fully
-separate build. **The point of this path is to get it running as an app on
-your own iPhone/iPad or Android device**, not just in a desktop browser —
-that needs a computer (Mac for the iOS shell, any OS for Android) to
-*build* it once, same as the iOS app itself needs Xcode, but the result
-installs and runs entirely on your phone afterward.
+`browser_ver/` is the same game — same C++ logic, same screens, same
+sprites, same sounds — compiled to run inside a web browser instead of as
+an iOS app. That means: **no App Store, no sideloading tool, no 7-day
+expiry, and no Xcode.** Any computer works (Windows, Mac, Linux), and your
+phone plays it over your home Wi-Fi. It keeps its own save data; it does
+not share a save with the iOS app.
 
-### Setup: clone this repository first
+What you need: a computer, a phone or tablet on the same Wi-Fi, a free
+GitHub account, and about ten minutes. Nothing gets typed except one short
+command, and that one is copy-paste.
 
-If you haven't already done so (either for Path C or starting fresh), clone
-the repository:
+### D1. Download the built game (2 minutes)
+
+The game has to be "built" once, and GitHub does that for you on its own
+computers, so you don't install anything for this step.
+
+1. Sign in to GitHub (a free account is enough — the download button only
+   appears when you're signed in).
+2. Open this repository's page and click the **Actions** tab at the top.
+3. In the left column click **Build (browser)**.
+4. Click the topmost run in the list. It should have a green check ✅.
+   (If there is no run yet, click **Run workflow** → **Run workflow** on the
+   right, wait about two minutes, then refresh the page.)
+5. Scroll down to **Artifacts** and click **`iTamaPoke-browser`**. A file
+   called `iTamaPoke-browser.zip` downloads.
+6. Unzip it. You get a folder with `index.html`, `main.js`,
+   `tp_core.wasm` and about a dozen other files. Rename that folder to
+   something easy to find, e.g. **`itamapoke`** on your Desktop.
+
+That folder *is* the game. There is nothing else to install for the game
+itself.
+
+### D2. Start it on your computer (3 minutes)
+
+Browsers refuse to run this kind of app straight from a double-clicked
+file (the `.wasm` part needs to be *served*, not opened), so the folder
+has to be served by a tiny local web server. Python has one built in.
+
+**Install Python (once).**
+
+- **Windows**: go to [python.org/downloads](https://www.python.org/downloads/),
+  click the big yellow **Download Python 3.x** button, run the installer,
+  and on the first screen **tick "Add python.exe to PATH"** before clicking
+  **Install Now**. That checkbox is the only thing people miss.
+- **Mac**: open the **Terminal** app (⌘-space, type `Terminal`) and paste:
+  ```bash
+  xcode-select --install
+  ```
+  Click **Install** in the dialog that appears. That gives you `python3`.
+  (Or install from python.org exactly as on Windows.)
+- **Linux**: it's already there.
+
+**Open a terminal *in the game folder*.**
+
+- **Windows**: open the `itamapoke` folder in Explorer, click in the empty
+  white part of the address bar, type `cmd` and press Enter. A black window
+  opens, already inside that folder.
+- **Mac**: open Finder, right-click the `itamapoke` folder → **Services →
+  New Terminal at Folder**. (If that entry is missing: open Terminal, type
+  `cd ` with a space, drag the folder into the window, press Enter.)
+
+**Start the server.** Paste this and press Enter:
 
 ```bash
-git clone --recurse-submodules https://github.com/allenst486db/iTamaPoke
-cd iTamaPoke
+python3 -m http.server 8123
 ```
 
-All paths in the steps below are relative to the iTamaPoke folder. If you
-already did this for Path C, you can skip this and go straight to step 1.
+On Windows, if that says `python3` is not recognized, use `python` instead
+of `python3`. It prints one line like `Serving HTTP on :: port 8123` and
+then sits there — that's correct, it's running. **Leave this window open**
+for as long as you want to play; closing it stops the game server (your
+save is not affected).
 
-### 1. Build the web core (on your computer, once)
+**Open the game.** In any browser on that computer go to
+**http://localhost:8123**. You should see the starter picker.
+
+### D3. Play it on your phone (3 minutes)
+
+The phone opens the same page over Wi-Fi. It works while the computer and
+the server window from D2 are on.
+
+1. **Find your computer's Wi-Fi address.**
+   - **Windows**: in the black window from D2 you can't type (the server
+     is using it), so open a second one the same way and type `ipconfig`.
+     Look for **IPv4 Address** under your Wi-Fi adapter, e.g.
+     `192.168.0.12`.
+   - **Mac**: System Settings → Wi-Fi → click **Details…** next to your
+     network → the **IP address** line, e.g. `192.168.0.12`.
+2. Make sure the phone is on the **same Wi-Fi** (not mobile data, not a
+   guest network).
+3. On the phone, open Safari (iPhone) or Chrome (Android) and type
+   **`http://192.168.0.12:8123`** with your own address in place of the
+   numbers. Note the `http://` — phones sometimes assume `https` and then
+   fail.
+4. The game appears. To make it feel like an app:
+   - **iPhone/iPad**: tap the Share button (square with an arrow) → **Add
+     to Home Screen** → **Add**. It gets its own icon and opens full-screen
+     without the browser bar.
+   - **Android**: Chrome menu (⋮) → **Add to Home screen**.
+
+Two things worth knowing:
+
+- **Your save lives in the phone's browser**, tied to that exact address.
+  If your computer's Wi-Fi address changes (some routers reshuffle them),
+  the phone sees a "new" site with an empty save. The fix is to give the
+  computer a fixed address in your router (usually called *DHCP
+  reservation* or *static lease* — look it up for your router model), or
+  simply use the same address again once it comes back.
+- **The Mac's firewall** may ask whether to allow Python to accept
+  connections the first time. Allow it, or the phone can't reach the
+  server. On Windows the same question pops up as a "Windows Defender
+  Firewall" dialog — tick **Private networks** and click **Allow access**.
+
+### D4. Add the characters (5 minutes, once)
+
+The game downloads without any Pokémon art or sounds, on purpose (see the
+[README on sprites](../README.md#sprites)). You add them yourself, and the
+game keeps them in the browser's own storage so this is done once per
+device. No scripts needed for the sprites:
+
+1. On the computer, go to
+   [github.com/socquique/TamaPoke](https://github.com/socquique/TamaPoke) →
+   green **Code** button → **Download ZIP**. Unzip it.
+2. Inside, open `tools/sdcard/mons`. That folder holds one `.bin` file per
+   species: `p001.bin`, `p002.bin`, … (normal) and `ps001.bin`, … (shiny).
+3. Get those files to the device you play on. On the computer they're
+   already there. For the phone, AirDrop the `mons` folder (Mac → iPhone),
+   or put it in iCloud Drive / Google Drive / any cloud app the phone's
+   Files app can see.
+4. In the game, tap **"Load sprites…"** (top right corner of the page).
+5. In the file picker that opens, **select all the `.bin` files at once**
+   (on iPhone: open the folder in the picker, tap **Select** at the top,
+   then **Select All**). Confirm. A count appears at the bottom of the page
+   as they load.
+6. Done — the characters appear immediately. You can ignore `thumbs.bin`
+   here; the browser build draws its own thumbnails from the full sprites.
+
+Do the same later for the two optional buttons:
+
+- **"Load dex text…"** — the little encyclopedia descriptions on the dex
+  detail screen's second page. These come from `Scripts/fetch_dex_entries.sh`
+  in this repository, which needs a terminal; if that's not for you, skip
+  it — nothing else depends on it.
+- **"Load cries…"** — each species' cry, playable from the dex detail
+  screen. From `Scripts/fetch_cries.sh`, which also needs `ffmpeg` on the
+  computer. Also optional. Cries only play when the sound setting is on
+  full (the same rule as the iOS app).
+
+Everything you pick stays in **that browser on that device** and is never
+uploaded anywhere. Clearing the browser's site data, using a private
+window, or switching browsers means picking the files again.
+
+### D5. Updating later
+
+When this repository changes, repeat D1 to download the new zip and
+replace the files in your `itamapoke` folder (keep the folder name and the
+`8123` port so the address stays the same). Your save and your loaded
+sprites are in the browser, not in that folder, so they survive the swap.
+
+### D6. Optional: a real installed app instead of a home-screen bookmark
+
+The home-screen bookmark from D3 needs the computer running. If you want
+the game fully self-contained on the phone, `browser_ver/native/` has two
+tiny wrappers — a WKWebView target for Xcode (needs a Mac, works with a
+free Apple ID, same 7-day rule as Path A) and an Android Studio project
+(any computer, no expiry). Both bundle the `web` folder inside the app.
+Step-by-step in [`browser_ver/native/README.md`](../browser_ver/native/README.md).
+This is the only part of Path D that involves developer tools.
+
+### Building the core yourself (developers only)
+
+Not needed for any step above. If you'd rather compile than download:
 
 ```bash
-# One-time: install the Emscripten SDK
-# (clone it anywhere outside the iTamaPoke folder)
 git clone --depth 1 https://github.com/emscripten-core/emsdk.git
-cd emsdk
-./emsdk install latest
-./emsdk activate latest
+cd emsdk && ./emsdk install latest && ./emsdk activate latest
 source ./emsdk_env.sh
-
-# Go back to the iTamaPoke repository folder
 cd /path/to/iTamaPoke
-
-# Build the core -> browser_ver/web/tp_core.{js,wasm}
-bash browser_ver/build.sh
+bash browser_ver/build.sh        # writes browser_ver/web/tp_core.{js,wasm}
 ```
 
-`emsdk` needs Python 3.10+. Check first:
+`emsdk` needs Python 3.10+ (`python3 --version`); macOS's bundled one is
+often 3.9, in which case `brew install python@3.11` and run
+`./emsdk install latest` through that interpreter. Re-run `build.sh` after
+every `git pull` that touches `upstream-expanded/` or `browser_ver/core/`
+— the compiled core is not committed, and stale one shows up as a single
+screen throwing rather than the page failing to load.
 
-```bash
-python3 --version
-```
+### Path D troubleshooting
 
-If that's already 3.10 or newer, you're set — skip ahead. If it's older
-(macOS's own bundled `/usr/bin/python3` is commonly 3.9), install a current
-one the normal way instead of hunting for a workaround:
+**Blank dark page with "loading…" that never changes.** You opened
+`index.html` by double-clicking it. Serve it as in D2 and use the
+`http://localhost:8123` address.
 
-- **macOS**: `brew install python@3.11` (or any newer 3.x)
-- **Windows**: the installer from [python.org](https://www.python.org/downloads/)
-- **Linux**: your distro's package manager (e.g. `apt install python3.11`)
+**Phone shows "cannot connect" / "site can't be reached".** In order: is
+the server window from D2 still open? Same Wi-Fi? Did you type `http://`
+and the `:8123`? Firewall allowed (D3)? Some routers block devices from
+seeing each other ("AP isolation" / "client isolation") — that setting has
+to be off.
 
-Then either put that Python first on your `PATH` for this terminal session,
-or run `emsdk install`/`emsdk activate` explicitly through it (e.g.
-`/opt/homebrew/opt/python@3.11/bin/python3 ./emsdk install latest`) instead
-of the plain `./emsdk install latest` above. Once installed and activated,
-`source ./emsdk_env.sh` still works the same either way.
+**No character art, just a stand-in shape or a "?".** The sprites haven't
+been loaded on *this* device/browser yet — D4, and it's per device.
 
-### 2. Put it on your phone: a native shell, not a browser tab
+**Sound doesn't play.** The game starts in silent mode, and browsers block
+audio until you tap something. Swipe down for settings and tap the sound
+pill to FULL.
 
-`browser_ver/native/` has everything for this — a minimal **WKWebView**
-(iOS/iPadOS) shell you drop into a new Xcode target, and a ready-to-open
-**WebView** (Android) Gradle project. Both load `browser_ver/web/` as
-local files bundled *inside* the app itself — no server running anywhere,
-no network permission, nothing left on a computer once it's installed.
-Full step-by-step in `browser_ver/native/README.md`; short version:
-
-- **iOS/iPadOS**: The Xcode project file (`TamaPoke.xcodeproj`) is already in
-  the root folder, included in the git clone (or generated by `xcodegen generate`
-  if you ran Path C). Open it in Xcode → File → New → Target… → iOS App → 
-  drag in `browser_ver/native/ios/WebShellApp.swift` and its `Info.plist` → 
-  drag the whole `browser_ver/web` folder into the target **as a folder reference** 
-  (blue folder icon, not a group) → build and run on your connected iPhone/iPad, 
-  same as the main app.
-- **Android**: open `browser_ver/native/android/` directly in Android
-  Studio → copy `browser_ver/web/` into `app/src/main/assets/web/` → run
-  on your connected phone.
-
-That's the app on your device. Everything below (sprites, dex text) is
-picked once inside that installed app, exactly like on a desktop browser.
-
-### Quick preview on your computer (optional, not the point of this path)
-
-If you just want to click around before wrapping it in a native shell:
-
-```bash
-# Serve it locally (not file:// -- the WASM load needs a real origin)
-cd browser_ver/web && python3 -m http.server 8123
-# then open http://localhost:8123 in a desktop browser
-```
-
-### Adding sprites (in detail)
-
-The browser build has no Files app to drop files into — instead, **you
-pick the files directly inside the page itself**:
-
-1. On a computer, run `Scripts/fetch_sprites.sh` (same script Path C
-   uses) to get `.bin` files — one per species, named `p<dex>.bin`
-   (normal) and `ps<dex>.bin` (shiny).
-2. Get those `.bin` files onto the device you're actually running the app
-   on. If that's the same computer, they're already there. If it's your
-   phone/tablet running the native shell from step 2 above, get them onto
-   it however you'd move any file — AirDrop, cable, a cloud drive app —
-   same as moving sprites onto the iOS app in Path A step 5.
-3. In the app, tap **"Load sprites…"** (top right).
-3. In the file picker, **select every `.bin` file you want at once** —
-   multi-select, not a folder drag. (Deliberately not a folder picker:
-   iOS Safari's folder-select is unreliable, so this build always uses a
-   plain multi-file select instead, on every platform.)
-4. The files are stored in **this browser's own IndexedDB** (local
-   storage tied to this browser, this device) and stay there across
-   reloads — you only need to pick them once per browser.
-5. Picking a file again for a species you already loaded just overwrites
-   it; nothing needs deleting first.
-
-Switching browsers (Safari → Chrome), using a private/incognito window, or
-clearing this site's data empties that IndexedDB — just click "Load
-sprites…" again when that happens. The `.bin` files themselves stay on
-your computer either way; nothing is ever uploaded anywhere.
-
-### Adding dex entry text (optional)
-
-Same idea, a second button: run `Scripts/fetch_dex_entries.sh` to get
-`dex_entries_<lang>.txt`, then click **"Load dex text…"** and multi-select
-the file(s). It shows up on the dex detail screen's second page (tap the
-right-hand page dot).
-
-### Adding cries (optional)
-
-A third button, same pattern: run `Scripts/fetch_cries.sh` (needs `ffmpeg`
-on the computer you run it from — see the README's "Cries") to get
-`psnd<dex>.m4a`, then click **"Load cries…"** and multi-select them. A play
-capsule then appears on the dex detail screen's first page, under the
-portrait; tapping it plays that species' cry and fills the capsule as it
-goes, tapping again stops it. Species you haven't loaded a file for simply
-don't show the button. Cries follow the sound setting: they're muted unless
-sound is set to full (vibrate-only and silent both mute them), the same
-rule the iOS app uses.
+**My save disappeared on the phone.** The address changed — see the note
+in D3. The old save comes back when the old address does.
 
 ---
 

@@ -1,7 +1,6 @@
 // Stat card, ported from PetScreen.swift's renderCard + its eight page
-// functions -- Profile/Personality/Battle/Medals/Progress are ported;
-// Daily/Box/Expedition show a placeholder (see below for why) rather than
-// crashing or silently doing nothing. Also the rename keyboard
+// functions. Profile/Personality/Battle/Medals/Progress live here;
+// Daily/Box/Expedition are in expedition.js. Also the rename keyboard
 // (renderKeyboard/keyboardTap).
 
 let cardPage = 0;

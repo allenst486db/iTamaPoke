@@ -320,11 +320,14 @@ struct PetScreen: View {
             drawHeader(ctx, name: pet.headerName, nameColor: ink,
                        message: pet.eggMessage, ink: ink)
             drawEgg(ctx, cracks: pet.eggCracks)
+            ctx.fillRect(0, 312, TP.screen, 154, panel)
+            // Drawn after the panel: at y=316 the label sits inside the
+            // panel's rect (312..466), so painting it first buried it under
+            // the fill and a rare/legendary egg never showed its label.
             if let rarity = pet.eggRarityLabel {
                 let c: UInt16 = pet.eggRarity == 3 ? UI.barWarn : 0x4C98
                 ctx.gfxTextCentered(rarity, 316, 2, c)
             }
-            ctx.fillRect(0, 312, TP.screen, 154, panel)
             ctx.gfxTextCentered(pet.pokedexLine, 348, 2, ink)
         } else {
             drawHeader(ctx, name: pet.headerName,

@@ -226,9 +226,7 @@ function drawCeremonyFx(now) {
       const py = 410 - ((now / 8 + i * 70) % 360);
       if (py < 30) continue;
       if (i % 4 === 0) {
-        ctx.font = "16px monospace"; ctx.textAlign = "center";
-        ctx.fillStyle = "#ff6b9a";
-        ctx.fillText("♥", px, py);
+        drawIcon(TPIcon.heart, px - 8, py - 8, 1);  // same glyph as PetScreen.swift's drawCeremony
       } else {
         ctx.fillStyle = i % 2 === 1 ? "#ffe79f" : "#ff9ac0";
         ctx.fillRect(px, py, 4, 4);

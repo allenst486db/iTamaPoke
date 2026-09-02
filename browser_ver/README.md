@@ -33,7 +33,11 @@ browser_ver/
       Arduino.h           # millis()/random()/Serial stand-ins
       Preferences.h        # in-memory NVS-shaped key/value store
   web/
-    index.html, main.js   # WASM smoke test (NOT the game UI)
+    index.html, main.js   # the game: idle screen, input, screen routing
+    icons.js, scene.js,   # TPIcon glyphs / SceneRenderer backdrop /
+    behaviour.js          #   creature behaviour + bath (ports of the Swift)
+    sprites.js, audio.js, minigames.js, dex.js, dexentry.js, cry.js,
+    battle.js, card.js, expedition.js, ceremony.js
     tp_core.js/.wasm       # build.sh's output, gitignored
   build.sh                # builds core/ + upstream-expanded/*.cpp -> web/tp_core.*
 ```
@@ -59,10 +63,11 @@ browser_ver/build.sh              # writes browser_ver/web/tp_core.{js,wasm}
 ```
 
 Then serve `browser_ver/web/` over HTTP (not `file://` — the WASM fetch
-needs a real origin) and open `index.html`. It doesn't play the game yet;
-it ticks a fresh egg forward once a frame and prints the core's status, to
-prove the link between the browser and the untouched C++ logic actually
-works before anything else gets built on top of it.
+needs a real origin) and open `index.html`. Or skip the local toolchain
+entirely: the **Build (browser)** GitHub Actions workflow
+(`.github/workflows/build-browser.yml`) compiles the core and uploads the
+whole `web/` folder as an artifact, which is what the install guide's
+Path D points non-developers at.
 
 emsdk requires Python 3.10+; if your system Python is older, a portable
 build from [astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)
@@ -157,9 +162,10 @@ Python for everything after that.
 4. ~~TPK2 sprite parser in JS~~ ✅ done, `web/sprites.js` — ports
    `TPSprite.swift` (palette, actions, frame-walk, whole-pixel scale)
    exactly, verified against a real `p004.bin` rendering correctly on
-   canvas. Only the idle pose animates so far; walk/eat/sleep/hurt/etc. are
-   parsed but not yet drawn anywhere — that's step 2's remaining scope, not
-   this one's.
+   canvas. Every action the sheet carries is drawn now: `web/behaviour.js`
+   ports `GameModel.swift`'s `advanceBehaviour`/`behNext` scheduler (look
+   around / stroll / one-shot gesture, plus eat/sleep/hurt by mood), so the
+   creature moves the same way it does on iOS.
 5. ~~Asset loading~~ ✅ done, same file: a local multi-file picker
    (`accept=".bin" multiple`, not `webkitdirectory` — unreliable on iOS
    Safari) into IndexedDB, mirroring the iOS app's Documents/mons flow.
@@ -189,10 +195,26 @@ Python for everything after that.
 Everything above is ported faithfully; a few things genuinely aren't there
 yet, rather than being a stand-in for something ported elsewhere:
 
-Nothing outstanding: the three entries this list used to carry are all
-resolved below.
+Nothing outstanding: the entries this list used to carry are all resolved
+below.
 
 Fixed since this list was written:
+
+- ~~**Presentation parity on the idle screen.**~~ The idle screen used to
+  be a flat backdrop, emoji buttons and one looping sprite frame. It now
+  matches `PetScreen.swift` piece for piece: `icons.js` carries the same
+  TPIcon pixel glyphs (food/play/light/clean/berries/candy/poop/heart) with
+  the same RGB565 palette; `scene.js` is a line-for-line port of
+  `SceneRenderer.swift` (sky by hour, biome ground, night palette), used
+  behind the idle screen, the minigames and the battle; `behaviour.js` is
+  the creature's stroll/gesture scheduler and the CLEAN bath (suds, then
+  the real `clean()` when they pop). Also ported: the egg with cracks,
+  hint text and rarity label; the four-item FEED menu (berry/berry/candy);
+  the streak badge; the level-up celebration; the header's status message;
+  the long-press release dialog; the caress zone; the wild-battle "already
+  caught" marker. The C++ side gained the matching presentation accessors
+  in `browser_glue.cpp` (`tp_egg_*`, `tp_status_message`, `tp_show_heart`,
+  `tp_release*`, medal/milestone banners …) mirroring `TPPet.mm`.
 
 - ~~**Dex cry playback.**~~ Ported, in `cry.js`: a "Load cries…" picker
   (same local-file/IndexedDB pattern as sprites and dex text, never

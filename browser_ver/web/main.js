@@ -8,7 +8,7 @@ const rgb565 = (u16) => {
 };
 
 // Mirrors TPGraphics.swift's TP/UI enums.
-const TP = { screen: 466, cx: 233, cy: 233, petGround: 304, btnHalf: 26 };
+const TP = { screen: 466, cx: 233, cy: 233, petCY: 202, petGround: 304, btnHalf: 26 };
 const UI = {
   bgDay: rgb565(0xF77C), bgNight: rgb565(0x10C5),
   ink: rgb565(0x2946), inkNight: rgb565(0xDEFE),
@@ -18,12 +18,28 @@ const UI = {
 
 // Same four buttons as PetScreen.swift's `Self.buttons`, in the same order:
 // feed / play / light(sleep toggle) / clean.
+// Each carries the firmware's own pixel icon (icons.js), drawn 16x16 at
+// scale 2 centred on the button exactly as drawButtons does on iOS.
+//
+// FEED opens the berry/candy menu rather than feeding straight away (the
+// iOS button does the same: red berry, blue berry, green berry, candy --
+// which berry the creature loves is a per-species secret to discover, and
+// candy is the weight mechanic; neither was reachable at all while FEED
+// short-circuited to feedBerry(0)). CLEAN starts the bath, which washes the
+// creature only once the suds finish -- see behaviour.js's stepBath.
 const BUTTONS = [
-  { x: 140, y: 390, label: "FEED", action: () => Module._tp_feed_berry(0) },
-  { x: 202, y: 404, label: "PLAY", action: () => { screen = "gamemenu"; } },
-  { x: 264, y: 404, label: "LIGHT", action: () => Module._tp_toggle_light() },
-  { x: 326, y: 390, label: "CLEAN", action: () => Module._tp_clean() },
+  { x: 140, y: 390, label: "FEED",  icon: () => TPIcon.food,  action: (now) => { feedMenuUntil = now + 6000; } },
+  { x: 202, y: 404, label: "PLAY",  icon: () => TPIcon.play,  action: () => { screen = "gamemenu"; } },
+  { x: 264, y: 404, label: "LIGHT", icon: () => TPIcon.light, action: () => Module._tp_toggle_light() },
+  { x: 326, y: 390, label: "CLEAN", icon: () => TPIcon.clean, action: (now) => {
+    startBath(now, fns.isEgg() !== 0, fns.sleeping() !== 0, fns.ceremony());
+  } },
 ];
+
+// Mirrors PetScreen.swift's `feedMenuUntil` / `confirmUntil`: deadlines in
+// ms after which the feed menu / release dialog close on their own.
+let feedMenuUntil = 0;
+let confirmUntil = 0;
 
 const canvas = document.getElementById("tp");
 const ctx = canvas.getContext("2d");
@@ -73,6 +89,18 @@ function isNight() {
   return h < 6 || h >= 20;
 }
 
+// Shared backdrop for the minigames and the wild battle: the creature's own
+// habitat, so they don't look like a different app -- PetScreen.swift's
+// drawGameScene (SceneRenderer with sleeping forced off). Returns the ink
+// colour the caller should draw its text in.
+function drawGameScene() {
+  const hour = sceneHour();
+  const night = sceneIsNight(hour, false);
+  const biome = fns.isEgg() !== 0 ? 0 : fns.dexBiome(fns.speciesId());
+  drawScene(biome, performance.now(), night, hour);
+  return { night, ink: night ? UI.inkNight : UI.ink };
+}
+
 function drawBar(x, y, label, value) {
   const bx = x + 48, bw = 100, bh = 15;
   ctx.fillStyle = UI.ink;
@@ -98,10 +126,10 @@ function drawBar(x, y, label, value) {
 const frameCanvas = document.createElement("canvas");
 const frameCtx = frameCanvas.getContext("2d");
 
-/// Draws the idle pose standing on TP.petGround, or the "no sprite loaded"
-/// placeholder when nothing's been picked yet for this species. Ports the
-/// idle branch of PetScreen.swift's drawPet -- no walk/eat/sleep poses or
-/// evolution FX yet, just the one animated action.
+/// Draws whichever pose behaviour.js settled on this tick (walk/eat/sleep/
+/// hurt/gesture, or idle), anchored by the creature's feet on TP.petGround
+/// at petPose.x -- PetScreen.swift's drawPet. The "no sprite loaded"
+/// placeholder reproduces the firmware's own behaviour with an empty SD card.
 function drawPet(ink) {
   if (!currentSprite) {
     ctx.font = "bold 64px monospace";
@@ -111,23 +139,124 @@ function drawPet(ink) {
     ctx.fillText("(no sprite loaded for this species)", TP.cx, TP.petGround - 40);
     return;
   }
-  const a = currentSprite.actions[TPAct.idle];
+  const act = spriteHas(currentSprite, petPose.act) ? petPose.act : TPAct.idle;
+  const a = currentSprite.actions[act];
   if (!a) return;
-  const elapsed = performance.now() - poseStart;
-  const frame = frameIndexAt(a, elapsed, true);
-  const img = frameImageData(currentSprite, TPAct.idle, frame);
+  const frame = frameIndexAt(a, petPose.elapsedMs, petPose.loop);
+  const img = frameImageData(currentSprite, act, frame);
   if (!img) return;
 
   const s = spriteScale(currentSprite, a);
   const w = a.w * s, h = a.h * s;
-  const x = TP.cx - w / 2;
-  const y = TP.petGround - (a.base > 0 ? a.base : a.h) * s;
+  const x = petPose.x - w / 2;
+  const y = TP.petGround - (a.base > 0 ? a.base : a.h) * s + petPose.yOffset;
 
   frameCanvas.width = a.w;
   frameCanvas.height = a.h;
   frameCtx.putImageData(img, 0, 0);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(frameCanvas, x, y, w, h);
+}
+
+// Port of drawEgg: cream ellipse, three spots, crack marks at 1 and 2 taps
+// (the third hatches).
+function drawEgg(cracks) {
+  const cy = TP.petCY;
+  ctx.beginPath();
+  ctx.ellipse(TP.cx, cy, 60, 75, 0, 0, Math.PI * 2);
+  ctx.fillStyle = "rgb(246,240,220)";
+  ctx.fill();
+  ctx.strokeStyle = UI.ink;
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  ctx.fillStyle = "rgb(216,201,164)";
+  for (const [sx, sy] of [[-22, -10], [14, 8], [-6, 34]]) {
+    ctx.beginPath(); ctx.arc(TP.cx + sx, cy + sy, 9, 0, Math.PI * 2); ctx.fill();
+  }
+  const crack = (fx, fy, dx) => {
+    ctx.strokeStyle = UI.ink; ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(fx, fy);
+    ctx.lineTo(fx + dx, fy + 12);
+    ctx.lineTo(fx, fy + 24);
+    ctx.lineTo(fx + dx, fy + 36);
+    ctx.stroke();
+  };
+  if (cracks >= 1) crack(TP.cx + 6, cy - 46, 10);
+  if (cracks >= 2) crack(TP.cx - 18, cy + 4, -12);
+}
+
+// Flame and streak count, top-left of the idle screen -- drawStreakBadge.
+function drawFlame(x, y, h = 18) {
+  ctx.fillStyle = UI.barBad;
+  ctx.beginPath(); ctx.moveTo(x + 8, y); ctx.lineTo(x + 1, y + h); ctx.lineTo(x + 15, y + h); ctx.closePath(); ctx.fill();
+  ctx.fillStyle = UI.barWarn;
+  ctx.beginPath(); ctx.moveTo(x + 8, y + 7); ctx.lineTo(x + 4, y + h); ctx.lineTo(x + 12, y + h); ctx.closePath(); ctx.fill();
+}
+function drawStreakBadge(ink) {
+  const streak = fns.streak();
+  if (streak < 1) return;
+  drawFlame(26, 16, 17);
+  ctx.textAlign = "left";
+  ctx.font = "bold 15px monospace";
+  ctx.fillStyle = ink;
+  ctx.fillText(String(streak), 48, 30);
+}
+
+// Temporary banner for a new medal or a streak milestone -- drawCelebration.
+function drawCelebration() {
+  let title, detail;
+  if (fns.showMedal() !== 0 && fns.newMedalName()) {
+    title = fns.medalBannerTitle(); detail = fns.newMedalName();
+  } else if (fns.showMilestone() !== 0) {
+    title = fns.milestoneTitle(); detail = fns.milestoneLine();
+  } else {
+    return;
+  }
+  ctx.fillStyle = UI.barWarn;
+  roundRect(73, 150, 320, 96, 16); ctx.fill();
+  ctx.strokeStyle = UI.ink; ctx.lineWidth = 1;
+  roundRect(73, 150, 320, 96, 16); ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(title, TP.cx, 192);
+  ctx.font = "15px monospace";
+  ctx.fillText(detail, TP.cx, 224);
+}
+
+// The berry/candy picker FEED opens -- drawFeedMenu: four icons at scale 3
+// in a white box, exactly where iOS puts them. Tapping picks by column.
+function drawFeedMenu(ink) {
+  ctx.fillStyle = UI.white;
+  roundRect(101, 288, 264, 64, 14); ctx.fill();
+  ctx.strokeStyle = ink; ctx.lineWidth = 1;
+  roundRect(101, 288, 264, 64, 14); ctx.stroke();
+  drawIcon(TPIcon.food, 110, 296, 3);
+  drawIcon(TPIcon.berryBlue, 176, 296, 3);
+  drawIcon(TPIcon.berryGreen, 242, 296, 3);
+  drawIcon(TPIcon.candy, 308, 296, 3);
+}
+
+// "Let it go?" -- the long-press confirmation, two buttons (TP.releaseYes/No).
+const RELEASE_YES = { x: 118, y: 252, w: 100, h: 52 };
+const RELEASE_NO = { x: 248, y: 252, w: 100, h: 52 };
+function drawReleaseDialog() {
+  ctx.fillStyle = UI.white;
+  roundRect(94, 168, 278, 152, 16); ctx.fill();
+  ctx.strokeStyle = UI.ink; ctx.lineWidth = 1;
+  roundRect(94, 168, 278, 152, 16); ctx.stroke();
+  ctx.textAlign = "center";
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 15px monospace";
+  ctx.fillText(fns.releaseQuestion(), TP.cx, 208);
+  ctx.fillStyle = UI.barOK;
+  roundRect(RELEASE_YES.x, RELEASE_YES.y, RELEASE_YES.w, RELEASE_YES.h, 12); ctx.fill();
+  ctx.fillStyle = UI.barBad;
+  roundRect(RELEASE_NO.x, RELEASE_NO.y, RELEASE_NO.w, RELEASE_NO.h, 12); ctx.fill();
+  ctx.fillStyle = UI.white;
+  ctx.fillText(fns.yesText(), RELEASE_YES.x + RELEASE_YES.w / 2, RELEASE_YES.y + 32);
+  ctx.fillText(fns.noText(), RELEASE_NO.x + RELEASE_NO.w / 2, RELEASE_NO.y + 32);
 }
 
 // Same 8-slot picker as PetScreen.swift's langCodes/isDexKorean, kept in
@@ -288,10 +417,7 @@ function drawGameOverCard(ink, score, newHigh, high) {
 // stops short of the falling-poop/weather flourishes SceneRenderer.swift
 // draws, since that renderer isn't ported yet either (see roadmap).
 function drawBallGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
 
   if (BallGame.overUntil !== 0) {
     drawGameOverCard(ink, BallGame.score, BallGame.newHigh, fns.gameHigh());
@@ -314,11 +440,17 @@ function drawBallGame(now) {
   // The creature chases the ball -- reuses drawPet's sprite/fallback but at
   // a ground line matching upstream's game-scene y (394, not petGround).
   if (currentSprite) {
-    const a = currentSprite.actions[TPAct.idle];
+    // Walks toward the ball, as renderBallGame does on iOS: walkR/walkL
+    // by which side the ball is on, idle if the sheet has no walk frames.
+    let act = TPAct.idle;
+    if (BallGame.ballX > BallGame.petX + 4) act = TPAct.walkR;
+    else if (BallGame.ballX < BallGame.petX - 4) act = TPAct.walkL;
+    if (!spriteHas(currentSprite, act)) act = TPAct.idle;
+    const a = currentSprite.actions[act];
     if (a) {
       const elapsed = performance.now() - poseStart;
       const frame = frameIndexAt(a, elapsed, true);
-      const img = frameImageData(currentSprite, TPAct.idle, frame);
+      const img = frameImageData(currentSprite, act, frame);
       if (img) {
         const s = Math.min(spriteScale(currentSprite, a), 3);
         const w = a.w * s, h = a.h * s;
@@ -338,22 +470,17 @@ function drawBallGame(now) {
     ctx.beginPath(); ctx.arc(BallGame.hitX, BallGame.hitY, rad, 0, Math.PI * 2); ctx.stroke();
   }
 
-  ctx.font = "24px monospace";
-  ctx.textAlign = "center";
-  ctx.fillText("⚽", BallGame.ballX, BallGame.ballY + 8); // ball emoji stand-in -- TPIcon.play isn't ported to canvas yet
+  // The ball is the firmware's own pokeball glyph, same as PetScreen.swift's
+  // renderBallGame: 16x16 at scale 3, centred on the ball's position.
+  drawIcon(TPIcon.play, BallGame.ballX - 24, BallGame.ballY - 24, 3);
 
   statusEl.textContent = `Ball · score ${BallGame.score} · misses ${BallGame.misses}/3`;
 }
 
-const CATCH_ICONS = ["🍖", "🫐", "🍏"];
-
 // Ports renderCatchGame(): a target that shrinks its own patience bar,
 // three lives, and the day/night backdrop shared with Ball.
 function drawCatchGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
   const g = CatchGame;
 
   if (g.overUntil !== 0) {
@@ -384,8 +511,10 @@ function drawCatchGame(now) {
   ctx.arc(g.targetX, g.targetY, 34, 0, Math.PI * 2);
   ctx.fillStyle = UI.white; ctx.fill();
   ctx.strokeStyle = UI.barWarn; ctx.lineWidth = 2; ctx.stroke();
-  ctx.font = "26px monospace";
-  ctx.fillText(CATCH_ICONS[g.icon], g.targetX, g.targetY + 9);
+  // The target is the same berry/food glyph PetScreen.swift's renderCatchGame
+  // draws (food / blue berry / green berry by g.icon), 16x16 at scale 3.
+  const catchIcon = g.icon === 0 ? TPIcon.food : (g.icon === 1 ? TPIcon.berryBlue : TPIcon.berryGreen);
+  drawIcon(catchIcon, g.targetX - 24, g.targetY - 24, 3);
 
   const bw = 280;
   const left = g.targetUntil > now ? g.targetUntil - now : 0;
@@ -406,10 +535,7 @@ function drawCatchGame(now) {
 // Ports renderMemoGame(): four pads, lighting during playback and flashing
 // green/red on the player's own taps.
 function drawMemoGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
   const g = MemoGame;
 
   if (g.overUntil !== 0) {
@@ -456,10 +582,7 @@ function drawMemoGame(now) {
 
 // Ports renderCleanGame(): dirt spots to scrub within a countdown.
 function drawCleanGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
   const g = CleanGame;
 
   if (g.overUntil !== 0) {
@@ -483,16 +606,22 @@ function drawCleanGame(now) {
   roundRect(TP.cx - bw / 2, 362, bw, 16, 5); ctx.fill();
   if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, 362, fw, 16, 5); ctx.fill(); }
 
-  ctx.textAlign = "center";
-  ctx.font = "28px monospace";
+  // Dirt blobs, as PetScreen.swift's renderCleanGame draws them: a brown
+  // disc with an ink outline and two darker spots -- not a bubble emoji.
   for (let i = 0; i < 4; i++) {
     if (!g.alive[i]) continue;
-    ctx.fillText("🫧", g.x[i], g.y[i] + 10);
+    ctx.fillStyle = "rgb(138,102,69)";
+    ctx.beginPath(); ctx.arc(g.x[i], g.y[i], 26, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = UI.ink; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(g.x[i], g.y[i], 28, 0, Math.PI * 2); ctx.stroke();
+    ctx.fillStyle = "rgb(98,69,46)";
+    ctx.beginPath(); ctx.arc(g.x[i] - 8, g.y[i] - 8, 5, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(g.x[i] + 10, g.y[i] + 4, 6, 0, Math.PI * 2); ctx.fill();
   }
   const since = now - g.hitAt;
   if (g.hitAt !== 0 && since < 220) {
     ctx.strokeStyle = UI.barOK; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.arc(g.hitX, g.hitY, 30 + since / 8, 0, Math.PI * 2); ctx.stroke();
+    ctx.beginPath(); ctx.arc(g.hitX, g.hitY, 42 + since / 8, 0, Math.PI * 2); ctx.stroke();
   }
 
   statusEl.textContent = `Clean · score ${g.score} · misses ${g.misses}/3`;
@@ -505,10 +634,7 @@ const TYPE_NAMES = ["", "NORMAL", "FIRE", "WATER", "ELECTRIC", "GRASS", "ICE",
   "DRAGON", "DARK", "STEEL", "FAIRY"];
 
 function drawTypeGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
   const g = TypeGame;
 
   if (g.overUntil !== 0) {
@@ -553,10 +679,7 @@ function drawTypeGame(now) {
 
 // Ports renderSack(): a swinging punching bag, tapped for ten seconds.
 function drawSackGame(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  const { night, ink } = drawGameScene();
 
   if (Module._tp_sack_is_over() !== 0) {
     ctx.fillStyle = ink;
@@ -645,48 +768,61 @@ function draw() {
     return;
   }
 
+  const now = performance.now();
   const isEgg = fns.isEgg() !== 0;
   const sleeping = fns.sleeping() !== 0;
-  const night = sleeping || isNight();
+  const hour = sceneHour();
+  const night = sceneIsNight(hour, sleeping);
   const panel = night ? UI.bgNight : UI.bgDay;
   const ink = night ? UI.inkNight : UI.ink;
 
-  ctx.fillStyle = panel;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  // The creature's world: sky from the clock, ground from the species'
+  // biome (an egg sits on the meadow) -- SceneRenderer.draw on iOS.
+  const biome = isEgg ? 0 : fns.dexBiome(fns.speciesId());
+  drawScene(biome, now, night, hour);
 
-  // Header
-  ctx.fillStyle = ink;
+  // Header: name in the species' own accent colour (ink at night), status
+  // line under it -- drawHeader on iOS.
+  const nameColor = night ? UI.inkNight : rgb565(fns.dexAccent(fns.speciesId()));
   ctx.textAlign = "center";
   ctx.font = "bold 22px monospace";
-  ctx.fillText(fns.name(), TP.cx, 60);
+  ctx.fillStyle = isEgg ? ink : nameColor;
+  ctx.fillText(fns.headerName(), TP.cx, 60);
+  ctx.font = "15px monospace";
+  ctx.fillStyle = ink;
+  ctx.fillText(isEgg ? fns.eggMessage() : fns.statusMessage(), TP.cx, 96);
 
   if (isEgg) {
-    // Simple egg placeholder -- no crack-tap animation yet.
-    ctx.beginPath();
-    ctx.ellipse(TP.cx, TP.petGround - 75, 60, 75, 0, 0, Math.PI * 2);
-    ctx.fillStyle = "#f6f0dc";
-    ctx.fill();
-    ctx.strokeStyle = UI.ink;
-    ctx.lineWidth = 3;
-    ctx.stroke();
-    ctx.font = "16px monospace";
+    drawEgg(fns.eggCracks());
+    ctx.fillStyle = panel;
+    ctx.fillRect(0, 312, TP.screen, 154);
+    // A rare/legendary egg says so under it; a common one says nothing.
+    // Drawn after the panel, same order as PetScreen.swift (which used to
+    // paint the label first and then fill the panel over it -- fixed there
+    // at the same time this was ported).
+    const rarity = fns.eggRarityLabel();
+    if (rarity) {
+      ctx.font = "bold 15px monospace";
+      ctx.fillStyle = fns.eggRarity() === 3 ? UI.barWarn : rgb565(0x4C98);
+      ctx.fillText(rarity, TP.cx, 330);
+    }
+    ctx.font = "bold 15px monospace";
     ctx.fillStyle = ink;
-    ctx.fillText("tap FEED to hatch (WIP)", TP.cx, TP.petGround + 30);
-    statusEl.textContent = `EGG · ${fns.name()}`;
+    ctx.fillText(`POKEDEX ${fns.registeredCount()}/${fns.dexCount()}`, TP.cx, 356);
+    statusEl.textContent = `EGG · ${fns.eggMessage()}`;
     return;
   }
 
   ensureSprite(fns.speciesId());
+  drawStreakBadge(ink);
   drawPet(ink);
+  drawBath(now);
+  // Port of drawPetPMD's trailing heart draw, following the creature.
+  if (fns.showHeart() !== 0) drawIcon(TPIcon.heart, petPose.x + 50, TP.petGround - 190, 2);
 
-  // Poop icons
+  // Poops, the firmware's own glyph -- 32x32 at scale 2, same spots as iOS.
   const poops = fns.poops();
-  ctx.fillStyle = "#7a5230";
-  for (let i = 0; i < poops; i++) {
-    ctx.beginPath();
-    ctx.arc(36 + i * 46 + 10, 244 + 10, 9, 0, Math.PI * 2);
-    ctx.fill();
-  }
+  for (let i = 0; i < poops; i++) drawIcon(TPIcon.poop, 36 + i * 46, 244, 2);
 
   // Bottom panel + bars
   ctx.fillStyle = panel;
@@ -697,7 +833,7 @@ function draw() {
   drawBar(78, 346, "ENE", fns.energy());
   drawBar(244, 346, "HYG", fns.hygiene());
 
-  // Buttons
+  // Buttons: asleep, only the light button stays lit -- drawButtons on iOS.
   for (const b of BUTTONS) {
     const off = sleeping && b.label !== "LIGHT";
     if (!sleeping) {
@@ -709,13 +845,18 @@ function draw() {
     ctx.lineWidth = 2;
     roundRect(b.x - TP.btnHalf, b.y - TP.btnHalf, TP.btnHalf * 2, TP.btnHalf * 2, 14);
     ctx.stroke();
-    if (!off) {
-      ctx.fillStyle = ink;
-      ctx.font = "9px monospace";
-      ctx.textAlign = "center";
-      ctx.fillText(b.label, b.x, b.y + 3);
-    }
+    // 16x16 at scale 2, drawn from its top-left corner: the firmware's
+    // `cx - 16, cy - 16` centres a 32px icon on the button.
+    if (!off) drawIcon(b.icon(), b.x - 16, b.y - 16, 2);
   }
+
+  drawCelebration();
+
+  // Evolve/farewell/runaway call-to-action, and its confirmation dialog --
+  // same precedence as PetScreen.swift's render(): evolve first, then
+  // runaway, then the voluntary farewell.
+  if (!isEgg) drawExpeditionHud();
+  if (!isEgg) drawEvolveEndingOverlay(now);
 
   if (sleeping) {
     ctx.font = "bold 28px monospace";
@@ -723,12 +864,8 @@ function draw() {
     ctx.textAlign = "left";
     ctx.fillText("Zz", 320, 140);
   }
-
-  // Evolve/farewell/runaway call-to-action, and its confirmation dialog --
-  // same precedence as PetScreen.swift's render(): evolve first, then
-  // runaway, then the voluntary farewell.
-  if (!isEgg) drawExpeditionHud();
-  if (!isEgg) drawEvolveEndingOverlay(performance.now());
+  if (now < feedMenuUntil) drawFeedMenu(ink);
+  if (now < confirmUntil) drawReleaseDialog();
   if (choice !== "none") drawChoiceDialog();
 
   // Wild-encounter prompt, checked once a frame while the idle screen is
@@ -806,24 +943,65 @@ function handleTap(x, y) {
     }
     return;
   }
-  if (fns.isEgg() !== 0) {
-    Module._tp_egg_tap();
-    return;
-  }
+  // From here on this is PetScreen.swift's idle-screen onTap, in its order.
+  const now = performance.now();
+
+  // A decision dialog swallows the tap whether or not it hit an option.
   if (choice !== "none") {
     choiceDialogTap(x, y);
     return;
   }
+  // The release confirmation swallows the tap and closes either way.
+  if (now < confirmUntil) {
+    if (x >= RELEASE_YES.x && x <= RELEASE_YES.x + RELEASE_YES.w &&
+        y >= RELEASE_YES.y && y <= RELEASE_YES.y + RELEASE_YES.h) {
+      Module._tp_release();
+    }
+    confirmUntil = 0;
+    return;
+  }
+  if (fns.ceremony() !== 0) return;  // no buttons during a ceremony
+
+  // Feed menu: pick by column, any other tap just closes it.
+  if (now < feedMenuUntil) {
+    if (y >= 288 && y <= 352 && x >= 101 && x <= 365) {
+      const item = Math.floor((x - 101) / 66);
+      if (item === 3) Module._tp_feed_candy(); else Module._tp_feed_berry(item);
+      playSfx(1); // eat
+    }
+    feedMenuUntil = 0;
+    return;
+  }
+
+  if (fns.isEgg() !== 0) {
+    Module._tp_egg_tap();
+    playSfx(0); // tap
+    return;
+  }
+
   if (evolveEndingTap(x, y)) return;
   if (fns.wildPromptActive() !== 0) {
     wildPromptTap(x, y);
     return;
   }
-  for (const b of BUTTONS) {
-    if (Math.abs(x - b.x) < TP.btnHalf && Math.abs(y - b.y) < TP.btnHalf) {
-      b.action();
-      return;
-    }
+
+  // The four action buttons: round hit area (BTN_HIT 36), and while asleep
+  // only the light button answers -- same as iOS.
+  const sleeping = fns.sleeping() !== 0;
+  for (let i = 0; i < BUTTONS.length; i++) {
+    const b = BUTTONS[i];
+    const dx = x - b.x, dy = y - b.y;
+    if (dx * dx + dy * dy > 36 * 36) continue;
+    if (sleeping && i !== 2) return;
+    playSfx(0); // tap
+    b.action(now);
+    return;
+  }
+
+  // inPetZone(): tapping the creature pets it.
+  if (x > 110 && x < 356 && y > 95 && y < 310) {
+    Module._tp_caress();
+    if (!sleeping) playSfx(3); // heart (audio.js EFFECTS[3]; 2 is "play")
   }
 }
 
@@ -833,6 +1011,10 @@ function handleTap(x, y) {
 // not be read as "swipe out of the game."
 function swipeAllowed() {
   if (screen === "game" || screen === "battle" || screen === "gamemenu") return false;
+  // Same extra gates as PetScreen.swift's swipe guard: an open feed menu
+  // or release dialog owns the touch until it closes.
+  const now = performance.now();
+  if (now < feedMenuUntil || now < confirmUntil) return false;
   return choice === "none" && fns.wildPromptActive() === 0;
 }
 
@@ -899,19 +1081,50 @@ function onSwipeV(dir) {
 // which would make every swipe also register as a tap on whatever sits
 // under the finger's starting point.
 let dragStart = null;
+let dragStartAt = 0;
+let dragNow = null;
+let holdFired = false;
 function toScreenSpace(clientX, clientY) {
   const rect = canvas.getBoundingClientRect();
   const sx = TP.screen / rect.width, sy = TP.screen / rect.height;
   return { x: (clientX - rect.left) * sx, y: (clientY - rect.top) * sy };
 }
+
+// Long-press on the creature opens the release ("let it go?") dialog --
+// PetScreen.swift's hold check: 3s held within 30px of where it started, on
+// the idle screen, inside the pet zone, with nothing else open. Polled from
+// the frame loop the same way iOS polls it from its tick.
+function checkHold(now) {
+  if (holdFired || screen !== "idle" || !dragStart || !dragNow) return;
+  if (now - dragStartAt <= 3000) return;
+  if (Math.abs(dragNow.x - dragStart.x) >= 30 || Math.abs(dragNow.y - dragStart.y) >= 30) return;
+  const p = dragStart;
+  if (!(p.x > 110 && p.x < 356 && p.y > 95 && p.y < 310)) return;   // inPetZone
+  if (fns.isEgg() !== 0 || fns.ceremony() !== 0 || choice !== "none") return;
+  if (now < confirmUntil || now < feedMenuUntil) return;
+  confirmUntil = now + 10000;
+  holdFired = true;
+}
+
 canvas.addEventListener("pointerdown", (e) => {
   if (!Module) return;
   dragStart = toScreenSpace(e.clientX, e.clientY);
+  dragNow = dragStart;
+  dragStartAt = performance.now();
+  holdFired = false;
+});
+canvas.addEventListener("pointermove", (e) => {
+  if (!Module || !dragStart) return;
+  dragNow = toScreenSpace(e.clientX, e.clientY);
 });
 canvas.addEventListener("pointerup", (e) => {
   if (!Module || !dragStart) return;
   const from = dragStart;
   dragStart = null;
+  dragNow = null;
+  // A fired hold has already acted; upstream swallows the gesture rather
+  // than also treating the release as a tap.
+  if (holdFired) { holdFired = false; return; }
   const to = toScreenSpace(e.clientX, e.clientY);
   if (!swipeAllowed()) {
     handleTap(from.x, from.y);
@@ -926,7 +1139,7 @@ canvas.addEventListener("pointerup", (e) => {
     handleTap(from.x, from.y);
   }
 });
-canvas.addEventListener("pointercancel", () => { dragStart = null; });
+canvas.addEventListener("pointercancel", () => { dragStart = null; dragNow = null; holdFired = false; });
 
 // --- Save persistence ----------------------------------------------------
 //
@@ -1075,6 +1288,30 @@ createTPCore({
     hygiene: mod.cwrap("tp_hygiene", "number", []),
     level: mod.cwrap("tp_level", "number", []),
     name: mod.cwrap("tp_name", "string", []),
+    // Idle-screen presentation (TPPet.mm's headerName/statusMessage/egg*/
+    // showHeart/mood + the celebration banner + release dialog + per-species
+    // scene biome and header accent) -- see browser_glue.cpp's matching block.
+    headerName: mod.cwrap("tp_header_name", "string", []),
+    statusMessage: mod.cwrap("tp_status_message", "string", []),
+    eggCracks: mod.cwrap("tp_egg_cracks", "number", []),
+    eggMessage: mod.cwrap("tp_egg_message", "string", []),
+    eggRarity: mod.cwrap("tp_egg_rarity", "number", []),
+    eggRarityLabel: mod.cwrap("tp_egg_rarity_label", "string", []),
+    showHeart: mod.cwrap("tp_show_heart", "number", []),
+    eating: mod.cwrap("tp_eating", "number", []),
+    mood: mod.cwrap("tp_mood", "number", []),
+    dexBiome: mod.cwrap("tp_dex_biome", "number", ["number"]),
+    dexAccent: mod.cwrap("tp_dex_accent", "number", ["number"]),
+    showMedal: mod.cwrap("tp_show_medal", "number", []),
+    showMilestone: mod.cwrap("tp_show_milestone", "number", []),
+    medalBannerTitle: mod.cwrap("tp_medal_banner_title", "string", []),
+    milestoneTitle: mod.cwrap("tp_milestone_title", "string", []),
+    newMedalName: mod.cwrap("tp_new_medal_name", "string", []),
+    milestoneLine: mod.cwrap("tp_milestone_line", "string", []),
+    releaseQuestion: mod.cwrap("tp_release_question", "string", []),
+    yesText: mod.cwrap("tp_yes_text", "string", []),
+    noText: mod.cwrap("tp_no_text", "string", []),
+    battleWildAlreadyCaught: mod.cwrap("tp_battle_wild_already_caught", "number", []),
     language: mod.cwrap("tp_language", "number", []),
     settingsTitle: mod.cwrap("tp_settings_title", "string", []),
     backHint: mod.cwrap("tp_back_hint", "string", []),
@@ -1293,6 +1530,14 @@ createTPCore({
     // just defers it to resume the instant the dialog closes -- mirrors
     // PetScreen.swift's fix, same reasoning.
     if (choice === "none") mod.ccall("tp_tick", null, ["number"], [t | 0]);
+    // The rest of GameModel.tick(): the idle creature's pose scheduler, the
+    // bath timer (which is what actually washes the creature when it ends),
+    // and the long-press check -- all on the tick, never in a draw.
+    if (screen === "idle") {
+      checkHold(t);
+      advanceBehaviour(t, currentSprite, fns.mood());
+      stepBath(t, currentSprite);
+    }
     draw();
     requestAnimationFrame(frame);
   }

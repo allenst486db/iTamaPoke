@@ -50,10 +50,9 @@ function drawBattleSprite(dex, x, now) {
 }
 
 function drawBattle(now) {
-  const night = isNight();
-  ctx.fillStyle = night ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
-  const ink = night ? UI.inkNight : UI.ink;
+  // The creature's own habitat behind the fight, as renderBattle's
+  // drawGameScene does on iOS -- not a flat panel.
+  const { night, ink } = drawGameScene();
 
   ctx.fillStyle = ink;
   ctx.textAlign = "center";
@@ -93,6 +92,11 @@ function drawBattle(now) {
     ctx.font = "bold 13px monospace";
     ctx.fillText(fns.battleRunText(), 233, 122);
   }
+  // Small "already caught" marker beside the wild side's HP bar, same glyph
+  // and spot as PetScreen.swift's renderBattle. Drawn after the RUN box so
+  // it isn't painted over while the battle is still in progress (the iOS
+  // build had exactly that bug until its draw order was fixed).
+  if (fns.battleWildAlreadyCaught() !== 0) drawIcon(TPIcon.food, 258, 108, 1);
 
   drawBattleSprite(dex, 142, now);
   drawBattleSprite(wildDex, 328, now);

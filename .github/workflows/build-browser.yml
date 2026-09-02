@@ -1,0 +1,49 @@
+# Builds the browser port's WASM core (browser_ver/build.sh) on GitHub's
+# runners and uploads the whole browser_ver/web/ folder as one artifact, so
+# nobody has to install the Emscripten SDK to get a runnable copy.
+#
+# Unlike the two iOS workflows this needs no signing, no Apple account and
+# has no 7-day expiry: the output is plain HTML/JS/WASM that runs in any
+# modern browser (docs/INSTALL.md, "Path D"). The artifact contains no
+# sprites, cries or dex text -- those are still picked locally by the user,
+# same rule as every other build (see LICENSE / NOTICE).
+
+name: Build (browser)
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "browser_ver/**"
+      - "upstream-expanded/**"
+      - ".github/workflows/build-browser.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install Emscripten
+        uses: mymindstorm/setup-emsdk@v14
+        with:
+          version: latest
+
+      - name: Build the core
+        run: bash browser_ver/build.sh
+
+      - name: Sanity-check the output
+        run: |
+          test -s browser_ver/web/tp_core.js
+          test -s browser_ver/web/tp_core.wasm
+          ls -la browser_ver/web
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iTamaPoke-browser
+          path: browser_ver/web
+          if-no-files-found: error
+          retention-days: 90

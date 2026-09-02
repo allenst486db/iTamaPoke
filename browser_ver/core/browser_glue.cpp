@@ -137,6 +137,107 @@ EMSCRIPTEN_KEEPALIVE void tp_clean() { gPet.clean(); }
 EMSCRIPTEN_KEEPALIVE void tp_caress() { gPet.caress(); }
 EMSCRIPTEN_KEEPALIVE void tp_egg_tap() { gPet.eggTap(); }
 
+// --- Idle-screen presentation, ported from TPPet.mm --------------------
+//
+// Everything PetScreen.swift's idle branch reads beyond the raw stats above:
+// the header/status lines, the egg's crack count + hint + rarity label, the
+// trailing heart, the mood the pose scheduler keys off, per-species biome/
+// accent for the scene and header, the medal/milestone celebration banner,
+// and the long-press release dialog. Each is a line-for-line port of the
+// matching TPPet.mm accessor so the two builds show the same text for the
+// same state.
+
+EMSCRIPTEN_KEEPALIVE int tp_egg_cracks() { return gPet.eggCracks(); }
+EMSCRIPTEN_KEEPALIVE int tp_egg_rarity() { return gPet.eggRarity(); }
+EMSCRIPTEN_KEEPALIVE int tp_show_heart() { return gPet.showHeart() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_eating() { return gPet.eating() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_mood() { return gPet.mood(); }  // PetMood: 0 happy 1 sad 2 eating 3 sleeping
+EMSCRIPTEN_KEEPALIVE int tp_dex_biome(int dex) {
+  return (dex >= 1 && dex <= DEX_COUNT) ? DEX_TBL[dex].biome : 0;
+}
+EMSCRIPTEN_KEEPALIVE int tp_dex_accent(int dex) {
+  return (dex >= 1 && dex <= DEX_COUNT) ? DEX_TBL[dex].accent : 0x2946;
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_egg_message() {
+  StrId id = gPet.eggCracks() == 0 ? S_EGG_TOUCH
+           : gPet.eggCracks() == 1 ? S_EGG_MOVES
+                                   : S_EGG_ALMOST;
+  return T(id);
+}
+
+// "" when the egg is common -- TPPet.mm returns nil there and the caller
+// draws nothing.
+EMSCRIPTEN_KEEPALIVE
+const char *tp_egg_rarity_label() {
+  uint8_t r = gPet.eggRarity();
+  if (r < R_RARO) return "";
+  return T(r == R_LEGENDARIO ? S_EGG_LEGEND : S_EGG_RARE);
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_header_name() {
+  static std::string out;
+  if (gPet.isEgg()) { out = T(S_EGG_HDR); return out.c_str(); }
+  const char *base = gPet.nick[0] ? gPet.nick : dexName(gPet.speciesId);
+  char buf[40];
+  snprintf(buf, sizeof(buf), T(S_NAME_FMT), gPet.shiny ? "*" : "", base, gPet.level());
+  out = buf;
+  return out.c_str();
+}
+
+EMSCRIPTEN_KEEPALIVE
+const char *tp_status_message() {
+  StrId id;
+  if (gPet.evolving())            id = S_EVOLVING;
+  else if (gPet.sleeping)         return "Zzz...";
+  else if (gPet.eating())         id = S_EATING;
+  else if (gPet.showHeart())      id = S_LIKES;
+  else if (gPet.fullness < 25)    id = S_HUNGRY;
+  else if (gPet.hygiene < 25)     id = S_NEEDS_BATH;
+  else if (gPet.energy < 25)      id = S_EXHAUSTED;
+  else if (gPet.joy < 25)         id = S_SAD;
+  else if (gPet.weight > 60)      id = S_CHUBBY;
+  else if (gPet.shiny && gPet.ageMinutes < 15) id = S_IS_SHINY;
+  else                            id = S_HAPPY;
+  return T(id);
+}
+
+// Celebration banner (drawCelebration): a new medal, else a streak milestone.
+EMSCRIPTEN_KEEPALIVE int tp_show_medal() { return gPet.showMedal() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_show_milestone() { return gPet.showMilestone() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE const char *tp_medal_banner_title() { return T(S_MEDAL_BANNER); }
+EMSCRIPTEN_KEEPALIVE const char *tp_milestone_title() { return T(S_GREAT); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_new_medal_name() {
+  if (!gPet.showMedal()) return "";
+  for (int i = 0; i < MED_COUNT; i++)
+    if (gPet.newMedal & (1 << i)) return medalName(i);
+  return "";
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_milestone_line() {
+  static std::string out;
+  char buf[32];
+  snprintf(buf, sizeof(buf), T(S_STREAK_DAYS_FMT), gPet.streak);
+  out = buf;
+  return out.c_str();
+}
+
+// Long-press release dialog ("Let it go?").
+EMSCRIPTEN_KEEPALIVE
+const char *tp_release_question() {
+  static std::string out;
+  char buf[48];
+  snprintf(buf, sizeof(buf), T(S_RELEASE_FMT), dexName(gPet.speciesId));
+  out = buf;
+  return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_yes_text() { return T(S_YES); }
+EMSCRIPTEN_KEEPALIVE const char *tp_no_text() { return T(S_NO); }
+EMSCRIPTEN_KEEPALIVE void tp_release() { gPet.release(); }
+
 // --- Ball minigame ---------------------------------------------------
 //
 // The physics (ball position/velocity, bounce, the creature chasing it)
@@ -627,9 +728,17 @@ const char *tp_next_level_line() {
   return out.c_str();
 }
 EMSCRIPTEN_KEEPALIVE const char *tp_evolution_label() { return T(S_EVO_LABEL); }
+// Same clamp TPPet.mm's TPDexEntry() applies: an out-of-range species id
+// (a corrupted save, or 0 before a starter exists) reads DEX_TBL[0]
+// instead of walking off the table.
+static const DexEntry &tp_dex_entry(int16_t dex) {
+  if (dex < 0 || dex > DEX_COUNT) dex = 0;
+  return DEX_TBL[dex];
+}
+
 EMSCRIPTEN_KEEPALIVE
 const char *tp_evolution_status() {
-  const DexEntry &d = DEX_TBL[gPet.speciesId];
+  const DexEntry &d = tp_dex_entry(gPet.speciesId);
   if (d.evolvesTo == 0) return T(S_FINAL_FORM);
   int needed = d.evolveLevel + gPet.careMistakes;
   if (gPet.level() >= needed) return T(gPet.lowestStat() >= 40 ? S_EVO_READY : S_EVO_BLOCKED);
@@ -641,7 +750,7 @@ const char *tp_evolution_status() {
 }
 EMSCRIPTEN_KEEPALIVE
 int tp_evolution_status_kind() {
-  const DexEntry &d = DEX_TBL[gPet.speciesId];
+  const DexEntry &d = tp_dex_entry(gPet.speciesId);
   if (d.evolvesTo == 0) return 0;
   int needed = d.evolveLevel + gPet.careMistakes;
   if (gPet.level() < needed) return 0;
