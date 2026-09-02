@@ -61,12 +61,30 @@ void tp_seed_random(uint32_t seed) { std::srand(seed); }
 // One call per rendered frame (or per fixed-step tick, TBD once the render
 // loop lands): advances the shim clock and steps the Pet the same way
 // TPPet.mm's tick() does on iOS.
+//
+// gLastClockSyncMs/kClockSyncIntervalMs: every once-a-day system (daily
+// goals, care streak, shake/walk daily caps, morning greeting) keys off
+// Pet::today(), which reads lastSeenEpoch -- and that was only ever set once,
+// on the very first tick (the !gStarted branch below). A tab left open
+// simply never saw it again: today() kept returning that same first-load day
+// number for as long as the page stayed open, so none of those systems could
+// ever roll over without a full reload. Re-syncing every 5 minutes (matching
+// GameModel.swift's own periodic resync on iOS) is cheap -- syncClock() only
+// actually re-walks minutes and saves when at least 2 have passed since the
+// last sync, so most calls are just "note the time, no-op."
+static uint32_t gLastClockSyncMs = 0;
+static const uint32_t kClockSyncIntervalMs = 5 * 60 * 1000;
+
 EMSCRIPTEN_KEEPALIVE
 void tp_tick(uint32_t nowMs) {
   g_millis = nowMs;
   if (!gStarted) {
     gStarted = true;
     gPet.begin();
+    gPet.syncClock((uint32_t)std::time(nullptr));
+    gLastClockSyncMs = nowMs;
+  } else if (nowMs - gLastClockSyncMs >= kClockSyncIntervalMs) {
+    gLastClockSyncMs = nowMs;
     gPet.syncClock((uint32_t)std::time(nullptr));
   }
   gPet.update(g_millis);

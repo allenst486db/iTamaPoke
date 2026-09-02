@@ -324,7 +324,15 @@ private:
   uint8_t walkJoyHour = 0;
   uint8_t walkBondToday = 0;
 
-  uint32_t today() const { return lastSeenEpoch ? lastSeenEpoch / 86400 : 0; }
+  // Every once-a-day system (daily goals, care streak, shake/walk daily caps,
+  // morning greeting) shares this one "day" counter, so they all roll over
+  // together. It's a plain UTC-midnight bucket by construction
+  // (lastSeenEpoch/86400) -- shifted here by +1h so the boundary lands on
+  // 08:00 KST (UTC+9) instead: KST 08:00 is UTC 23:00 the *previous* day, and
+  // +3600 before the /86400 floor is exactly what maps that instant onto the
+  // next integer day. If this ever needs to serve a non-KST audience, make
+  // the shift configurable instead of hardcoding it here.
+  uint32_t today() const { return lastSeenEpoch ? (lastSeenEpoch + 3600) / 86400 : 0; }
   void registerCare();   // primer cuidado del dia: racha + vinculo
   void addBond(uint8_t amt);
   void noteDailyGoal(uint8_t goalType, uint8_t amount);

@@ -101,6 +101,20 @@ final class GameModel: ObservableObject {
     private var started = false
     private let epoch = Date()
 
+    /// Real wall-clock resync, on a timer independent of scene-phase
+    /// transitions. pet.syncClock() (and therefore every once-a-day system --
+    /// daily goals, care streak, shake/walk caps -- since they all key off
+    /// Pet::today(), which reads lastSeenEpoch) previously only refreshed at
+    /// launch and on foreground return, so a session left open straight
+    /// through the day boundary never saw it roll over: today() kept
+    /// returning the same stale day number for as long as the app stayed
+    /// foregrounded, no matter how many times a goal-tracked action re-ran
+    /// the check. This is what made the reset look inconsistent -- it worked
+    /// whenever the app happened to relaunch or come back from background
+    /// after the boundary, and silently didn't otherwise.
+    private var lastClockSyncMs: UInt64 = 0
+    private static let clockSyncIntervalMs: UInt64 = 5 * 60 * 1000
+
     /// Milliseconds since launch, for the Swift-side scene animations
     /// (clouds, waves, snow) that upstream phases off `millis()`.
     var millis: UInt64 { UInt64(Date().timeIntervalSince(epoch) * 1000) }
@@ -175,6 +189,10 @@ final class GameModel: ObservableObject {
     /// Called on the display tick. Advances animation timers and, once a minute,
     /// the game tick — same contract as `pet.update(millis())` in `loop()`.
     func tick() {
+        if millis - lastClockSyncMs >= Self.clockSyncIntervalMs {
+            lastClockSyncMs = millis
+            pet.syncClock()
+        }
         pet.update()
         refreshSprite()
         refreshEvoSprite()
