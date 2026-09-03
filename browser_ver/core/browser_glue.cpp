@@ -80,6 +80,11 @@ void tp_tick(uint32_t nowMs) {
   g_millis = nowMs;
   if (!gStarted) {
     gStarted = true;
+    // The language pick is persisted in the same store as the save (setLang/
+    // setDexNamesKorean write "lang"/"dexkr"), but nothing read it back on
+    // startup, so every launch came up in English until the settings pill
+    // was tapped again. Same call TPPet.mm's init makes on iOS.
+    loadLang();
     gPet.begin();
     gPet.syncClock((uint32_t)std::time(nullptr));
     gLastClockSyncMs = nowMs;
