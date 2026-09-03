@@ -1,14 +1,18 @@
-# Builds the browser port's WASM core (browser_ver/build.sh) on GitHub's
-# runners and publishes browser_ver/web/ to GitHub Pages as an installable
-# offline web app (PWA). This is the install path for people without a Mac
-# or a developer account: open the page on the phone once, "Add to Home
-# Screen", done -- the service worker keeps it running with no network and
-# no computer involved afterward (docs/INSTALL.md, "Path D").
+# Builds the browser port and publishes it two ways, both from the same
+# compiled web/ folder:
+#
+#   * iOS / iPadOS / desktop: an installable offline web app (PWA) on GitHub
+#     Pages -- open the link once, "Add to Home Screen", done. No Mac, no
+#     developer account, no signing, no expiry (docs/INSTALL.md, "Path D").
+#   * Android: a real APK (the WebView shell in browser_ver/native/android
+#     with web/ bundled inside), placed on that same Pages site as
+#     iTamaPoke.apk so it downloads straight from the phone's browser.
 #
 # What gets published is code only: the MIT-licensed game engine compiled to
 # WASM, the UI, and the generic egg app icon. No sprites, cries or dex text
-# are in the repository or in this build -- every player loads those from
-# their own device through the in-page file pickers (see NOTICE).
+# are in the repository or in either build -- every player loads those from
+# their own device through the in-page file pickers (see NOTICE). The
+# "refuse to publish" check below enforces that mechanically.
 #
 # One-time setup on the repository: Settings -> Pages -> Source: "GitHub
 # Actions". After that every push to main that touches the browser build
@@ -36,7 +40,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  web:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -56,38 +60,105 @@ jobs:
           set -e
           cp Resources/DefaultAppIcon.png browser_ver/web/icon.png
           # Stamp the service worker so every deploy gets its own cache and
-          # phones pick up the new version on their next launch.
+          # installed copies pick up the new version on their next launch.
           sed -i "s/__BUILD__/${GITHUB_SHA::12}/" browser_ver/web/sw.js
           test -s browser_ver/web/tp_core.js
           test -s browser_ver/web/tp_core.wasm
-          # Belt and braces: fail the deploy if any creature asset ever
-          # lands in the published folder.
+          # Refuse to publish if any creature asset ever lands in the folder.
           if ls browser_ver/web | grep -Eiq '^(p|ps)[0-9]+\.bin$|^psnd[0-9]+\.|^dex_entries_|^thumbs\.bin$'; then
             echo "refusing to publish: creature assets found in browser_ver/web" >&2
             exit 1
           fi
           ls -la browser_ver/web
 
-      # Same folder, also downloadable from the run page for anyone who
-      # wants to keep a copy or serve it themselves.
       - uses: actions/upload-artifact@v4
         with:
-          name: iTamaPoke-browser
+          name: web
           path: browser_ver/web
           if-no-files-found: error
-          retention-days: 90
+          retention-days: 7
 
-      - uses: actions/configure-pages@v5
-      - uses: actions/upload-pages-artifact@v3
+  android:
+    needs: web
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
         with:
-          path: browser_ver/web
+          name: web
+          path: browser_ver/native/android/app/src/main/assets/web
 
-  deploy:
-    needs: build
+      - name: Launcher icon from the shared mascot PNG
+        run: |
+          set -e
+          sudo apt-get update -qq >/dev/null
+          sudo apt-get install -y -qq imagemagick >/dev/null
+          cd browser_ver/native/android/app/src/main
+          for d in mdpi:48 hdpi:72 xhdpi:96 xxhdpi:144 xxxhdpi:192; do
+            name=${d%%:*}; px=${d##*:}
+            mkdir -p "res/mipmap-$name"
+            convert "$GITHUB_WORKSPACE/Resources/DefaultAppIcon.png" -resize ${px}x${px} "res/mipmap-$name/ic_launcher.png"
+          done
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - uses: gradle/actions/setup-gradle@v3
+        with:
+          gradle-version: "8.7"
+
+      # Debug build: signed with the SDK's debug key, which is exactly what
+      # lets it install on any phone without a Play/keystore setup. There is
+      # no store listing to sign for -- LICENSE, personal use.
+      - name: Build the APK
+        working-directory: browser_ver/native/android
+        run: gradle assembleDebug --no-daemon --warning-mode=none
+
+      - name: Collect
+        run: |
+          set -e
+          apk=$(ls browser_ver/native/android/app/build/outputs/apk/debug/*.apk | head -n1)
+          test -s "$apk"
+          mkdir -p out && cp "$apk" out/iTamaPoke.apk
+          ls -la out
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: apk
+          path: out/iTamaPoke.apk
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    needs: [web, android]
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: web
+          path: site
+      - uses: actions/download-artifact@v4
+        with:
+          name: apk
+          path: site
+      - run: ls -la site
+
+      # Same folder, also downloadable from the run page.
+      - uses: actions/upload-artifact@v4
+        with:
+          name: iTamaPoke-browser
+          path: site
+          retention-days: 90
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
       - id: deployment
         uses: actions/deploy-pages@v4

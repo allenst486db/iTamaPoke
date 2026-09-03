@@ -263,16 +263,32 @@ hostable: nothing of Nintendo's or of the sprite artists' is ever served.
 
 **The link:** https://allenst486db.github.io/iTamaPoke/
 
+**Is my game shared with other people at that link?** No. The link only
+hands your phone the program. Your creature, level, Pokédex, catches and
+sprites are stored inside your phone (the app's own browser storage) and
+never leave it — there is no account, no server-side save, nothing anyone
+else can see or affect. Two people opening the same link get two
+completely separate games, exactly as if they'd each installed an app from
+a store. The flip side: nothing can restore a save from outside the phone
+either, so see D2.
+
 ### D1. Install it (1 minute)
 
 - **iPhone / iPad**: open the link in **Safari** (it has to be Safari, not
   Chrome or an in-app browser). Tap the **Share** button (the square with an
-  arrow) → scroll down → **Add to Home Screen** → **Add**.
-- **Android**: open the link in **Chrome**. Tap the **⋮** menu → **Install
-  app** (or **Add to Home screen**) → **Install**.
-
-An **iTamaPoke** icon appears on your home screen. Close the browser and
-open the game from that icon from now on.
+  arrow) → scroll down → **Add to Home Screen** → **Add**. An **iTamaPoke**
+  icon appears on your home screen; close Safari and open the game from
+  that icon from now on.
+- **Android**: install the real app instead. In Chrome, open
+  **https://allenst486db.github.io/iTamaPoke/iTamaPoke.apk** — the file
+  downloads (a few MB). Pull down the notification shade and tap the
+  download, or open it from **Files → Downloads**. Android will say the app
+  is from an unknown source: tap **Settings** → allow **Chrome** (or your
+  file manager) to install unknown apps → back → **Install**. It's a normal
+  app after that: its own icon, works offline, updates by installing a
+  newer `.apk` over it (your save is kept). If you'd rather not install an
+  APK, the web link works in Chrome too (⋮ → **Install app**), with the
+  same "play it from the icon" rule as iPhone.
 
 ### D2. Why the icon matters (read this once)
 
@@ -342,6 +358,12 @@ copy from a previous version. Close the app fully (swipe it away), make
 sure you have internet, and open it again. Once it has loaded, it works
 offline again.
 
+**Android: "App not installed" / "Blocked by Play Protect".** Play
+Protect flags any app that isn't from the Play Store, which this one
+isn't. Tap **More details** → **Install anyway**. It's the debug-signed
+build the workflow produces from this repository's source; nothing is
+downloaded from anywhere else.
+
 **"Add to Home Screen" is missing on iPhone.** You're not in Safari —
 Chrome, the GitHub app, Kakao/Line's built-in browser, etc. can't install
 web apps on iOS. Copy the link and open it in Safari.
@@ -365,17 +387,36 @@ deleted and re-added (on iPhone that wipes its data). The save is never on
 any server, so nothing can restore it from outside the phone — treat the
 icon as the thing that holds it.
 
-### For developers: hosting it yourself
+### Optional: your own copy of the link (fork it)
 
-Not needed to play. The site at the link above is built and published by
+Not needed to play — the link above is enough. But if you want a copy that
+keeps working no matter what happens to this repository, or you want to
+tweak the game, GitHub can build and host one for you under your own
+account. No software to install; about ten minutes, once.
+
+1. Sign in to GitHub (a free account is fine) and open this repository.
+2. Click **Fork** (top right) → **Create fork**. You now have your own copy
+   at `github.com/<your-name>/iTamaPoke`.
+3. In *your* copy: **Settings** → **Pages** (left column) → under **Build
+   and deployment**, set **Source** to **GitHub Actions**.
+4. **Actions** tab → if it asks, click **I understand my workflows, go
+   ahead and enable them** → click **Build (browser)** in the left column →
+   **Run workflow** → **Run workflow**.
+5. Wait for the green check ✅ (about three minutes). Your link is
+   **`https://<your-name>.github.io/iTamaPoke/`**. Open it on your phone
+   and follow D1 – D3 exactly as above.
+
+To pick up later changes from this repository, click **Sync fork** →
+**Update branch** on your copy; the site rebuilds by itself.
+
+Keep the link to yourself. LICENSE allows a personal fork's site for your
+own play but not as a place for other people to get the game — the address
+above is the one meant for sharing.
+
+For developers: the site is produced by
 [`.github/workflows/build-browser.yml`](../.github/workflows/build-browser.yml)
-on every push (Emscripten compiles `upstream-expanded/` + `browser_ver/core/`
-to WASM, the folder is deployed to GitHub Pages). To publish from your own
-fork: **Settings → Pages → Source: GitHub Actions**, then run the workflow
-once. To build locally instead, `browser_ver/README.md` has the emsdk
-steps. Note LICENSE Section 3: re-hosting a copy of this build elsewhere
-needs permission; the workflow exists so the copyright holder's own
-address is the one people use.
+(Emscripten compiles `upstream-expanded/` + `browser_ver/core/` to WASM,
+the folder deploys to GitHub Pages). Local builds: `browser_ver/README.md`.
 
 ---
 

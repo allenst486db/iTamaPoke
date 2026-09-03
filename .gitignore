@@ -34,3 +34,10 @@ browser_ver/web/tp_core.wasm
 # Copied from Resources/DefaultAppIcon.png by the deploy workflow (or by
 # hand for a local test); one source of truth for the icon.
 browser_ver/web/icon.png
+# The Android shell's bundled copy of web/ and generated launcher icons
+# (both produced by the workflow), plus Gradle output.
+browser_ver/native/android/app/src/main/assets/
+browser_ver/native/android/app/src/main/res/mipmap-*/
+browser_ver/native/android/.gradle/
+browser_ver/native/android/app/build/
+browser_ver/native/android/local.properties

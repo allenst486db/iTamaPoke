@@ -1,11 +1,18 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <!-- No android:icon: add your own @mipmap/ic_launcher in Android Studio's
-         Image Asset tool once this builds -- omitted here so a fresh checkout
-         builds without any binary asset this repo doesn't ship. -->
+    <!-- No <uses-permission>: the app needs neither network nor storage.
+         Files the player picks arrive through the system picker as
+         content:// URIs the WebView reads directly. -->
+
+    <!-- The launcher icon is generated at build time from
+         Resources/DefaultAppIcon.png (the generic egg mascot) into
+         res/mipmap-*/ic_launcher.png -- see the CI workflow. For a local
+         Android Studio build, add one with Image Asset, or drop any PNG at
+         app/src/main/res/mipmap-xxxhdpi/ic_launcher.png. -->
     <application
         android:allowBackup="false"
+        android:icon="@mipmap/ic_launcher"
         android:label="iTamaPoke"
         android:theme="@style/Theme.AppCompat.NoActionBar">
         <activity

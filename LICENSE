@@ -42,7 +42,13 @@ You may, free of charge:
     as an installed web app. The Hosted Build contains code only; the
     creature sprites, cries and Pokédex text it can display are never part
     of it -- you supply those from your own device, and Section 7 governs
-    them, not this license.
+    them, not this license;
+  - publish the browser build from your own personal fork (for example on
+    GitHub Pages) for your own play. The address may be technically
+    reachable by others; that is tolerated as long as you do not promote,
+    share, or present it as a place for other people to get the game, and
+    it carries the same code-only rule as the Hosted Build (no creature
+    sprites, cries or Pokédex text in what is published).
 
 None of this requires payment or permission, commercial or not.
 

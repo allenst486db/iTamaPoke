@@ -1,6 +1,6 @@
 # iTamaPoke
 
-![Platform](https://img.shields.io/badge/platform-iPhone%20%2B%20Apple%20Watch-black?logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iPhone%20%2B%20Apple%20Watch%20%C2%B7%20Web%20app%20%C2%B7%20Android-black?logo=apple&logoColor=white)
 ![Code](https://img.shields.io/badge/code-custom%20license-blue)
 ![Status](https://img.shields.io/badge/status-personal%20project%2C%20bugs%20possible-yellow)
 
@@ -11,16 +11,24 @@
 포팅한 프로젝트입니다. 게임 자체는 그대로입니다: 원본 하드웨어에서 돌아가던
 그 C++ 코드가 여기서도 똑같이 돌아가고, 화면만 다를 뿐입니다.
 
-> **개인 이용만 가능. 빌드를 공개 배포하거나 나눠주지 마세요 — 캐릭터를
-> 바꾼 리스킨 버전(다른 캐릭터, 같은 엔진)도 동일하게 안 됩니다.**
-> 뭔가 하기 전에 먼저 [라이선스](#라이선스)를 읽어주세요.
+> **개인 이용만 가능. 빌드를 다시 배포하거나 나눠주지 마세요 — 캐릭터를
+> 바꾼 리스킨 버전(다른 캐릭터, 같은 엔진)도 동일하게 안 됩니다.** 받는
+> 곳은 아래 링크 하나입니다. [라이선스](#라이선스) 참고.
+
+**그냥 플레이하고 싶다면:** 폰에서 **https://allenst486db.github.io/iTamaPoke/**
+를 여세요 — 아이폰: Safari → 공유 → *홈 화면에 추가*; 안드로이드: 같은
+사이트의 [`iTamaPoke.apk`](https://allenst486db.github.io/iTamaPoke/iTamaPoke.apk)
+다운로드. Mac도, 개발자 계정도, 만료도 없고 그 뒤로는 폰에서 오프라인으로
+돌아갑니다. 캐릭터 그림은 직접 넣어야 합니다([설치
+가이드](docs/INSTALL.ko.md#경로-d--링크에서-설치하는-웹앱-mac-없이-개발자-계정-없이-컴퓨터-없이)의
+D3) — 사이트에는 일부러 하나도 안 들어 있습니다.
 
 처음이신가요? 아래부터 시작하세요:
 
 | | |
 |---|---|
 | 🎮 [게임 방법](docs/GAMEPLAY.ko.md) | 게임이 실제로 어떻게 동작하는지, 화면별로, 실제 화면 캡처와 함께 |
-| 📲 [설치 가이드](docs/INSTALL.ko.md) | 코딩 지식 없이도 따라할 수 있는 단계별 설명, 실제 화면 캡처와 함께 — **이제 Mac과 Windows 둘 다 가능** |
+| 📲 [설치 가이드](docs/INSTALL.ko.md) | 코딩 지식 없이 따라하는 단계별 설명 — 웹앱/안드로이드 경로는 컴퓨터가 아예 필요 없고, 네이티브 iOS 경로는 Mac·Windows 둘 다 가능 |
 | 🛠️ [Xcode 빌드 가이드](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/xcode_build_guide.html) | Xcode로 직접 빌드해서 설치하는 과정을 그림으로 |
 | 🍎 [무료 vs 유료 Apple 계정](docs/DEV_ACCOUNT.md) | 어떤 설치 경로가 나에게 맞는지 |
 
@@ -149,11 +157,13 @@ C++에서 **한 줄 한 줄 그대로** 포팅됩니다.
 코딩 배경지식이 전혀 없다고 가정한, 화면 단위로 자세한 전체 가이드:
 **[docs/INSTALL.ko.md](docs/INSTALL.ko.md)**.
 
-요약하면 — 쉬운 순서대로 세 가지 방법이 있습니다:
+요약하면 — 쉬운 순서대로:
 
 | | 필요한 것 | 지원 OS | 애플워치 | 비고 |
 |---|---|---|---|---|
-| **서명 안 된 `.ipa`(워치 제외) + Sideloadly/AltStore** | 무료 Apple ID, Mac 불필요 | Mac 또는 **Windows** | 이 빌드엔 없음(아래 참고) | 가장 쉬움; 아이폰 전용; 7일마다 재서명 |
+| **링크에서 웹앱 설치** (`browser_ver/`) | 폰 | 아이폰 / 아이패드 / 안드로이드 / 데스크톱 브라우저 | 없음 | 같은 게임, 같은 C++ 코어를 WebAssembly로 컴파일; Safari/Chrome에서 설치, 오프라인 동작, 만료 없음, 계정 불필요. 세이브와 스프라이트는 기기 안에 |
+| **안드로이드 `.apk`** (같은 사이트) | 안드로이드 폰 | Android 8+ | 없음 | 웹 빌드를 진짜 앱(WebView 셸)으로 감싼 것, CI가 디버그 서명; 덮어 설치로 업데이트 |
+| **서명 안 된 `.ipa`(워치 제외) + Sideloadly/AltStore** | 무료 Apple ID, Mac 불필요 | Mac 또는 **Windows** | 이 빌드엔 없음(아래 참고) | 네이티브 iOS 앱; 아이폰 전용; 7일마다 재서명 |
 | **GitHub Actions로 서명된 `.ipa`** | 유료 Apple Developer 계정($99/년) | Mac 또는 Windows | 정상 설치 | 사이드로딩 도구 아예 불필요 |
 | **Xcode로 직접 빌드** | Mac | Mac만 | 가장 안정적 | 이미 Xcode에 익숙한 분들에게 |
 
@@ -167,7 +177,9 @@ C++에서 **한 줄 한 줄 그대로** 포팅됩니다.
 C(Xcode로 워치와 직접 연결해 빌드)를 이용하세요.
 
 어느 경로로 설치하든 **캐릭터 아트 없이** 설치됩니다 — [스프라이트](#스프라이트)
-참고, 설치 방법과 무관하게 이제 동일한 방식으로 추가할 수 있습니다.
+참고. 네이티브 iOS 앱은 파일 앱에서 읽고, 웹앱과 안드로이드 APK는 "Load
+sprites…" 버튼으로 폰의 파일 선택 창을 열어 고른 뒤 앱 자체 저장소에
+보관합니다.
 
 ---
 
@@ -291,11 +303,16 @@ Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트
 
 ## 라이선스
 
-- **이 포팅 자체의 코드**(Swift/watchOS 레이어, 스크립트, 문서):
-  **[LICENSE](LICENSE)** — 표준 오픈소스 라이선스가 아니라 짧은 커스텀
-  라이선스입니다. 개인 이용과 수정은 자유롭고, 어떤 빌드든(리스킨 포함)
-  공개 배포하거나 남에게 넘기려면 먼저 저작권자의 허락이 필요합니다. 길지
-  않으니 꼭 읽어보세요.
+- **이 포팅 자체의 코드**(Swift/watchOS 레이어, 브라우저 빌드, 스크립트,
+  문서): **[LICENSE](LICENSE)** — 표준 오픈소스 라이선스가 아니라 짧은
+  커스텀 라이선스입니다. 개인 이용과 수정은 자유롭고, 위 주소의 웹앱/APK를
+  플레이하거나 본인 fork의 사본을 본인용으로 올리는 것도 됩니다. 어떤
+  빌드든(리스킨 포함) 다시 배포하거나 남에게 넘기려면 먼저 저작권자의
+  허락이 필요합니다. 길지 않으니 꼭 읽어보세요.
+- **호스팅된 사이트가 실제로 내보내는 것**은 이 저장소에 있는 것과 같습니다:
+  MIT 엔진 코드를 WebAssembly로 컴파일한 것, 이 포팅의 UI, 프로젝트용으로
+  직접 그린 알 아이콘. 배포 워크플로는 폴더에 스프라이트·울음소리·도감
+  설명문 파일이 하나라도 있으면 배포를 거부합니다.
 - **원본 C++를 한 줄 한 줄 번역한 부분**(렌더러, 레이아웃 등): 여전히 ©
   Quique Tortosa, MIT — 이 저장소를 어떻게 받았든 함께 딸려오도록, MIT 원문
   자체를 [NOTICE](NOTICE)에 그대로 실어뒀습니다(MIT 조건 자체가 요구하는
@@ -303,10 +320,14 @@ Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트
 - **`upstream/` 서브모듈 자체**: 저희가 재라이선스할 수 있는 대상이
   아닙니다 — [원본 저장소](https://github.com/socquique/TamaPoke)에서 직접
   받으면 그쪽 MIT 조건이 그대로 적용됩니다.
-- **포켓몬 이름, 디자인, 도감 설명문, 울음소리**: © Nintendo / Game Freak /
-  The Pokémon Company. **이 저장소나 그 빌드 어디에도 포함되어 있지
-  않습니다** — 설치 후 직접 받는 방법은 [스프라이트](#스프라이트),
-  [도감 설명문](#도감-설명문), [울음소리](#울음소리) 참고.
+- **포켓몬 디자인, 그림, 도감 설명문, 울음소리**: © Nintendo / Game Freak /
+  The Pokémon Company. **이 저장소, 그 빌드, 호스팅된 사이트 어디에도
+  포함되어 있지 않습니다** — 설치 후 직접 받는 방법은
+  [스프라이트](#스프라이트), [도감 설명문](#도감-설명문),
+  [울음소리](#울음소리) 참고. 종 *표*(번호, 7개 언어 이름, 타입, PokéAPI
+  기본 능력치, 진화 연결)는 MIT 원본에서 물려받은 데이터로, 코드가 담고
+  있는 유일한 포켓몬 관련 내용입니다 — 이름은 사용자가 넣은 파일이 어느
+  종의 것인지 표시하는 데 쓰입니다.
 - **스프라이트 아트**: [PMD
   SpriteCollab](https://github.com/PMDCollab/SpriteCollab)(CC BY-NC
   4.0 — https://creativecommons.org/licenses/by-nc/4.0/), Nintendo와

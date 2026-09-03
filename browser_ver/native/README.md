@@ -1,52 +1,54 @@
 # Native shells
 
-Two minimal, dependency-free wrappers that load `browser_ver/web/` from
-local files (no server, no network permission) — the "feels like a real
-app instead of a browser tab" option from the plan. Neither is a runnable
-Xcode/Android Studio project by itself: `ios/` is source you drop into a
-new target, `android/` is a real Gradle project skeleton you open directly.
+Wrappers around `browser_ver/web/` for people who want an app icon rather
+than a browser tab. As of v0.9.0 the web build is itself an installable
+offline PWA (see `browser_ver/README.md`), so on iOS the shell here is no
+longer the recommended route -- "Add to Home Screen" from Safari does the
+same job with no Mac and no signing. The Android shell *is* the
+recommended Android route: CI builds it into `iTamaPoke.apk` on every
+push and puts it on the Pages site next to the web app.
 
-Both are for **your own device only** — see the root `LICENSE`. Nothing
-here should ever be built for distribution, TestFlight, or the Play Store.
-
-## iOS: `ios/`
-
-Xcode's own "New Target" wizard writes a correct `project.pbxproj` in a way
-hand-editing one from scratch would not reliably reproduce, so this ships
-source files to drop in rather than a second `.xcodeproj`:
-
-1. Open `TamaPoke.xcodeproj`. File → New → Target… → iOS App (SwiftUI,
-   Swift), name it e.g. `iTamaPokeWeb`. Give it its own bundle id
-   (`com.<you>.itamapokeweb` or similar) so it installs alongside the main
-   app rather than replacing it.
-2. Delete the target's generated `ContentView.swift` and `…App.swift`.
-   Drag `WebShellApp.swift` from this folder into the new target (check
-   only the new target's membership).
-3. Replace the new target's `Info.plist` with this folder's `Info.plist`,
-   or merge the four keys in if you'd rather keep Xcode's generated one.
-4. Drag `browser_ver/web` (the whole folder, from the Finder, not from
-   inside Xcode) into the new target — when prompted, choose **"Create
-   folder references"** (blue folder icon), not groups, and check only the
-   new target's membership. This matters: a folder reference preserves
-   `web/`'s own layout in the built bundle, which is what
-   `WebShellView.swift`'s `subdirectory: "web"` lookup expects, and what
-   lets `tp_core.wasm`/`audio.js`/`sprites.js` resolve as plain relative
-   fetches from `index.html`.
-5. Build `browser_ver/build.sh` first if `web/tp_core.js`/`.wasm` don't
-   exist yet (they're gitignored — see `browser_ver/README.md`).
-6. Build and run the new target on your own device or the simulator.
+Both are for **your own device only** -- see the root `LICENSE`.
 
 ## Android: `android/`
 
-A real (if minimal) Gradle project — open `browser_ver/native/android/` in
-Android Studio directly.
+A minimal Gradle project, built by `.github/workflows/build-browser.yml`
+(Gradle 8.7, JDK 17, `assembleDebug`). What the workflow does, if you want
+to build it locally in Android Studio instead:
 
-1. Copy `browser_ver/web/` into `app/src/main/assets/web/` (create the
-   `assets` folder if Android Studio hasn't already). Build
-   `browser_ver/build.sh` first if `tp_core.js`/`.wasm` don't exist yet.
-2. Open the folder in Android Studio, let it sync Gradle.
-3. Run on your own device or an emulator (`minSdk 26` — anything from
-   Android 8.0 on has a WebView modern enough for WASM streaming compile).
+1. Copy `browser_ver/web/` (after `browser_ver/build.sh`) into
+   `app/src/main/assets/web/`. This path is gitignored.
+2. Put a launcher icon at `app/src/main/res/mipmap-xxxhdpi/ic_launcher.png`
+   (the workflow resizes `Resources/DefaultAppIcon.png`; Android Studio's
+   Image Asset tool works too). Also gitignored.
+3. Open `browser_ver/native/android/` in Android Studio, let Gradle sync,
+   run on your phone (`minSdk 26`, Android 8.0+).
 
-Nothing here re-copies `web/` automatically on every build; re-run step 1
-after changing anything in `browser_ver/web/` or rebuilding the core.
+`MainActivity.kt` serves the bundled folder through `WebViewAssetLoader`
+at `https://appassets.androidplatform.net/assets/web/` -- a real https
+origin, so IndexedDB (the save and the user's sprites) and the service
+worker behave exactly as on the hosted site -- and implements
+`onShowFileChooser`, without which the page's "Load sprites…" picker would
+be a dead button in a WebView. No permissions are declared: picked files
+arrive as `content://` URIs the WebView reads itself.
+
+The debug signing key is what lets the APK install on any phone without a
+keystore. Updating is "install the newer `.apk` over the old one"; the
+save survives because it lives in the app's WebView storage.
+
+## iOS: `ios/`
+
+Kept for anyone who prefers a WKWebView target in Xcode (needs a Mac and a
+free Apple ID, same 7-day rule as a sideloaded build). Not needed for the
+normal install path.
+
+1. Open `TamaPoke.xcodeproj`. File → New → Target… → iOS App (SwiftUI,
+   Swift), name it e.g. `iTamaPokeWeb`, with its own bundle id.
+2. Delete the generated `ContentView.swift` / `…App.swift`; drag
+   `WebShellApp.swift` from this folder into the new target.
+3. Replace the target's `Info.plist` with this folder's, or merge its keys.
+4. Drag `browser_ver/web` (from the Finder) into the target as a **folder
+   reference** (blue icon), so `WebShellView.swift`'s `subdirectory: "web"`
+   lookup and the page's relative fetches resolve.
+5. Run `browser_ver/build.sh` first if `web/tp_core.*` don't exist yet.
+6. Build and run on your own device.

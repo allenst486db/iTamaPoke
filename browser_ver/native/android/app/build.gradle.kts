@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.itamapoke.web"
-        minSdk = 26   // WKWebView-equivalent WASM streaming compile needs a modern WebView
+        minSdk = 26   // WASM streaming compile + WebViewAssetLoader need a modern WebView
         targetSdk = 34
         versionCode = 1
-        versionName = "0.1"
+        versionName = "0.9.0"
     }
 
     buildTypes {
@@ -32,4 +32,8 @@ android {
 
 dependencies {
     implementation("androidx.appcompat:appcompat:1.7.0")
+    implementation("androidx.activity:activity-ktx:1.9.0")
+    // WebViewAssetLoader: serves the bundled web/ folder from a real https
+    // origin so IndexedDB and the service worker behave (see MainActivity).
+    implementation("androidx.webkit:webkit:1.11.0")
 }

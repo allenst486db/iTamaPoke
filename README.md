@@ -1,6 +1,6 @@
 # iTamaPoke
 
-![Platform](https://img.shields.io/badge/platform-iPhone%20%2B%20Apple%20Watch-black?logo=apple&logoColor=white)
+![Platform](https://img.shields.io/badge/platform-iPhone%20%2B%20Apple%20Watch%20%C2%B7%20Web%20app%20%C2%B7%20Android-black?logo=apple&logoColor=white)
 ![Code](https://img.shields.io/badge/code-custom%20license-blue)
 ![Status](https://img.shields.io/badge/status-personal%20project%2C%20bugs%20possible-yellow)
 
@@ -11,16 +11,24 @@ a gen-1-Pokémon-inspired tamagotchi firmware for a round AMOLED board — to
 iPhone and Apple Watch. The game itself is unchanged: the same C++ that runs
 on the original hardware runs here too, just drawn on a different screen.
 
-> **Personal use only. Do not publish or hand out builds — including
-> reskinned versions (different creatures, same engine).**
-> See [License](#license) before doing anything with this.
+> **Personal use only. Do not re-publish or hand out builds — including
+> reskinned versions (different creatures, same engine).** The one place
+> to get it is the link below. See [License](#license).
+
+**Just want to play?** Open **https://allenst486db.github.io/iTamaPoke/**
+on your phone — iPhone: Safari → Share → *Add to Home Screen*; Android:
+download [`iTamaPoke.apk`](https://allenst486db.github.io/iTamaPoke/iTamaPoke.apk)
+from that same site. No Mac, no developer account, no expiry; it runs on
+the phone offline after that. Then add the creature art yourself (D3 in the
+[install guide](docs/INSTALL.md#path-d--web-app-installed-from-a-link-no-mac-no-developer-account-no-computer))
+— the site ships none of it, on purpose.
 
 New here? Start with one of these:
 
 | | |
 |---|---|
 | 🎮 [How to play](docs/GAMEPLAY.md) | What the game actually does, page by page, with real screenshots |
-| 📲 [Install guide](docs/INSTALL.md) | Step-by-step, no coding knowledge assumed, with real screenshots — **works on both Mac and Windows now** |
+| 📲 [Install guide](docs/INSTALL.md) | Step-by-step, no coding knowledge assumed — the web app / Android path needs no computer at all; the native iOS paths work from Mac or Windows |
 | 🛠️ [Xcode build guide](https://htmlpreview.github.io/?https://github.com/allenst486db/iTamaPoke/blob/main/docs/xcode_build_guide.html) | Building and installing straight from Xcode, illustrated (Korean only) |
 | 🍎 [Free vs. paid Apple account](docs/DEV_ACCOUNT.md) | Which install path is right for you |
 
@@ -157,11 +165,13 @@ envelope) are synthesised in software instead of using a new sound.
 Full step-by-step walkthrough (screenshots-level detail, assumes no coding
 background): **[docs/INSTALL.md](docs/INSTALL.md)**.
 
-The short version — three ways to get this running, easiest first:
+The short version — easiest first:
 
 | | Needs | Works on | Apple Watch | Notes |
 |---|---|---|---|---|
-| **Unsigned `.ipa` (no-watch) + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | not included in this build — see note below | Easiest path; iPhone only; re-sign every 7 days |
+| **Web app from the link** (`browser_ver/`) | a phone | iPhone / iPad / Android / any desktop browser | no | Same game, same C++ core compiled to WebAssembly; installs from Safari/Chrome, runs offline, never expires, no account of any kind. Save and sprites live on the device |
+| **Android `.apk`** from that same site | an Android phone | Android 8+ | no | The web build wrapped as a real app (WebView shell), debug-signed by CI; install over it to update |
+| **Unsigned `.ipa` (no-watch) + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | not included in this build — see note below | Native iOS app; iPhone only; re-sign every 7 days |
 | **Signed `.ipa` from GitHub Actions** | paid Apple Developer account ($99/yr) | Mac or Windows | installs correctly | No sideloading tool needed at all |
 | **Build with Xcode yourself** | a Mac | Mac only | most reliable path | For anyone comfortable with Xcode already |
 
@@ -176,8 +186,10 @@ account, use Path C (build with Xcode, connected directly to your paired
 watch) instead of sideloading.
 
 Whichever path you take, the app installs with **no creature art built in**
-— see [Sprites](#sprites) for how that gets added, which now works the same
-way regardless of which install path you used.
+— see [Sprites](#sprites) for how that gets added. The native iOS app reads
+them from the Files app; the web app and the Android APK have a "Load
+sprites…" button that opens the phone's own file picker instead, and keep
+what you pick in the app's own storage.
 
 ---
 
@@ -305,11 +317,18 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
 
 ## License
 
-- **This port's own code** (the Swift/watchOS layer, scripts, docs):
-  **[LICENSE](LICENSE)** — a short custom license, not a standard
-  open-source one. Personal use and modification are free; publishing or
-  handing out any build (including a reskinned one) needs the copyright
-  holder's permission first. Read it — it's a few screens, not forty.
+- **This port's own code** (the Swift/watchOS layer, the browser build,
+  scripts, docs): **[LICENSE](LICENSE)** — a short custom license, not a
+  standard open-source one. Personal use and modification are free, and so
+  is playing the hosted web app / APK at the address above or publishing
+  your own fork's copy for yourself; re-publishing or handing out any build
+  (including a reskinned one) needs the copyright holder's permission
+  first. Read it — it's a few screens, not forty.
+- **What the hosted site actually serves** is the same thing this
+  repository contains: MIT-licensed engine code compiled to WebAssembly,
+  this port's UI, and a generic egg icon drawn for the project. The
+  workflow that publishes it refuses to run if a sprite, cry or dex-text
+  file is found in the folder.
 - **Portions translated line-for-line from upstream's C++** (the renderer,
   layout, and similar): remain © Quique Tortosa, MIT — the exact MIT notice
   travels with this repo in [NOTICE](NOTICE) so it's included regardless of
@@ -317,10 +336,14 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
 - **The `upstream/` submodule itself**: not ours to relicense — get it
   directly from [its own repository](https://github.com/socquique/TamaPoke)
   under its own MIT terms.
-- **Pokémon names, designs, dex text, and cries**: © Nintendo / Game Freak /
-  The Pokémon Company. **Not distributed anywhere in this repository or its
-  builds** — see [Sprites](#sprites), [Pokédex entries](#pokédex-entries),
-  and [Cries](#cries) for how you fetch your own copy after installing.
+- **Pokémon designs, artwork, dex text, and cries**: © Nintendo / Game
+  Freak / The Pokémon Company. **Not distributed anywhere in this
+  repository, its builds, or the hosted site** — see [Sprites](#sprites),
+  [Pokédex entries](#pokédex-entries), and [Cries](#cries) for how you
+  fetch your own copy after installing. The species *table* (numbers,
+  names in seven languages, types, PokéAPI base stats, evolution links) is
+  plain data inherited from the MIT upstream and is the one Pokémon-related
+  thing the code carries — names are used to label the files you supply.
 - **Sprite art**: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab)
   (CC BY-NC 4.0 — https://creativecommons.org/licenses/by-nc/4.0/), a
   fan-drawn, non-commercial project distinct from Nintendo's own art. Also
