@@ -339,6 +339,11 @@ EMSCRIPTEN_KEEPALIVE int tp_sack_hits() { return gSackHits; }
 EMSCRIPTEN_KEEPALIVE int tp_sack_over_until_reached(uint32_t nowMs) { return gSackOverUntil != 0 && nowMs >= gSackOverUntil; }
 EMSCRIPTEN_KEEPALIVE int tp_sack_is_over() { return gSackOverUntil != 0; }
 EMSCRIPTEN_KEEPALIVE int tp_sack_gain() { return gSackGain; }
+// Milliseconds left on the 10s clock, for renderSack's countdown bar.
+EMSCRIPTEN_KEEPALIVE int tp_sack_ms_left(uint32_t nowMs) {
+  if (!gSackRunning || gSackOverUntil != 0 || nowMs >= gSackUntil) return 0;
+  return (int)(gSackUntil - nowMs);
+}
 EMSCRIPTEN_KEEPALIVE int tp_sack_new_high() { return gSackNewHigh; }
 EMSCRIPTEN_KEEPALIVE int tp_strength_high2() { return tp_battle_pet().strHi; }
 

@@ -89,8 +89,10 @@ function drawBattle(now) {
     ctx.fill();
     ctx.fillStyle = UI.bgDay;
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.font = "bold 13px monospace";
-    ctx.fillText(fns.battleRunText(), 233, 122);
+    ctx.fillText(fns.battleRunText(), 233, 118);
+    ctx.textBaseline = "alphabetic";
   }
   // Small "already caught" marker beside the wild side's HP bar, same glyph
   // and spot as PetScreen.swift's renderBattle. Drawn after the RUN box so
@@ -128,8 +130,10 @@ function drawBattle(now) {
       roundRect(242, 396, 148, 52, 14); ctx.fill();
       ctx.fillStyle = UI.bgDay;
       ctx.font = "bold 13px monospace";
-      ctx.fillText(fns.battleCatchWildText(), 150, 426);
-      ctx.fillText(fns.battleLeaveWildText(), 316, 426);
+      ctx.textBaseline = "middle";
+      ctx.fillText(fns.battleCatchWildText(), 150, 422);
+      ctx.fillText(fns.battleLeaveWildText(), 316, 422);
+      ctx.textBaseline = "alphabetic";
     } else {
       if (catchDone && fns.battleCatchTried() !== 0) {
         const success = fns.battleCatchSuccess() !== 0;
@@ -141,7 +145,9 @@ function drawBattle(now) {
       roundRect(118, 396, 230, 52, 14); ctx.fill();
       ctx.fillStyle = UI.bgDay;
       ctx.font = "bold 16px monospace";
-      ctx.fillText(fns.battleOkText(), TP.cx, 428);
+      ctx.textBaseline = "middle";
+      ctx.fillText(fns.battleOkText(), TP.cx, 422);
+      ctx.textBaseline = "alphabetic";
     }
   } else {
     ctx.textAlign = "left";
@@ -167,8 +173,10 @@ function drawBattle(now) {
       ctx.fillStyle = UI.bgDay;
       ctx.font = "bold 13px monospace";
       ctx.textAlign = "center";
-      ctx.fillText(fns.battleQuickAttackText(), 149, 325);
-      ctx.fillText(fns.battleHeavyAttackText(), 317, 325);
+      ctx.textBaseline = "middle";
+      ctx.fillText(fns.battleQuickAttackText(), 149, 321);
+      ctx.fillText(fns.battleHeavyAttackText(), 317, 321);
+      ctx.textBaseline = "alphabetic";
     }
 
     ctx.fillStyle = UI.barBad;
@@ -180,9 +188,11 @@ function drawBattle(now) {
     ctx.fillStyle = UI.bgDay;
     ctx.font = "bold 13px monospace";
     ctx.textAlign = "center";
-    ctx.fillText(fns.battleAttackText(), 112, 391);
-    ctx.fillText(fns.battleDodgeText(), 233, 391);
-    ctx.fillText(fns.battleRestText(), 354, 391);
+    ctx.textBaseline = "middle";
+    ctx.fillText(fns.battleAttackText(), 112, 387);
+    ctx.fillText(fns.battleDodgeText(), 233, 387);
+    ctx.fillText(fns.battleRestText(), 354, 387);
+    ctx.textBaseline = "alphabetic";
   }
 
   statusEl.textContent = resolved
@@ -246,9 +256,11 @@ function drawWildPrompt() {
   roundRect(93, 278, 280, 44, 12); ctx.fill();
   ctx.fillStyle = UI.white;
   ctx.font = "bold 15px monospace";
-  ctx.fillText(fns.battleFightText(), TP.cx, 254);
+  ctx.textBaseline = "middle";
+  ctx.fillText(fns.battleFightText(), TP.cx, 248);
   ctx.fillStyle = UI.bgDay;
-  ctx.fillText(fns.battleLaterText(), TP.cx, 306);
+  ctx.fillText(fns.battleLaterText(), TP.cx, 300);
+  ctx.textBaseline = "alphabetic";
 }
 
 function wildPromptTap(x, y) {

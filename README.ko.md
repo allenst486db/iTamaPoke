@@ -25,6 +25,20 @@
 들어 있습니다. 단계별: [설치 가이드 경로
 D](docs/INSTALL.ko.md#경로-d--내-fork에서-만드는-웹앱--안드로이드-앱-mac-없이-개발자-계정-없이).
 
+```mermaid
+flowchart LR
+    subgraph you["내 fork (한 번)"]
+        F[Fork] --> W[Build 워크플로]
+    end
+    W --> WEB[웹앱<br/>아이폰 · 아이패드 · 데스크톱]
+    W --> APK[안드로이드 .apk]
+    W -.-> IPA[iOS .ipa<br/>경로 A/B/C]
+    MONS[(mons 폴더<br/>스프라이트 · 울음소리 · 도감문<br/>본인이 넣음, 호스팅 안 함)] --> WEB
+    MONS --> APK
+    MONS --> IPA
+    style MONS fill:#f5dca0,stroke:#2946,color:#000
+```
+
 처음이신가요? 아래부터 시작하세요:
 
 | | |

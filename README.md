@@ -24,6 +24,20 @@ Android `iTamaPoke.apk`. No Mac, no developer account, no expiry; it runs
 on the phone offline after that. Then add the creature art yourself — the
 build ships none of it, on purpose. Step by step: [install guide, Path D](docs/INSTALL.md#path-d--web-app--android-app-from-your-own-fork-no-mac-no-developer-account).
 
+```mermaid
+flowchart LR
+    subgraph you["your fork (once)"]
+        F[Fork] --> W[Build workflow]
+    end
+    W --> WEB[Web app<br/>iPhone · iPad · desktop]
+    W --> APK[Android .apk]
+    W -.-> IPA[iOS .ipa<br/>Paths A/B/C]
+    MONS[(mons folder<br/>sprites · cries · dex text<br/>you supply, never hosted)] --> WEB
+    MONS --> APK
+    MONS --> IPA
+    style MONS fill:#f5dca0,stroke:#2946,color:#000
+```
+
 New here? Start with one of these:
 
 | | |

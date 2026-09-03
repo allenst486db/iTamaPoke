@@ -20,28 +20,35 @@
     font: 11px/1.4 -apple-system, system-ui, sans-serif; color: #8a93a6;
     text-align: center; padding: 4px 0; pointer-events: none;
   }
-  #spriteLoad, #dexEntryLoad, #cryLoad {
-    position: fixed; top: 8px;
+  .tool {
+    position: fixed; right: 8px;
     font: 11px -apple-system, system-ui, sans-serif;
     background: #1c2030; color: #cdd4e0; border: 1px solid #333a4d;
     border-radius: 6px; padding: 6px 10px; cursor: pointer;
   }
-  #spriteLoad { right: 8px; }
-  #dexEntryLoad { right: 8px; top: 42px; }
-  #cryLoad { right: 8px; top: 76px; }
-  #spriteLoad:active, #dexEntryLoad:active, #cryLoad:active { background: #262b3f; }
-  #spriteInput, #dexEntryInput, #cryInput { display: none; }
+  .tool:active { background: #262b3f; }
+  #spriteLoad { top: 8px; }
+  #dexEntryLoad { top: 42px; }
+  #cryLoad { top: 76px; }
+  #saveExport { top: 122px; }
+  #saveImport { top: 156px; }
+  #gameReset { top: 190px; color: #e08a8a; }
+  #spriteInput, #dexEntryInput, #cryInput, #saveInput { display: none; }
 </style>
 </head>
 <body>
 <canvas id="tp" width="466" height="466"></canvas>
 <div id="status">loading…</div>
-<button id="spriteLoad" type="button">Load sprites…</button>
+<button id="spriteLoad" class="tool" type="button">Load sprites…</button>
 <input id="spriteInput" type="file" accept=".bin" multiple>
-<button id="dexEntryLoad" type="button">Load dex text…</button>
+<button id="dexEntryLoad" class="tool" type="button">Load dex text…</button>
 <input id="dexEntryInput" type="file" accept=".txt" multiple>
-<button id="cryLoad" type="button">Load cries…</button>
+<button id="cryLoad" class="tool" type="button">Load cries…</button>
 <input id="cryInput" type="file" accept=".m4a,.mp3,.wav,.ogg" multiple>
+<button id="saveExport" class="tool" type="button">Save file…</button>
+<button id="saveImport" class="tool" type="button">Load save…</button>
+<input id="saveInput" type="file" accept=".tpsave,.bin,application/octet-stream">
+<button id="gameReset" class="tool" type="button">Reset game…</button>
 <script>
 // Surface any startup failure in the status line instead of a silent
 // "loading…" -- on a phone there is no console to look at.

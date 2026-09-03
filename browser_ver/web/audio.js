@@ -156,8 +156,13 @@ const SOUND_SILENT = 0, SOUND_VIBRATE = 1, SOUND_FULL = 2;
 let soundMode = SOUND_SILENT; // starts silent -- browsers block audio before a user gesture anyway
 
 function loadSoundMode() {
-  const v = parseInt(localStorage.getItem("tp_soundmode3") || "0", 10);
-  soundMode = v === 1 || v === 2 ? v : SOUND_SILENT;
+  // Sound on by default, like the iOS app. The AudioContext itself is
+  // still only created on the first tap (browsers require a gesture), so
+  // starting in FULL costs nothing and means cries/SFX work from the
+  // first tap rather than after a hidden settings toggle.
+  const stored = localStorage.getItem("tp_soundmode3");
+  const v = stored === null ? SOUND_FULL : parseInt(stored, 10);
+  soundMode = v === 0 || v === 1 || v === 2 ? v : SOUND_FULL;
   return soundMode;
 }
 

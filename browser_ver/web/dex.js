@@ -28,6 +28,22 @@ function drawDexThumb(sprite, x, y, box) {
   ctx.drawImage(frameCanvas, x + (box - w) / 2, y + (box - h) / 2, w, h);
 }
 
+// The detail view's portrait plays the idle cycle, as the iOS detail
+// view's sprite does; only the grid tiles stay static.
+function drawDexPortrait(sprite, x, y, box, now) {
+  const a = sprite.actions[TPAct.idle];
+  if (!a) return;
+  const frame = frameIndexAt(a, now, true);
+  const img = frameImageData(sprite, TPAct.idle, frame);
+  if (!img) return;
+  const s = Math.min(box / a.w, box / a.h);
+  const w = a.w * s, h = a.h * s;
+  frameCanvas.width = a.w; frameCanvas.height = a.h;
+  frameCtx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(frameCanvas, x + (box - w) / 2, y + (box - h) / 2, w, h);
+}
+
 const TYPE_COLORS = {
   1: "#a8a878", 2: "#f08030", 3: "#6890f0", 4: "#f8d030", 5: "#78c850",
   6: "#98d8d8", 7: "#c03028", 8: "#a040a0", 9: "#e0c068", 10: "#a890f0",
@@ -69,10 +85,12 @@ function dexPageCount() {
   return Math.max(1, Math.ceil(dexFilteredCount() / 16));
 }
 
+// Labels from the string table (S_FILTER_ALL / S_RAISED_MARK / S_CAUGHT_MARK),
+// same as PetScreen's filter row, so they follow the UI language.
 const DEX_FILTER_PILLS = [
-  { x: 74, w: 96, label: "ALL" },
-  { x: 180, w: 96, label: "RAISED" },
-  { x: 286, w: 96, label: "CAUGHT" },
+  { x: 74, w: 96, label: () => fns.filterAllText() },
+  { x: 180, w: 96, label: () => fns.raisedMarkText() },
+  { x: 286, w: 96, label: () => fns.caughtMarkText() },
 ];
 const GAL_X = 71, GAL_Y = 96, GAL_CELL = 82;
 
@@ -98,7 +116,7 @@ function drawDexGrid() {
     ctx.stroke();
     ctx.fillStyle = selected ? UI.bgDay : UI.ink;
     ctx.font = "bold 10px monospace";
-    ctx.fillText(p.label, p.x + p.w / 2, 83);
+    ctx.fillText(p.label(), p.x + p.w / 2, 83);
   }
 
   if (dexPage >= dexPageCount()) dexPage = 0;
@@ -157,7 +175,7 @@ function drawDexGrid() {
   ctx.font = "11px monospace";
   ctx.fillText("< prev · next >  ·  tap a tile", TP.cx, 456);
 
-  statusEl.textContent = `Dex · page ${dexPage + 1}/${pages} · filter ${DEX_FILTER_PILLS[dexFilter].label}`;
+  statusEl.textContent = `Dex · page ${dexPage + 1}/${pages} · filter ${DEX_FILTER_PILLS[dexFilter].label()}`;
 }
 
 function drawDexDetail() {
@@ -215,7 +233,7 @@ function drawDexDetail() {
     // the grid uses when there's no local file for this species.
     const portrait = known ? dexThumbFor(dex) : null;
     if (portrait) {
-      drawDexThumb(portrait, TP.cx - 60, 200, 120);
+      drawDexPortrait(portrait, TP.cx - 60, 200, 120, performance.now());
     } else {
       ctx.font = "bold 56px monospace";
       ctx.fillStyle = known ? UI.ink : "#c8ccd4";
@@ -225,11 +243,11 @@ function drawDexDetail() {
     ctx.font = "bold 15px monospace";
     if (registered) {
       ctx.fillStyle = UI.barOK;
-      ctx.fillText("RAISED", TP.cx, caught ? 384 : 396);
+      ctx.fillText(fns.raisedMarkText(), TP.cx, caught ? 384 : 396);
     }
     if (caught) {
       ctx.fillStyle = UI.barWarn;
-      ctx.fillText("CAUGHT", TP.cx, registered ? 406 : 396);
+      ctx.fillText(fns.caughtMarkText(), TP.cx, registered ? 406 : 396);
     }
   } else {
     drawDexEntryPage(dex, known);
@@ -250,7 +268,7 @@ function drawDexDetail() {
 
   ctx.fillStyle = UI.track;
   ctx.font = "13px monospace";
-  ctx.fillText("tap: back", TP.cx, 424);
+  ctx.fillText(fns.detailBackText(), TP.cx, 424);
 
   statusEl.textContent = `Dex detail · #${dex} ${known ? fns.dexName(dex) : "???"}`;
 }

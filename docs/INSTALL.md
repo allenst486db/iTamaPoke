@@ -13,21 +13,26 @@ If a term isn't explained inline, it's explained the first time it comes up.
 
 ## Which path should I take?
 
+```mermaid
+flowchart TD
+    Q{Paid Apple Developer<br/>account?}
+    Q -- No (most people) --> Q2{What do you want?}
+    Q -- Yes --> B[Path B<br/>signed .ipa<br/>no re-signing]
+    Q2 -- easiest, no computer --> D[Path D ★<br/>web app / Android app<br/>built from your fork]
+    Q2 -- a native iOS app --> A[Path A<br/>free sideloading<br/>renew every 7 days]
+    Q2 -- Mac + Xcode,<br/>Apple Watch too --> C[Path C<br/>build in Xcode]
+    style D fill:#5dcd5d,stroke:#2946,color:#000
 ```
-Do you have a paid Apple Developer account ($99/year)?
-│
-├─ No (most people) ─┬─ Don't want to re-sign every 7 days,
-│                    │  or just want the easiest route ───► Path D: Web app / Android
-│                    │                                       (fork once ~10 min, then
-│                    │                                       phone only; never expires)
-│                    │
-│                    └─ Want it as a real iOS app ─────────► Path A: Free install
-│                                                            (Mac or Windows, ~15 min,
-│                                                            renew every 7 days)
-│
-└─ Yes ────────────────────────────────────────────────────► Path B: Signed install
-                                                             (~10 min, no re-signing ever)
-```
+
+| Path | Needs | Time | Expiry | Apple Watch |
+|---|---|---|---|---|
+| **D web app / Android** ★ | a phone, a free GitHub account | 10 min fork + 1 min install | never | ✗ |
+| A free sideloading | iPhone, Mac or Windows, free Apple ID | 15 min | renew every 7 days | ✗ |
+| B signed install | paid developer account | 10 min | 1 year | ✓ |
+| C build in Xcode | Mac + Xcode | 20 min | 7 days (free ID) | ✓ |
+
+Whichever path, the game installs **without creature art**; you add
+sprites, cries and dex text yourself → [Building the mons folder](#building-the-mons-folder).
 
 There's also **Path C**, building it yourself with Xcode — only relevant if
 you already have a Mac with Xcode and want to bake sprites directly into the
@@ -36,6 +41,51 @@ screens, built as a web app (`browser_ver/`) that GitHub builds under your
 own account once; after that it installs from your own link and runs on
 the phone by itself, offline. No Mac, no developer account, no sideloading
 tool, so **if this is your first time, start with Path D.**
+
+---
+
+## Building the mons folder
+
+Every path uses the same one folder, named exactly `mons`.
+
+```
+mons/
+├── p001.bin … p386.bin        creature sprites (normal)          ← required
+├── ps001.bin … ps386.bin      creature sprites (shiny)           optional
+├── thumbs.bin                 Pokédex thumbnail atlas            iOS app only, required there
+├── dex_entries_en.txt         Pokédex text, one file per language   optional
+├── dex_entries_ko.txt
+├── psnd001.m4a … psnd386.m4a  cries                              optional
+├── iTamaPoke-save.json        the iOS app's save (written by the app)
+└── iTamaPoke-save.tpsave      the web/Android save (from "Save file…")
+```
+
+| File | Source | How |
+|---|---|---|
+| `p###.bin`, `thumbs.bin` | [socquique/TamaPoke](https://github.com/socquique/TamaPoke) | **Code → Download ZIP** → the whole `tools/sdcard/mons` folder |
+| `ps###.bin` (shiny) | PMD SpriteCollab | on a computer: `Scripts/pack_shiny_sprites.py` (optional) |
+| `dex_entries_<lang>.txt` | PokéAPI | on a computer: `Scripts/fetch_dex_entries.sh --lang en` |
+| `psnd###.m4a` | PokéAPI cries | on a computer: `Scripts/fetch_cries.sh` (needs `ffmpeg`) |
+| all of the above at once | | `Scripts/fetch_assets.sh` |
+
+- **Phone only:** the first row (the ZIP) is enough. Download it in Safari,
+  tap it in the Files app to unpack, and `TamaPoke-main/tools/sdcard/mons`
+  is the folder. Move that `mons` to the top of **On My iPhone** to keep it
+  easy to find.
+- **With a computer:** clone the repository, run `Scripts/fetch_assets.sh`,
+  and everything lands in `Resources/mons/`. AirDrop or cloud-drive that
+  folder to the phone.
+- Partial sets are fine: a species without a file shows "?" and nothing
+  breaks.
+- None of these files are in this repository, and the app never uploads
+  them anywhere.
+
+**Where does it go?**
+
+| | Location |
+|---|---|
+| iOS app (Paths A/B/C) | Files → On My iPhone → **iTamaPoke** → `mons` (read automatically) |
+| Web app / Android (Path D) | Files → On My iPhone → `mons` (anywhere works — you pick it with **Load sprites…**) |
 
 ---
 
@@ -250,12 +300,22 @@ xcodegen generate
 ## Path D — Web app / Android app from your own fork (no Mac, no developer account)
 
 The same game — same engine, same screens, same sprites, same sounds — built
-as a web app, and as an Android package. GitHub builds it once under your
-account (D0); then you open your link on the phone, add it to the home
-screen (or install the APK), and from then on it runs **on the phone by
-itself, offline**, like any other app: no App Store, no sideloading, no
-7-day expiry, nothing to keep running anywhere. It keeps its own save; it
-doesn't share one with the iOS app.
+as a web app, and as an Android package.
+
+```mermaid
+flowchart LR
+    F[① Fork<br/>your own copy on GitHub] --> W[② Run the workflow<br/>GitHub builds it]
+    W --> L[③ Your link<br/>username.github.io/iTamaPoke]
+    L --> I[④ Install on the phone<br/>iPhone: Add to Home Screen<br/>Android: APK]
+    I --> M[⑤ Load the mons folder<br/>art, cries, dex text]
+    M --> P[🎮 play offline]
+```
+
+GitHub builds it once under your account (D0); then you open your link on
+the phone, add it to the home screen (or install the APK), and from then on
+it runs **on the phone by itself, offline**, like any other app: no App
+Store, no sideloading, no 7-day expiry, nothing to keep running anywhere.
+It keeps its own save; it doesn't share one with the iOS app.
 
 What's at that link is code only. The Pokémon art, cries and Pokédex text
 are **not** part of it — you put those on your phone yourself in D3, and the
@@ -313,19 +373,37 @@ installed copies update on their next launch.
   APK, the web link works in Chrome too (⋮ → **Install app**), with the
   same "play it from the icon" rule as iPhone.
 
-### D2. Why the icon matters (read this once)
+### D2. The icon and the save (read this once)
 
-The home-screen icon is the app. Opening the game from a browser tab
-instead works too, but:
+```mermaid
+flowchart TD
+    subgraph phone
+        ICON[Home-screen icon<br/>= app + save + sprites]
+        TAB[Browser tab<br/>same address, separate storage]
+        FILES[Files › On My iPhone › mons<br/>art, cries, dex text, save file]
+    end
+    FILES -- "Load sprites… etc." --> ICON
+    ICON -- "Save file…" --> FILES
+    FILES -- "Load save…" --> ICON
+    TAB -. not shared .- ICON
+```
 
-- your **save is stored inside the home-screen app**, so always play from
-  the icon. A browser tab at the same address has its own separate save.
-- **don't delete the icon** to "reinstall" — on iPhone that also deletes its
-  save and the sprites you loaded. If something's wrong, see the
-  troubleshooting list below first.
-- after the first launch it needs **no internet**. Updates arrive on their
-  own: when a new version is published, the next launch with internet picks
-  it up (the screen may reload once). Your save and sprites stay.
+- **The save lives inside the icon.** It autosaves every 15 seconds and
+  whenever you leave the screen. A browser tab at the same address is a
+  *separate* app with a separate save and separate sprites — always play
+  from the icon.
+- **Deleting the icon deletes the save** (iPhone). Before reinstalling, use
+  **Save file…** first.
+- **Save file…** (button on the right): exports the current state as
+  `iTamaPoke-save.tpsave`. On iPhone the share sheet opens — **Save to
+  Files** → your `mons` folder. That's your backup, and how you move to
+  another phone.
+- **Load save…**: picks that file and restores it (replaces the current
+  creature).
+- **Reset game…**: wipes the save only and starts a new egg; sprites stay.
+  Use it when a wrong state keeps showing.
+- After the first launch it needs **no internet**. New versions are picked
+  up on the next launch with internet.
 
 ### D3. Add the characters (5 minutes, once per device)
 
@@ -376,6 +454,10 @@ Chrome and Edge offer an **Install** button in the address bar for a
 windowed app. The save is per browser.
 
 ### Path D troubleshooting
+
+**Picked one starter, a different name shows / no creature at all.** An
+old, broken save is still in the app. Tap **Reset game…** (right side) and
+start from the egg; if the art is gone too, **Load sprites…** again.
 
 **The page says "loading…" and nothing happens.** Usually an old cached
 copy from a previous version. Close the app fully (swipe it away), make

@@ -65,10 +65,13 @@ function drawCardProfile(now) {
     }
   }
 
+  // The same little flame the idle screen's streak badge uses, not an
+  // emoji (which renders differently per platform, or not at all).
+  drawFlame(118, 220, 16);
   ctx.textAlign = "left";
   ctx.font = "13px monospace";
   ctx.fillStyle = UI.ink;
-  ctx.fillText(`🔥 ${fns.streakLine()}`, 138, 232);
+  ctx.fillText(fns.streakLine(), 140, 232);
 
   const bondLabel = fns.bondLabel(), bond = fns.bond();
   ctx.fillText(bondLabel, 60, 262);
@@ -97,14 +100,18 @@ function drawPersonalityRecord(x, y, label, value, color) {
   roundRect(x, y, 118, 34, 8); ctx.fill();
   ctx.strokeStyle = color; ctx.lineWidth = 1;
   roundRect(x, y, 118, 34, 8); ctx.stroke();
+  // Label and number share one vertical centre (the iOS build had them on
+  // mismatched baselines until it was fixed there too).
+  ctx.textBaseline = "middle";
   ctx.fillStyle = color;
   ctx.textAlign = "left";
   ctx.font = "10px monospace";
-  ctx.fillText(label, x + 10, y + 15);
+  ctx.fillText(label, x + 10, y + 17);
   ctx.fillStyle = UI.ink;
   ctx.font = "bold 14px monospace";
   ctx.textAlign = "right";
-  ctx.fillText(`${value}`, x + 108, y + 24);
+  ctx.fillText(`${value}`, x + 108, y + 17);
+  ctx.textBaseline = "alphabetic";
 }
 
 function drawCardPersonality() {
@@ -185,13 +192,15 @@ function drawCardStats() {
   roundRect(40, 296, 160, 40, 11); ctx.fill();
   ctx.fillStyle = UI.bgDay;
   ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
   ctx.font = "bold 13px monospace";
-  ctx.fillText(fns.wildBattleText(), 120, 320);
+  ctx.fillText(fns.wildBattleText(), 120, 316);
 
   ctx.fillStyle = UI.barBad;
   roundRect(216, 296, 160, 40, 11); ctx.fill();
   ctx.fillStyle = UI.bgDay;
-  ctx.fillText(fns.trainButtonText(), 296, 320);
+  ctx.fillText(fns.trainButtonText(), 296, 316);
+  ctx.textBaseline = "alphabetic";
 
   statusEl.textContent = `Card · Battle stats`;
 }
@@ -225,8 +234,10 @@ function drawCardMedals() {
     roundRect(x, y, 196, 44, 10); ctx.fill();
     ctx.fillStyle = got ? UI.bgDay : "#84888a";
     ctx.textAlign = "left";
+    ctx.textBaseline = "middle";
     ctx.font = "12px monospace";
-    ctx.fillText((got ? "✓ " : "") + fns.medalDescription(i), x + 12, y + 27);
+    ctx.fillText((got ? "✓ " : "") + fns.medalDescription(i), x + 12, y + 22);
+    ctx.textBaseline = "alphabetic";
   }
   statusEl.textContent = `Card · ${fns.medalsLine()}`;
 }
@@ -297,7 +308,7 @@ function drawKeyboard() {
   ctx.textAlign = "center";
   ctx.fillStyle = UI.ink;
   ctx.font = "bold 18px monospace";
-  ctx.fillText("NAME", TP.cx, 56);
+  ctx.fillText(fns.nameLabel(), TP.cx, 56);
 
   ctx.fillStyle = UI.white;
   roundRect(83, 84, 300, 40, 8); ctx.fill();
@@ -317,8 +328,10 @@ function drawKeyboard() {
     roundRect(x, y, KB_W - 6, KB_H - 6, 6); ctx.stroke();
     ctx.fillStyle = UI.ink;
     ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
     ctx.font = "bold 16px monospace";
-    ctx.fillText(i < 28 ? KB_KEYS[i] : (i === 28 ? "<-" : "OK"), x + (KB_W - 6) / 2, y + (KB_H - 6) / 2 + 6);
+    ctx.fillText(i < 28 ? KB_KEYS[i] : (i === 28 ? "<-" : "OK"), x + (KB_W - 6) / 2, y + (KB_H - 6) / 2);
+    ctx.textBaseline = "alphabetic";
   }
   statusEl.textContent = `Rename · "${nameDraft}"`;
 }

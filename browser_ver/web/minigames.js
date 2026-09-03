@@ -352,9 +352,10 @@ const TypeGame = {
     }
   },
   choiceAt(x, y) {
+    // Same three 290x48 buttons renderTypeGame draws at x 88, y 210+60i.
     for (let i = 0; i < 3; i++) {
       const by = 210 + i * 60;
-      if (x >= 70 && x <= 396 && y >= by - 8 && y <= by + 56) return i;
+      if (x >= 88 && x <= 378 && y >= by && y <= by + 48) return i;
     }
     return -1;
   },

@@ -337,12 +337,14 @@ function settingsTap(x, y) {
 // Ports drawGameMenu(): five tiles, same layout math as PetScreen.swift's
 // `gameMenuTiles` (two rows of tiles inside the 78,112,310,266 card).
 let gameMode = 0; // 0 ball, 1 catch, 2 memo, 3 clean, 4 type
+// Labels come from the string table (pet.ballRecordLabel etc. on iOS), so
+// a Korean UI shows 공놀이/캐치/패턴 기억/청소/타입 here too.
 const GAME_TILES = [
-  { x: 92, y: 168, w: 138, h: 78, label: "BALL", color: UI.barBad, hi: () => fns.gameHigh() },
-  { x: 236, y: 168, w: 138, h: 78, label: "CATCH", color: UI.barWarn, hi: () => fns.catchHigh() },
-  { x: 92, y: 254, w: 138, h: 78, label: "MEMO", color: "#4C98D9", hi: () => fns.memoHigh() },
-  { x: 236, y: 254, w: 138, h: 78, label: "CLEAN", color: UI.barOK, hi: () => fns.cleanHigh() },
-  { x: 92, y: 340, w: 282, h: 30, label: "TYPE", color: "#F3B7D9", hi: () => fns.typeHigh() },
+  { x: 92, y: 168, w: 138, h: 78, label: () => fns.ballRecordLabel(), color: UI.barBad, hi: () => fns.gameHigh() },
+  { x: 236, y: 168, w: 138, h: 78, label: () => fns.catchRecordLabel(), color: UI.barWarn, hi: () => fns.catchHigh() },
+  { x: 92, y: 254, w: 138, h: 78, label: () => fns.memoRecordLabel(), color: "#4C98D9", hi: () => fns.memoHigh() },
+  { x: 236, y: 254, w: 138, h: 78, label: () => fns.cleanRecordLabel(), color: UI.barOK, hi: () => fns.cleanHigh() },
+  { x: 92, y: 340, w: 282, h: 30, label: () => fns.typeRecordLabel(), color: "#F3B7D9", hi: () => fns.typeHigh() },
 ];
 const GAME_STARTERS = [
   () => BallGame.start(performance.now()),
@@ -362,7 +364,7 @@ function drawGameMenu() {
   ctx.fillStyle = UI.ink;
   ctx.textAlign = "center";
   ctx.font = "bold 20px monospace";
-  ctx.fillText("PLAY", TP.cx, 140);
+  ctx.fillText(fns.playTitle(), TP.cx, 140);
 
   for (const t of GAME_TILES) {
     ctx.fillStyle = t.color;
@@ -373,14 +375,12 @@ function drawGameMenu() {
     ctx.stroke();
     ctx.fillStyle = UI.bgDay;
     ctx.font = "bold 15px monospace";
-    ctx.fillText(t.label, t.x + t.w / 2, t.y + t.h / 2 - 2);
-    ctx.font = "11px monospace";
-    ctx.fillText(`hi ${t.hi()}`, t.x + t.w / 2, t.y + t.h / 2 + 16);
+    ctx.textBaseline = "middle";
+    // PetScreen's tiles carry the label alone, centred; the record shows
+    // inside each game instead.
+    ctx.fillText(t.label(), t.x + t.w / 2, t.y + t.h / 2);
+    ctx.textBaseline = "alphabetic";
   }
-
-  ctx.fillStyle = UI.track;
-  ctx.font = "13px monospace";
-  ctx.fillText("tap outside to close", TP.cx, 410);
   statusEl.textContent = "Play menu";
 }
 
@@ -402,14 +402,51 @@ function gameMenuTap(x, y) {
 // Shared game-over card: the four newer minigames all show the same
 // "SCORE: N" + record/new-record layout, matching renderCatchGame etc.'s
 // shared shape in PetScreen.swift.
-function drawGameOverCard(ink, score, newHigh, high) {
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 40px monospace";
-  ctx.fillText(`SCORE: ${score}`, TP.cx, 170);
-  ctx.font = "bold 20px monospace";
-  ctx.fillStyle = newHigh ? UI.barWarn : ink;
-  ctx.fillText(newHigh ? "NEW RECORD!" : `record: ${high}`, TP.cx, 220);
+// Bitmap-font size -> canvas font, matching TPGraphics' 6px-per-size glyph
+// widths closely enough that iOS's x positions land in the same places.
+function gfxFont(size) {
+  return `bold ${[0, 11, 15, 20, 28, 34, 40][size] || 15}px monospace`;
+}
+// gfxTextCentered / gfxText with iOS's "y is the text's top" convention.
+function gfxTextC(text, y, size, color) {
+  ctx.font = gfxFont(size); ctx.fillStyle = color;
+  ctx.textAlign = "center"; ctx.textBaseline = "top";
+  ctx.fillText(text, TP.cx, y);
+  ctx.textBaseline = "alphabetic";
+}
+function gfxTextL(text, x, y, size, color) {
+  ctx.font = gfxFont(size); ctx.fillStyle = color;
+  ctx.textAlign = "left"; ctx.textBaseline = "top";
+  ctx.fillText(text, x, y);
+  ctx.textBaseline = "alphabetic";
+}
+// TP.textTop(centeredOn:size:) -- the top y that centres a line on cy.
+function gfxTop(cy, size) { return cy - ([0, 11, 15, 20, 28, 34, 40][size] || 15) / 2; }
+
+// Shared "SCORE: N" + record/new-record card the four newer minigames show
+// (gain line optional), laid out as PetScreen.swift's renderCatchGame etc.
+function drawGameOverCard(ink, score, newHigh, high, gainLine, gainColor) {
+  gfxTextC(fns.scoreLine(score), gainLine ? 148 : 160, 4, ink);
+  if (gainLine) gfxTextC(gainLine, 204, 3, gainColor);
+  const y = gainLine ? 256 : 214;
+  if (newHigh && score > 0) gfxTextC(fns.newRecordText(), y, 2, UI.barWarn);
+  else gfxTextC(fns.recordLine(high), y, 2, ink);
+}
+// The three-dot miss counter at y 104 every minigame shares.
+function drawMisses(misses) {
+  for (let i = 0; i < 3; i++) {
+    ctx.beginPath();
+    ctx.arc(180 + i * 28, 104, 6, 0, Math.PI * 2);
+    if (i < 3 - misses) { ctx.fillStyle = UI.barBad; ctx.fill(); }
+    else { ctx.strokeStyle = UI.track; ctx.lineWidth = 2; ctx.stroke(); }
+  }
+}
+function drawTimeBar(y, h, leftMs, totalMs) {
+  const bw = 280;
+  const fw = bw * Math.min(leftMs, totalMs) / totalMs;
+  ctx.fillStyle = UI.track;
+  roundRect(TP.cx - bw / 2, y, bw, h, 5); ctx.fill();
+  if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, y, fw, h, 5); ctx.fill(); }
 }
 
 // Ports renderBallGame(): the day/night habitat backdrop, score + lives,
@@ -421,21 +458,17 @@ function drawBallGame(now) {
 
   if (BallGame.overUntil !== 0) {
     drawGameOverCard(ink, BallGame.score, BallGame.newHigh, fns.gameHigh());
+    gfxTextC(BallGame.score >= 10 ? fns.greatJoyText() : fns.plusJoyText(), 250, 2, ink);
     if (now >= BallGame.overUntil) { screen = "idle"; BallGame.running = false; }
     statusEl.textContent = `Ball · game over · score ${BallGame.score}`;
     return;
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "left";
-  ctx.font = "bold 28px monospace";
-  ctx.fillText(`${BallGame.score}`, 30, 44);
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath();
-    ctx.arc(180 + i * 28, 104, 6, 0, Math.PI * 2);
-    if (i < 3 - BallGame.misses) { ctx.fillStyle = UI.barBad; ctx.fill(); }
-    else { ctx.strokeStyle = UI.track; ctx.lineWidth = 2; ctx.stroke(); }
-  }
+  // renderBallGame: big score centred at the top, the record under it,
+  // three lives.
+  gfxTextC(`${BallGame.score}`, 30, 4, ink);
+  gfxTextC(fns.recLine(fns.gameHigh()), 76, 2, ink);
+  drawMisses(BallGame.misses);
 
   // The creature chases the ball -- reuses drawPet's sprite/fallback but at
   // a ground line matching upstream's game-scene y (394, not petGround).
@@ -485,27 +518,16 @@ function drawCatchGame(now) {
 
   if (g.overUntil !== 0) {
     drawGameOverCard(ink, g.score, g.newHigh, fns.catchHigh());
+    gfxTextC(g.score >= 10 ? fns.greatJoyText() : fns.plusJoyText(), 250, 2, ink);
     if (now >= g.overUntil) screen = "idle";
     statusEl.textContent = `Catch · game over · score ${g.score}`;
     return;
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 24px monospace";
-  ctx.fillText("CATCH", TP.cx, 44);
-  ctx.textAlign = "left";
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(`${g.score}`, 50, 82);
-  ctx.textAlign = "right";
-  ctx.fillText(`hi ${fns.catchHigh()}`, 396, 82);
-  ctx.textAlign = "center";
-  for (let i = 0; i < 3; i++) {
-    ctx.beginPath();
-    ctx.arc(180 + i * 28, 104, 6, 0, Math.PI * 2);
-    if (i < 3 - g.misses) { ctx.fillStyle = UI.barBad; ctx.fill(); }
-    else { ctx.strokeStyle = UI.track; ctx.lineWidth = 2; ctx.stroke(); }
-  }
+  gfxTextC(fns.catchTitle(), 32, 3, ink);
+  gfxTextL(fns.scoreLine(g.score), 50, 78, 2, ink);
+  gfxTextL(fns.recLine(fns.catchHigh()), 294, 78, 2, ink);
+  drawMisses(g.misses);
 
   ctx.beginPath();
   ctx.arc(g.targetX, g.targetY, 34, 0, Math.PI * 2);
@@ -516,12 +538,7 @@ function drawCatchGame(now) {
   const catchIcon = g.icon === 0 ? TPIcon.food : (g.icon === 1 ? TPIcon.berryBlue : TPIcon.berryGreen);
   drawIcon(catchIcon, g.targetX - 24, g.targetY - 24, 3);
 
-  const bw = 280;
-  const left = g.targetUntil > now ? g.targetUntil - now : 0;
-  const fw = bw * Math.min(left, 20000) / 20000;
-  ctx.fillStyle = UI.track;
-  roundRect(TP.cx - bw / 2, 362, bw, 16, 5); ctx.fill();
-  if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, 362, fw, 16, 5); ctx.fill(); }
+  drawTimeBar(362, 16, g.targetUntil > now ? g.targetUntil - now : 0, 20000);
 
   const since = now - g.hitAt;
   if (g.hitAt !== 0 && since < 220) {
@@ -539,43 +556,49 @@ function drawMemoGame(now) {
   const g = MemoGame;
 
   if (g.overUntil !== 0) {
-    ctx.fillStyle = ink;
-    ctx.textAlign = "center";
-    ctx.font = "bold 40px monospace";
-    ctx.fillText(`SCORE: ${g.rounds}`, TP.cx, 148);
-    ctx.font = "bold 24px monospace";
-    ctx.fillStyle = "#4C98D9";
-    ctx.fillText(`+${g.gain || 0} DEF`, TP.cx, 194);
-    ctx.font = "bold 18px monospace";
-    ctx.fillStyle = g.newHigh ? UI.barWarn : ink;
-    ctx.fillText(g.newHigh ? "NEW RECORD!" : `record: ${fns.memoHigh()}`, TP.cx, 230);
+    drawGameOverCard(ink, g.rounds, g.newHigh, fns.memoHigh(), fns.defGainLine(g.gain || 0), rgb565(0x4C98));
     if (now >= g.overUntil) screen = "idle";
     statusEl.textContent = `Memo · game over · rounds ${g.rounds}`;
     return;
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(`Round ${g.rounds + 1}`, TP.cx, 60);
+  gfxTextC(fns.memoRecordLabel(), 34, 3, ink);
+  gfxTextL(fns.roundLine(g.rounds + 1), 60, 82, 2, ink);
+  gfxTextL(fns.recLine(fns.memoHigh()), 310, 82, 2, ink);
 
-  const padColors = ["#e86464", "#5da0e8", "#e8c85d", "#5dd08a"];
+  // Four round pads, as renderMemoGame draws them: bad/warn/blue/ok, the
+  // active one lightened with a pulsing ring, a good/bad double ring on
+  // the pad just pressed.
+  const cols565 = [0xEA87, 0xED07, 0x4C98, 0x5DCD];
+  const active = g.showing ? g.activePad : (g.failUntil !== 0 ? g.hintPad : -1);
   for (let i = 0; i < 4; i++) {
-    let fill = padColors[i];
-    if (g.activePad === i) fill = UI.white;
-    if (g.hintPad === i) fill = UI.barWarn;
-    if (g.flashPad === i && now < g.flashUntil) fill = g.flashGood ? UI.barOK : UI.barBad;
-    ctx.fillStyle = fill;
-    roundRect(g.padX[i] - 60, g.padY[i] - 60, 120, 120, 16);
-    ctx.fill();
-    ctx.strokeStyle = ink; ctx.lineWidth = 2;
-    roundRect(g.padX[i] - 60, g.padY[i] - 60, 120, 120, 16);
-    ctx.stroke();
+    const px = g.padX[i], py = g.padY[i];
+    const fill = i === active ? lerp565(cols565[i], 0xFFFF, 5, 8) : cols565[i];
+    ctx.fillStyle = rgb565(fill);
+    ctx.beginPath(); ctx.arc(px, py, 48, 0, Math.PI * 2); ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(px, py, 52, 0, Math.PI * 2); ctx.stroke();
+    if (i === active) {
+      const pulse = 56 + (Math.floor(now / 70) % 5);
+      ctx.strokeStyle = rgb565(cols565[i]);
+      ctx.beginPath(); ctx.arc(px, py, pulse, 0, Math.PI * 2); ctx.stroke();
+    }
+    if (i === g.flashPad && now < g.flashUntil) {
+      ctx.strokeStyle = g.flashGood ? UI.barOK : UI.barBad;
+      ctx.beginPath(); ctx.arc(px, py, 60, 0, Math.PI * 2); ctx.stroke();
+      ctx.beginPath(); ctx.arc(px, py, 64, 0, Math.PI * 2); ctx.stroke();
+    }
   }
 
-  ctx.fillStyle = UI.track;
-  ctx.font = "13px monospace";
-  ctx.fillText(g.showing ? "watch..." : "your turn", TP.cx, 410);
+  const phase = g.failUntil !== 0 ? fns.memoWrongText()
+              : g.showing ? fns.memoWatchText()
+              : fns.memoTurnLine(g.input, g.seq.length);
+  ctx.fillStyle = UI.bgDay;
+  roundRect(78, 230, 310, 24, 7); ctx.fill();
+  ctx.strokeStyle = ink; ctx.lineWidth = 1;
+  roundRect(78, 230, 310, 24, 7); ctx.stroke();
+  const phaseColor = g.failUntil !== 0 ? UI.barBad : (g.showing ? UI.barWarn : UI.barOK);
+  gfxTextC(phase, gfxTop(230 + 12, 2), 2, phaseColor);
 
   statusEl.textContent = `Memo · round ${g.rounds + 1} · ${g.showing ? "playback" : "input"}`;
 }
@@ -586,25 +609,17 @@ function drawCleanGame(now) {
   const g = CleanGame;
 
   if (g.overUntil !== 0) {
-    drawGameOverCard(ink, g.score, g.newHigh, fns.cleanHigh());
+    drawGameOverCard(ink, g.score, g.newHigh, fns.cleanHigh(), fns.hygGainLine(g.gain || 0), UI.barOK);
     if (now >= g.overUntil) screen = "idle";
     statusEl.textContent = `Clean · game over · score ${g.score}`;
     return;
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 24px monospace";
-  ctx.fillText("CLEAN", TP.cx, 44);
-  ctx.textAlign = "left";
-  ctx.font = "bold 20px monospace";
-  ctx.fillText(`${g.score}`, 50, 82);
-  const bw = 280;
-  const left = g.until > now ? g.until - now : 0;
-  const fw = bw * Math.min(left, 18000) / 18000;
-  ctx.fillStyle = UI.track;
-  roundRect(TP.cx - bw / 2, 362, bw, 16, 5); ctx.fill();
-  if (fw > 2) { ctx.fillStyle = UI.barOK; roundRect(TP.cx - bw / 2, 362, fw, 16, 5); ctx.fill(); }
+  gfxTextC(fns.cleanTitle(), 32, 3, ink);
+  gfxTextL(fns.scoreLine(g.score), 50, 78, 2, ink);
+  gfxTextL(fns.recLine(fns.cleanHigh()), 294, 78, 2, ink);
+  drawMisses(g.misses);
+  drawTimeBar(362, 16, g.until > now ? g.until - now : 0, 18000);
 
   // Dirt blobs, as PetScreen.swift's renderCleanGame draws them: a brown
   // disc with an ink outline and two darker spots -- not a bubble emoji.
@@ -629,50 +644,48 @@ function drawCleanGame(now) {
 
 // Ports renderTypeGame(): the attacking type shown at top, three answer
 // rows, a countdown bar per question.
-const TYPE_NAMES = ["", "NORMAL", "FIRE", "WATER", "ELECTRIC", "GRASS", "ICE",
-  "FIGHT", "POISON", "GROUND", "FLYING", "PSYCHIC", "BUG", "ROCK", "GHOST",
+// TPPet.mm's kTypeNames / TPTypeColor: deliberately English in every
+// language (upstream keeps them outside the string table), same colours.
+const TYPE_NAMES = ["", "NORMAL", "FIRE", "WATER", "ELEC", "GRASS", "ICE",
+  "FIGHT", "POISON", "GROUND", "FLY", "PSY", "BUG", "ROCK", "GHOST",
   "DRAGON", "DARK", "STEEL", "FAIRY"];
+const TYPE_COLORS_565 = [0x8C4D, 0x8C4D, 0xEA87, 0x4C98, 0xBCA1, 0x3C49, 0x5D99, 0xA2A5,
+  0x8A73, 0xB447, 0x8D7F, 0xD28F, 0x7CC4, 0x9407, 0x6B33, 0x5A5F, 0x5ACB, 0xA534, 0xF3B7];
+function typeColor565(t) { return TYPE_COLORS_565[t] || 0x8C4D; }
 
 function drawTypeGame(now) {
   const { night, ink } = drawGameScene();
   const g = TypeGame;
 
   if (g.overUntil !== 0) {
-    drawGameOverCard(ink, g.score, g.newHigh, fns.typeHigh());
+    drawGameOverCard(ink, g.score, g.newHigh, fns.typeHigh(), fns.atkGainLine(g.gain || 0), UI.barBad);
     if (now >= g.overUntil) screen = "idle";
     statusEl.textContent = `Type · game over · score ${g.score}`;
     return;
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 18px monospace";
-  ctx.fillText("What beats...", TP.cx, 70);
-  ctx.font = "bold 28px monospace";
-  ctx.fillText(TYPE_NAMES[g.enemy], TP.cx, 110);
+  gfxTextC(fns.typeTitle(), 32, 3, ink);
+  gfxTextL(fns.scoreLine(g.score), 50, 78, 2, ink);
+  gfxTextL(fns.recLine(fns.typeHigh()), 294, 78, 2, ink);
+  drawMisses(g.misses);
 
-  const left = g.until > now ? g.until - now : 0;
-  const bw = 326;
-  ctx.fillStyle = UI.track;
-  roundRect(TP.cx - bw / 2, 150, bw, 10, 4); ctx.fill();
-  ctx.fillStyle = UI.barOK;
-  roundRect(TP.cx - bw / 2, 150, bw * Math.min(left, 4200) / 4200, 10, 4); ctx.fill();
+  // The type to beat, in its own colour, then three answer buttons.
+  ctx.fillStyle = rgb565(lerp565(typeColor565(g.enemy), 0xFFFF, 4, 8));
+  roundRect(118, 126, 230, 54, 14); ctx.fill();
+  ctx.strokeStyle = ink; ctx.lineWidth = 1;
+  roundRect(118, 126, 230, 54, 14); ctx.stroke();
+  gfxTextC(TYPE_NAMES[g.enemy], gfxTop(126 + 27, 3), 3, UI.ink);
 
   for (let i = 0; i < 3; i++) {
-    const by = 210 + i * 60;
-    ctx.fillStyle = UI.white;
-    roundRect(70, by - 8, 326, 56, 12); ctx.fill();
-    ctx.strokeStyle = ink; ctx.lineWidth = 2;
-    roundRect(70, by - 8, 326, 56, 12); ctx.stroke();
-    ctx.fillStyle = ink;
-    ctx.font = "bold 18px monospace";
-    ctx.fillText(TYPE_NAMES[g.choices[i]], TP.cx, by + 28);
+    const bx = 88, by = 210 + i * 60;
+    ctx.fillStyle = rgb565(lerp565(typeColor565(g.choices[i]), 0xFFFF, 5, 8));
+    roundRect(bx, by, 290, 48, 12); ctx.fill();
+    ctx.strokeStyle = ink; ctx.lineWidth = 1;
+    roundRect(bx, by, 290, 48, 12); ctx.stroke();
+    gfxTextC(TYPE_NAMES[g.choices[i]], gfxTop(by + 24, 2), 2, UI.ink);
   }
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "left";
-  ctx.font = "bold 16px monospace";
-  ctx.fillText(`${g.score}`, 30, 44);
+  drawTimeBar(392, 14, g.until > now ? g.until - now : 0, 4200);
 
   statusEl.textContent = `Type · score ${g.score} · misses ${g.misses}/3`;
 }
@@ -682,38 +695,35 @@ function drawSackGame(now) {
   const { night, ink } = drawGameScene();
 
   if (Module._tp_sack_is_over() !== 0) {
-    ctx.fillStyle = ink;
-    ctx.textAlign = "center";
-    ctx.font = "bold 32px monospace";
-    ctx.fillText(fns.hitsLine(), TP.cx, 160);
-    ctx.fillStyle = UI.barBad;
-    ctx.font = "bold 22px monospace";
-    ctx.fillText(fns.strengthGainLine(), TP.cx, 210);
+    gfxTextC(fns.hitsLine(), 150, 4, ink);
+    gfxTextC(fns.strengthGainLine(), 210, 3, UI.barBad);
     const newHigh = fns.sackNewHigh() !== 0;
-    ctx.fillStyle = newHigh ? UI.barWarn : ink;
-    ctx.font = "13px monospace";
-    ctx.fillText(newHigh && fns.sackHits() > 0 ? fns.newRecordText() : fns.recordLine(fns.strengthHigh2()), TP.cx, 256);
+    if (newHigh && fns.sackHits() > 0) gfxTextC(fns.newRecordText(), 256, 2, UI.barWarn);
+    else gfxTextC(fns.recordLine(fns.strengthHigh2()), 256, 2, ink);
     if (Module._tp_sack_over_until_reached(now)) screen = "card";
     statusEl.textContent = `Sack · done · ${fns.sackHits()} hits`;
     return;
   }
 
+  // renderSack: rope, chain, the bag with a band, the hit count, the
+  // "hit fast!" hint and the 10-second countdown bar.
   const off = SackGame.shake * Math.sin(now * 0.05);
   const sx = TP.cx + off, top = 86;
   ctx.fillStyle = ink;
   ctx.fillRect(TP.cx - 3, 56, 6, top - 56);
   ctx.fillRect(sx - 4, top - 30, 8, 34);
-  ctx.fillStyle = "#b53a3a";
+  ctx.fillStyle = "rgb(181,58,58)";
   roundRect(sx - 42, top, 84, 150, 26); ctx.fill();
-  ctx.fillStyle = "#7e2828";
+  ctx.fillStyle = "rgb(126,40,40)";
   roundRect(sx - 42, top, 84, 22, 18); ctx.fill();
-  ctx.strokeStyle = ink; ctx.lineWidth = 2;
+  ctx.strokeStyle = ink; ctx.lineWidth = 1;
   roundRect(sx - 42, top, 84, 150, 26); ctx.stroke();
+  ctx.fillStyle = "rgb(126,40,40)";
+  ctx.fillRect(sx - 42, top + 70, 84, 4);
 
-  ctx.fillStyle = ink;
-  ctx.textAlign = "center";
-  ctx.font = "bold 28px monospace";
-  ctx.fillText(`${fns.sackHits()}`, TP.cx, 280);
+  gfxTextC(`${fns.sackHits()}`, 268, 6, ink);
+  gfxTextC(fns.hitFastText(), 322, 2, ink);
+  drawTimeBar(350, 16, fns.sackMsLeft(now | 0), 10000);
 
   statusEl.textContent = `Sack · ${fns.sackHits()} hits`;
 }
@@ -915,7 +925,7 @@ function draw() {
     }
     ctx.font = "bold 15px monospace";
     ctx.fillStyle = ink;
-    ctx.fillText(`POKEDEX ${fns.registeredCount()}/${fns.dexCount()}`, TP.cx, 356);
+    ctx.fillText(fns.pokedexLine(), TP.cx, 356);
     statusEl.textContent = `EGG · ${fns.eggMessage()}`;
     return;
   }
@@ -1327,6 +1337,7 @@ function importStateBytes(mod, bytes) {
 }
 
 async function saveNow(mod) {
+  if (!mod) return;   // cleared by "Reset game…" while the page unloads
   await writeSave(exportStateBytes(mod));
 }
 
@@ -1383,6 +1394,75 @@ cryInput.addEventListener("change", async () => {
   const n = await importCryFiles(files);
   cryLoadBtn.textContent = n > 0 ? `Loaded ${n} cry file(s)` : "No psnd<dex>.m4a files found";
   setTimeout(() => { cryLoadBtn.textContent = "Load cries…"; }, 2500);
+});
+
+// --- Save file: export / import / reset --------------------------------------
+//
+// The save itself lives in this app's IndexedDB (a web page cannot write
+// into the phone's Files app on its own). These three buttons are the
+// bridge to a real file, mirroring the iOS app's iTamaPoke-save.json /
+// iTamaPoke-import.json flow: "Save file…" hands the current state to the
+// share sheet (iPhone: "Save to Files" -> put it in your mons folder),
+// "Load save…" reads one back and restarts on it, "Reset game…" wipes the
+// save (not the sprites) and starts a fresh egg.
+const SAVE_FILE_NAME = "iTamaPoke-save.tpsave";
+
+async function exportSaveFile() {
+  if (!Module) return;
+  const bytes = exportStateBytes(Module);
+  await writeSave(bytes);
+  const blob = new Blob([bytes], { type: "application/octet-stream" });
+  const file = new File([blob], SAVE_FILE_NAME, { type: "application/octet-stream" });
+  try {
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      await navigator.share({ files: [file], title: "iTamaPoke save" });
+      return;
+    }
+  } catch (e) {
+    if (e && e.name === "AbortError") return;   // user closed the sheet
+  }
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = SAVE_FILE_NAME;
+  document.body.appendChild(a);
+  a.click();
+  setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1000);
+}
+
+document.getElementById("saveExport").addEventListener("click", () => { exportSaveFile(); });
+
+const saveInput = document.getElementById("saveInput");
+document.getElementById("saveImport").addEventListener("click", () => saveInput.click());
+saveInput.addEventListener("change", async () => {
+  const f = saveInput.files && saveInput.files[0];
+  saveInput.value = "";
+  if (!f) return;
+  const bytes = new Uint8Array(await f.arrayBuffer());
+  // Same sanity check tp_import_state does: a 4-byte entry count first.
+  if (bytes.length < 4) { alert("Not an iTamaPoke save file."); return; }
+  if (!confirm("Replace the current creature with this save file?")) return;
+  await writeSave(bytes);
+  window.location.reload();   // the core reads the store before its first tick
+});
+
+document.getElementById("gameReset").addEventListener("click", async () => {
+  if (!confirm("Start over with a new egg? The current creature, level and Pokédex are erased. Sprites stay.")) return;
+  if (!confirm("Really erase the save? This cannot be undone.")) return;
+  try {
+    const db = await openDb();
+    await new Promise((resolve, reject) => {
+      const tx = db.transaction(STORE_NAME, "readwrite");
+      tx.objectStore(STORE_NAME).delete(SAVE_KEY);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+    });
+  } catch (e) {
+    console.warn("[save] reset failed:", e);
+  }
+  // Stop the periodic autosave from writing the old state back before the
+  // page has gone away.
+  Module = null;
+  window.location.reload();
 });
 
 loadSoundMode();
@@ -1501,6 +1581,31 @@ createTPCore({
     streakLine: mod.cwrap("tp_streak_line", "string", []),
     streak: mod.cwrap("tp_streak", "number", []),
     bestStreak: mod.cwrap("tp_best_streak", "number", []),
+    // Localized UI strings (see browser_glue.cpp's "Localized UI strings").
+    playTitle: mod.cwrap("tp_play_title", "string", []),
+    hitFastText: mod.cwrap("tp_hit_fast_text", "string", []),
+    greatJoyText: mod.cwrap("tp_great_joy_text", "string", []),
+    plusJoyText: mod.cwrap("tp_plus_joy_text", "string", []),
+    catchTitle: mod.cwrap("tp_catch_title", "string", []),
+    cleanTitle: mod.cwrap("tp_clean_title", "string", []),
+    typeTitle: mod.cwrap("tp_type_title", "string", []),
+    memoWatchText: mod.cwrap("tp_memo_watch_text", "string", []),
+    memoWrongText: mod.cwrap("tp_memo_wrong_text", "string", []),
+    memoTurnLine: mod.cwrap("tp_memo_turn_line", "string", ["number", "number"]),
+    filterAllText: mod.cwrap("tp_filter_all_text", "string", []),
+    caughtMarkText: mod.cwrap("tp_caught_mark_text", "string", []),
+    detailBackText: mod.cwrap("tp_detail_back_text", "string", []),
+    nameLabel: mod.cwrap("tp_name_label", "string", []),
+    effectiveText: mod.cwrap("tp_effective_text", "string", []),
+    notEffectiveText: mod.cwrap("tp_not_effective_text", "string", []),
+    scoreLine: mod.cwrap("tp_score_line", "string", ["number"]),
+    roundLine: mod.cwrap("tp_round_line", "string", ["number"]),
+    recLine: mod.cwrap("tp_rec_line", "string", ["number"]),
+    pokedexLine: mod.cwrap("tp_pokedex_line", "string", []),
+    defGainLine: mod.cwrap("tp_def_gain_line", "string", ["number"]),
+    hygGainLine: mod.cwrap("tp_hyg_gain_line", "string", ["number"]),
+    atkGainLine: mod.cwrap("tp_atk_gain_line", "string", ["number"]),
+    sackMsLeft: mod.cwrap("tp_sack_ms_left", "number", ["number"]),
     infoLine: mod.cwrap("tp_info_line", "string", []),
     renameHint: mod.cwrap("tp_rename_hint", "string", []),
     bondLabel: mod.cwrap("tp_bond_label", "string", []),

@@ -150,6 +150,75 @@ EMSCRIPTEN_KEEPALIVE int tp_starter_dex(int slot) {
 EMSCRIPTEN_KEEPALIVE void tp_choose_starter(int dex) { gPet.chooseStarter((int16_t)dex); }
 EMSCRIPTEN_KEEPALIVE const char *tp_choose_starter_title() { return T(S_CHOOSE_STARTER); }
 
+// --- Localized UI strings the browser build used to hard-code in English.
+// Same accessors PetScreen.swift reads through TPPet.mm, so a KR/ES/... UI
+// is fully translated here too, not just the pet's own status lines.
+EMSCRIPTEN_KEEPALIVE const char *tp_play_title() { return T(S_PLAY); }
+EMSCRIPTEN_KEEPALIVE const char *tp_hit_fast_text() { return T(S_HIT_FAST); }
+EMSCRIPTEN_KEEPALIVE const char *tp_great_joy_text() { return T(S_GREAT_JOY); }
+EMSCRIPTEN_KEEPALIVE const char *tp_plus_joy_text() { return T(S_PLUS_JOY); }
+EMSCRIPTEN_KEEPALIVE const char *tp_catch_title() { return T(S_CATCH_TITLE); }
+EMSCRIPTEN_KEEPALIVE const char *tp_clean_title() { return T(S_CLEAN_TITLE); }
+EMSCRIPTEN_KEEPALIVE const char *tp_type_title() { return T(S_TYPE_TITLE); }
+EMSCRIPTEN_KEEPALIVE const char *tp_memo_watch_text() { return T(S_MEMO_WATCH); }
+EMSCRIPTEN_KEEPALIVE const char *tp_memo_wrong_text() { return T(S_MEMO_WRONG); }
+EMSCRIPTEN_KEEPALIVE const char *tp_filter_all_text() { return T(S_FILTER_ALL); }
+EMSCRIPTEN_KEEPALIVE const char *tp_caught_mark_text() { return T(S_CAUGHT_MARK); }
+EMSCRIPTEN_KEEPALIVE const char *tp_detail_back_text() { return T(S_DETAIL_BACK); }
+EMSCRIPTEN_KEEPALIVE const char *tp_name_label() { return T(S_NAME); }
+EMSCRIPTEN_KEEPALIVE const char *tp_effective_text() { return T(S_EFFECTIVE); }
+EMSCRIPTEN_KEEPALIVE const char *tp_not_effective_text() { return T(S_NOT_EFFECTIVE); }
+EMSCRIPTEN_KEEPALIVE
+const char *tp_score_line(int score) {
+  static std::string out; char buf[32];
+  snprintf(buf, sizeof(buf), T(S_SCORE_FMT), (unsigned)score);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_round_line(int round) {
+  static std::string out; char buf[32];
+  snprintf(buf, sizeof(buf), T(S_ROUND_FMT), (unsigned)round);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_memo_turn_line(int done, int total) {
+  static std::string out; char buf[40];
+  snprintf(buf, sizeof(buf), T(S_MEMO_TURN_FMT), (unsigned)done, (unsigned)total);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_rec_line(int record) {
+  static std::string out; char buf[32];
+  snprintf(buf, sizeof(buf), T(S_REC_FMT), (unsigned)record);
+  out = buf; return out.c_str();
+}
+// Memo/Clean/Type result cards: "+N DEF" etc. (TPPet.mm's defGainLine/
+// hygGainLine/atkGainLine).
+EMSCRIPTEN_KEEPALIVE
+const char *tp_def_gain_line(int gain) {
+  static std::string out; char buf[24];
+  snprintf(buf, sizeof(buf), T(S_DEF_GAIN_FMT), (unsigned)gain);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_hyg_gain_line(int gain) {
+  static std::string out; char buf[24];
+  snprintf(buf, sizeof(buf), T(S_HYG_GAIN_FMT), (unsigned)gain);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_atk_gain_line(int gain) {
+  static std::string out; char buf[24];
+  snprintf(buf, sizeof(buf), T(S_ATK_GAIN_FMT), (unsigned)gain);
+  out = buf; return out.c_str();
+}
+EMSCRIPTEN_KEEPALIVE
+const char *tp_pokedex_line() {
+  static std::string out; char buf[32];
+  snprintf(buf, sizeof(buf), T(S_POKEDEX_FMT), (unsigned)gPet.registeredCount());
+  out = buf; return out.c_str();
+}
+
 // --- Idle-screen presentation, ported from TPPet.mm --------------------
 //
 // Everything PetScreen.swift's idle branch reads beyond the raw stats above:
