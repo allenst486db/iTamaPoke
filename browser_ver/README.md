@@ -63,11 +63,20 @@ browser_ver/build.sh              # writes browser_ver/web/tp_core.{js,wasm}
 ```
 
 Then serve `browser_ver/web/` over HTTP (not `file://` — the WASM fetch
-needs a real origin) and open `index.html`. Or skip the local toolchain
-entirely: the **Build (browser)** GitHub Actions workflow
-(`.github/workflows/build-browser.yml`) compiles the core and uploads the
-whole `web/` folder as an artifact, which is what the install guide's
-Path D points non-developers at.
+needs a real origin) and open `index.html`.
+
+## Deploying (how players actually get it)
+
+`web/` is a PWA: `manifest.webmanifest` + `sw.js` make it installable from
+Safari/Chrome and fully offline after the first load, with the save and the
+user-picked assets living in the phone's own storage. The **Build
+(browser)** workflow (`.github/workflows/build-browser.yml`) compiles the
+core on every push, stamps the service worker with the commit id (so
+installed copies pick up the new version on their next launch), copies
+`Resources/DefaultAppIcon.png` in as `icon.png`, refuses to publish if any
+creature asset is found in the folder, and deploys to GitHub Pages. One-time
+repository setup: **Settings → Pages → Source: GitHub Actions**. The
+install guide's Path D is just "open the link, Add to Home Screen".
 
 emsdk requires Python 3.10+; if your system Python is older, a portable
 build from [astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)

@@ -3,7 +3,14 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
-<title>iTamaPoke (browser build)</title>
+<title>iTamaPoke</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon.png">
+<meta name="theme-color" content="#10131a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="iTamaPoke">
 <style>
   html, body { margin: 0; height: 100%; background: #10131a; overscroll-behavior: none; }
   body { display: flex; align-items: center; justify-content: center; }
@@ -50,5 +57,20 @@
 <script src="expedition.js"></script>
 <script src="ceremony.js"></script>
 <script src="main.js"></script>
+<script>
+// Offline install (see sw.js). Only registers on https:// or localhost --
+// the browser refuses it anywhere else, and a plain dev server is fine
+// without it. When a new deploy's worker takes over, reload once so the
+// running page and the cached files are the same version.
+if ("serviceWorker" in navigator) {
+  let reloaded = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (reloaded) return;
+    reloaded = true;
+    window.location.reload();
+  });
+  navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[sw] register failed:", e));
+}
+</script>
 </body>
 </html>

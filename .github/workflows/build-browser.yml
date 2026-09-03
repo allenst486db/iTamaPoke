@@ -1,12 +1,18 @@
 # Builds the browser port's WASM core (browser_ver/build.sh) on GitHub's
-# runners and uploads the whole browser_ver/web/ folder as one artifact, so
-# nobody has to install the Emscripten SDK to get a runnable copy.
+# runners and publishes browser_ver/web/ to GitHub Pages as an installable
+# offline web app (PWA). This is the install path for people without a Mac
+# or a developer account: open the page on the phone once, "Add to Home
+# Screen", done -- the service worker keeps it running with no network and
+# no computer involved afterward (docs/INSTALL.md, "Path D").
 #
-# Unlike the two iOS workflows this needs no signing, no Apple account and
-# has no 7-day expiry: the output is plain HTML/JS/WASM that runs in any
-# modern browser (docs/INSTALL.md, "Path D"). The artifact contains no
-# sprites, cries or dex text -- those are still picked locally by the user,
-# same rule as every other build (see LICENSE / NOTICE).
+# What gets published is code only: the MIT-licensed game engine compiled to
+# WASM, the UI, and the generic egg app icon. No sprites, cries or dex text
+# are in the repository or in this build -- every player loads those from
+# their own device through the in-page file pickers (see NOTICE).
+#
+# One-time setup on the repository: Settings -> Pages -> Source: "GitHub
+# Actions". After that every push to main that touches the browser build
+# redeploys; the address is https://<owner>.github.io/<repo>/.
 
 name: Build (browser)
 
@@ -17,7 +23,17 @@ on:
     paths:
       - "browser_ver/**"
       - "upstream-expanded/**"
+      - "Resources/DefaultAppIcon.png"
       - ".github/workflows/build-browser.yml"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -35,15 +51,43 @@ jobs:
       - name: Build the core
         run: bash browser_ver/build.sh
 
-      - name: Sanity-check the output
+      - name: Assemble the site
         run: |
+          set -e
+          cp Resources/DefaultAppIcon.png browser_ver/web/icon.png
+          # Stamp the service worker so every deploy gets its own cache and
+          # phones pick up the new version on their next launch.
+          sed -i "s/__BUILD__/${GITHUB_SHA::12}/" browser_ver/web/sw.js
           test -s browser_ver/web/tp_core.js
           test -s browser_ver/web/tp_core.wasm
+          # Belt and braces: fail the deploy if any creature asset ever
+          # lands in the published folder.
+          if ls browser_ver/web | grep -Eiq '^(p|ps)[0-9]+\.bin$|^psnd[0-9]+\.|^dex_entries_|^thumbs\.bin$'; then
+            echo "refusing to publish: creature assets found in browser_ver/web" >&2
+            exit 1
+          fi
           ls -la browser_ver/web
 
+      # Same folder, also downloadable from the run page for anyone who
+      # wants to keep a copy or serve it themselves.
       - uses: actions/upload-artifact@v4
         with:
           name: iTamaPoke-browser
           path: browser_ver/web
           if-no-files-found: error
           retention-days: 90
+
+      - uses: actions/configure-pages@v5
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: browser_ver/web
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

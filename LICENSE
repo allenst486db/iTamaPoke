@@ -36,7 +36,13 @@ You may, free of charge:
     names, or tweaking gameplay;
   - build it and install the result on devices you personally own or
     administer (your own iPhone, your own Apple Watch, a simulator);
-  - fork this repository on GitHub for the same personal purposes above.
+  - fork this repository on GitHub for the same personal purposes above;
+  - play the browser build at the web address the copyright holder
+    publishes for it (the "Hosted Build"), and keep it on your own devices
+    as an installed web app. The Hosted Build contains code only; the
+    creature sprites, cries and Pokédex text it can display are never part
+    of it -- you supply those from your own device, and Section 7 governs
+    them, not this license.
 
 None of this requires payment or permission, commercial or not.
 
@@ -51,7 +57,10 @@ Regardless of whether money changes hands, you may NOT, without asking first:
      yourself any build, binary, `.ipa`, package, or installable artifact of
      the Software or of any modified or derivative version of it — through
      the App Store, TestFlight, any alternative marketplace, a sideloading
-     service, a public download link, a GitHub Release, or any other channel;
+     service, a public download link, a GitHub Release, or any other channel.
+     The one exception is the Hosted Build the copyright holder publishes
+     (Section 2): playing it, linking to it, and installing it from that
+     address is permitted; re-hosting a copy of it elsewhere is not;
 
   b. do the same with a version where the characters, names, art style, or
      species have been substantially replaced (for example: a version of

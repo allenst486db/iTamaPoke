@@ -1,0 +1,14 @@
+{
+  "name": "iTamaPoke",
+  "short_name": "iTamaPoke",
+  "description": "A virtual-pet game. Sprites, cries and dex text are never bundled: you load them from your own device.",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#10131a",
+  "theme_color": "#10131a",
+  "icons": [
+    { "src": "icon.png", "sizes": "1024x1024", "type": "image/png", "purpose": "any" }
+  ]
+}

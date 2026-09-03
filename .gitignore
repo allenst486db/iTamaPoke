@@ -31,3 +31,6 @@ Resources/AppIcon.png
 # build/ above. See browser_ver/README.md.
 browser_ver/web/tp_core.js
 browser_ver/web/tp_core.wasm
+# Copied from Resources/DefaultAppIcon.png by the deploy workflow (or by
+# hand for a local test); one source of truth for the icon.
+browser_ver/web/icon.png

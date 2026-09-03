@@ -120,11 +120,18 @@ whichever species you ask for.
 
 NOT COVERED by any license granted here
 
-  * Pokemon names, designs and species data — (c) Nintendo / Game Freak /
-    The Pokemon Company. NOT distributed in this repository; no license to
-    them is granted or implied. This includes Pokedex entry text: the dex
-    detail view reads it at runtime from a `mons/dex_entries.txt` the user
-    supplies, exactly as it reads sprites, and ships none of it.
+  * Pokemon designs, artwork, audio and Pokedex text — (c) Nintendo / Game
+    Freak / The Pokemon Company. NOT distributed in this repository or in
+    the hosted browser build; no license to them is granted or implied.
+    The dex detail view reads entry text at runtime from a
+    `mons/dex_entries_<lang>.txt` the user supplies, exactly as it reads
+    sprites and cries, and ships none of it.
+
+    What the code does carry, as plain data inherited from the MIT-licensed
+    upstream firmware, is the species *table*: dex numbers, names in seven
+    languages, types, base stats (from PokéAPI), and evolution links. Names
+    and numbers are used nominatively, to say which creature a user-supplied
+    file belongs to; no artwork, audio or descriptive text is included.
 
   * Sprites from PMD SpriteCollab — CC BY-NC 4.0. NOT distributed here.
     https://github.com/PMDCollab/SpriteCollab
