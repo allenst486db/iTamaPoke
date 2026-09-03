@@ -810,6 +810,9 @@ function starterTap(x, y) {
     if (x >= 70 && x <= 396 && y >= ry && y <= ry + STARTER_ROW_H) {
       Module._tp_choose_starter(fns.starterDex(slot));
       playSfx(0);
+      // A once-only decision: persist it now rather than at the next
+      // 15s autosave, so a reload/backgrounding in between can't lose it.
+      saveNow(Module);
       return;
     }
   }
@@ -1084,6 +1087,7 @@ function handleTap(x, y) {
   if (fns.isEgg() !== 0) {
     Module._tp_egg_tap();
     playSfx(0); // tap
+    saveNow(Module);   // cracks and the hatch itself are worth keeping immediately
     return;
   }
 
@@ -1495,6 +1499,8 @@ createTPCore({
 
     speciesName: mod.cwrap("tp_species_name", "string", []),
     streakLine: mod.cwrap("tp_streak_line", "string", []),
+    streak: mod.cwrap("tp_streak", "number", []),
+    bestStreak: mod.cwrap("tp_best_streak", "number", []),
     infoLine: mod.cwrap("tp_info_line", "string", []),
     renameHint: mod.cwrap("tp_rename_hint", "string", []),
     bondLabel: mod.cwrap("tp_bond_label", "string", []),

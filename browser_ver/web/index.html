@@ -73,15 +73,12 @@ window.addEventListener("unhandledrejection", (e) => {
 <script>
 // Offline install (see sw.js). Only registers on https:// or localhost --
 // the browser refuses it anywhere else, and a plain dev server is fine
-// without it. When a new deploy's worker takes over, reload once so the
-// running page and the cached files are the same version.
+// without it. A new version is fetched in the background and used from
+// the *next* launch. Deliberately no reload when it takes over: on the
+// very first launch the worker installs a few seconds in, and reloading
+// then threw away whatever the player had just done (the starter pick
+// was the visible casualty -- it hadn't reached IndexedDB yet).
 if ("serviceWorker" in navigator) {
-  let reloaded = false;
-  navigator.serviceWorker.addEventListener("controllerchange", () => {
-    if (reloaded) return;
-    reloaded = true;
-    window.location.reload();
-  });
   navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[sw] register failed:", e));
 }
 </script>
