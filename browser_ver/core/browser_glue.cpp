@@ -154,6 +154,25 @@ EMSCRIPTEN_KEEPALIVE const char *tp_choose_starter_title() { return T(S_CHOOSE_S
 // Same accessors PetScreen.swift reads through TPPet.mm, so a KR/ES/... UI
 // is fully translated here too, not just the pet's own status lines.
 EMSCRIPTEN_KEEPALIVE const char *tp_play_title() { return T(S_PLAY); }
+// Idle-screen need bars: FOOD/JOY/ENE/HYG in the UI language.
+EMSCRIPTEN_KEEPALIVE
+const char *tp_bar_label(int i) {
+  static const StrId ids[4] = { S_BAR_FOOD, S_BAR_JOY, S_BAR_ENE, S_BAR_HYG };
+  return (i >= 0 && i < 4) ? T(ids[i]) : "";
+}
+// Settings pill: SILENT / VIBRATE / FULL.
+EMSCRIPTEN_KEEPALIVE
+const char *tp_sound_mode_label(int mode) {
+  return T(mode == 0 ? S_SND_OFF : mode == 1 ? S_SND_VIB : S_SND_FULL);
+}
+EMSCRIPTEN_KEEPALIVE const char *tp_lang_label() { return T(S_LANG_LABEL); }
+// Pokédex grid header: "R:x C:y" (TPPet.mm's raisedCaughtLine).
+EMSCRIPTEN_KEEPALIVE
+const char *tp_raised_caught_line() {
+  static std::string out; char buf[32];
+  snprintf(buf, sizeof(buf), T(S_RAISED_CAUGHT_FMT), (unsigned)gPet.registeredCount(), (unsigned)gPet.caughtCount());
+  out = buf; return out.c_str();
+}
 EMSCRIPTEN_KEEPALIVE const char *tp_hit_fast_text() { return T(S_HIT_FAST); }
 EMSCRIPTEN_KEEPALIVE const char *tp_great_joy_text() { return T(S_GREAT_JOY); }
 EMSCRIPTEN_KEEPALIVE const char *tp_plus_joy_text() { return T(S_PLUS_JOY); }

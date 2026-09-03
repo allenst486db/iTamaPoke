@@ -121,9 +121,10 @@ function drawCardBox() {
 
 function drawBoxPager(pages) {
   const prevOn = boxPage > 0, nextOn = boxPage + 1 < pages;
-  ctx.fillStyle = prevOn ? UI.track : "#3a3f4a";
+  const off = rgb565(lerp565(0xDE97, 0xF77C, 5, 8));
+  ctx.fillStyle = prevOn ? UI.track : off;
   roundRect(58, 296, 90, 32, 11); ctx.fill();
-  ctx.fillStyle = nextOn ? UI.track : "#3a3f4a";
+  ctx.fillStyle = nextOn ? UI.track : off;
   roundRect(288, 296, 90, 32, 11); ctx.fill();
   ctx.fillStyle = UI.bgDay;
   ctx.textAlign = "center";
@@ -209,7 +210,9 @@ function drawCardExpedition() {
 function drawExpeditionItem(x, y, index) {
   const count = fns.expeditionItemCount(index);
   const col = rgb565(fns.expeditionItemColor(index));
-  ctx.fillStyle = count > 0 ? UI.white : "#2a2e38";
+  // An empty slot is a faded card, not a black hole -- same light panel
+  // the iOS build uses, with the outline and text greyed instead.
+  ctx.fillStyle = count > 0 ? UI.white : rgb565(lerp565(0xDE97, 0xF77C, 5, 8));
   roundRect(x, y, 172, 54, 9); ctx.fill();
   ctx.strokeStyle = count > 0 ? col : UI.track; ctx.lineWidth = 1;
   roundRect(x, y, 172, 54, 9); ctx.stroke();

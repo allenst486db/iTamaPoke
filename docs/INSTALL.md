@@ -24,15 +24,39 @@ flowchart TD
     style D fill:#5dcd5d,stroke:#2946,color:#000
 ```
 
-| Path | Needs | Time | Expiry | Apple Watch |
-|---|---|---|---|---|
-| **D web app / Android** ★ | a phone, a free GitHub account | 10 min fork + 1 min install | never | ✗ |
-| A free sideloading | iPhone, Mac or Windows, free Apple ID | 15 min | renew every 7 days | ✗ |
-| B signed install | paid developer account | 10 min | 1 year | ✓ |
-| C build in Xcode | Mac + Xcode | 20 min | 7 days (free ID) | ✓ |
+| Path | Recommendation | Needs | Time | Expiry | Apple Watch |
+|---|---|---|---|---|---|
+| **D web app / Android** | ★★★ start here | a phone, a free GitHub account | 10 min fork + 1 min install | never | ✗ |
+| C build in Xcode | ★★ least effort, slightly less predictable | Mac + Xcode | 20 min | 7 days (free ID) / 1 year (paid) | ✓ |
+| B signed install | ★★ most reliable, most prerequisites | paid developer account + Mac + a little dev know-how | 10 min | 1 year | ✓ (devices must be registered) |
+| A free sideloading | ★ not recommended | iPhone, Mac or Windows, free Apple ID | 15 min | renew every 7 days | ✗ |
 
 Whichever path, the game installs **without creature art**; you add
 sprites, cries and dex text yourself → [Building the mons folder](#building-the-mons-folder).
+
+### Apple Watch and developer accounts
+
+```mermaid
+flowchart TD
+    W{Want it on the<br/>Apple Watch too?}
+    W --> P{Paid developer<br/>account?}
+    P -- yes --> R[Register the iPhone and Watch UDIDs<br/>in the developer portal - or plug each<br/>into Xcode once]
+    R --> B2[Path B or C<br/>no re-signing for a year]
+    P -- no --> C2[Path C only<br/>Xcode auto-registers the devices<br/>to your personal team, ⌘R every 7 days]
+    P -- no --> X[Path A ✗<br/>sideloading cannot sign<br/>the embedded watch app]
+```
+
+- **Device registration is the whole story.** A signed build installs only
+  on devices whose UDID is in its provisioning profile. With a paid
+  account, register the iPhone and the Watch in the portal (Certificates,
+  Identifiers & Profiles → Devices) **before** building; connecting each
+  device to Xcode once registers it too. The "Build (signed)" workflow
+  cannot register devices for you.
+- **A free Apple ID** has no portal, but Xcode registers connected devices
+  to your "personal team" automatically and installs with a 7-day profile.
+  So Path C reaches the Watch on a free ID; you just rebuild weekly.
+- **What a free ID cannot do:** sideload the watch app (Path A) or use the
+  signed CI build (Path B).
 
 There's also **Path C**, building it yourself with Xcode — only relevant if
 you already have a Mac with Xcode and want to bake sprites directly into the
@@ -75,6 +99,13 @@ mons/
 - **With a computer:** clone the repository, run `Scripts/fetch_assets.sh`,
   and everything lands in `Resources/mons/`. AirDrop or cloud-drive that
   folder to the phone.
+- **Shiny sprites (`ps###.bin`) take a while.** `pack_shiny_sprites.py`
+  fetches and converts each of the 386 source sheets from PMD SpriteCollab
+  one by one — tens of minutes to over an hour depending on your
+  connection. In a hurry, pass just the numbers you want
+  (`Scripts/fetch_assets.sh --only shiny 25 133`). Grabbing sheets by hand
+  from the site works too, but you'd be hunting through per-species
+  folders.
 - Partial sets are fine: a species without a file shows "?" and nothing
   breaks.
 - None of these files are in this repository, and the app never uploads
@@ -282,8 +313,13 @@ Both iOS 16+ and watchOS 9+ need **Developer Mode** turned on once: Settings
 → Privacy & Security → Developer Mode → on, then restart. The watch has its
 own separate toggle.
 
-A free Apple ID still expires after 7 days here too — just press ⌘R again to
-renew.
+**Expiry:** a free Apple ID still expires after 7 days here too (Watch
+included) — just press ⌘R again to renew. Signing with a paid account
+gives a year; Xcode registers the connected devices in the portal for you.
+
+With a Mac this is the least effort of the native paths. It is also the
+one most likely to hit a one-off snag (Xcode version, signing state), so
+for sheer reliability the signed `.ipa` of Path B is the safer bet.
 
 ### App icon
 

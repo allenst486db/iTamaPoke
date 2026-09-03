@@ -101,9 +101,11 @@ function drawGameScene() {
   return { night, ink: night ? UI.inkNight : UI.ink };
 }
 
-function drawBar(x, y, label, value) {
+function drawBar(x, y, label, value, ink = UI.ink) {
   const bx = x + 48, bw = 100, bh = 15;
-  ctx.fillStyle = UI.ink;
+  // Label in the scene's ink: at night the panel is dark, so the day ink
+  // would vanish into it -- PetScreen's drawBars takes the same ink.
+  ctx.fillStyle = ink;
   ctx.font = "bold 13px monospace";
   ctx.textBaseline = "middle";
   ctx.fillText(label, x, y + bh / 2);
@@ -264,7 +266,10 @@ function drawReleaseDialog() {
 const LANG_CODES = ["ES", "EN", "FR", "DE", "IT", "PT", "KR", "kr"];
 const SND_PILL = { x: 34, y: 296, w: 96, h: 30 };
 const LANG_PILL = { x: 336, y: 296, w: 96, h: 30 };
-const SND_LABELS = ["OFF", "VIB", "ALL"]; // ports soundModeLabel's S_SND_OFF/VIB/FULL order
+// Settings pill labels come from the string table (S_SND_OFF/VIB/FULL).
+const SND_LABELS = { get [0]() { return fns.soundModeLabel(0); },
+                     get [1]() { return fns.soundModeLabel(1); },
+                     get [2]() { return fns.soundModeLabel(2); } };
 
 function inRect(x, y, r) {
   return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
@@ -945,10 +950,11 @@ function draw() {
   ctx.fillStyle = panel;
   ctx.fillRect(0, 312, TP.screen, 154);
   ctx.textAlign = "left";
-  drawBar(78, 318, "FUL", fns.fullness());
-  drawBar(244, 318, "JOY", fns.joy());
-  drawBar(78, 346, "ENE", fns.energy());
-  drawBar(244, 346, "HYG", fns.hygiene());
+  drawBar(78, 318, fns.barLabel(0), fns.fullness(), ink);
+  drawBar(244, 318, fns.barLabel(1), fns.joy(), ink);
+  drawBar(78, 346, fns.barLabel(2), fns.energy(), ink);
+  drawBar(244, 346, fns.barLabel(3), fns.hygiene(), ink);
+  ctx.textBaseline = "alphabetic";
 
   // Buttons: asleep, only the light button stays lit -- drawButtons on iOS.
   for (const b of BUTTONS) {
@@ -1583,6 +1589,10 @@ createTPCore({
     bestStreak: mod.cwrap("tp_best_streak", "number", []),
     // Localized UI strings (see browser_glue.cpp's "Localized UI strings").
     playTitle: mod.cwrap("tp_play_title", "string", []),
+    barLabel: mod.cwrap("tp_bar_label", "string", ["number"]),
+    soundModeLabel: mod.cwrap("tp_sound_mode_label", "string", ["number"]),
+    langLabel: mod.cwrap("tp_lang_label", "string", []),
+    raisedCaughtLine: mod.cwrap("tp_raised_caught_line", "string", []),
     hitFastText: mod.cwrap("tp_hit_fast_text", "string", []),
     greatJoyText: mod.cwrap("tp_great_joy_text", "string", []),
     plusJoyText: mod.cwrap("tp_plus_joy_text", "string", []),

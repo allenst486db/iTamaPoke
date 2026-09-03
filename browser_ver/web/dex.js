@@ -100,9 +100,12 @@ function drawDexGrid() {
   ctx.fillStyle = UI.ink;
   ctx.textAlign = "center";
   ctx.font = "bold 20px monospace";
-  ctx.fillText("POKEDEX", TP.cx, 30);
+  // Korean UIs title the gallery 도감, everything else keeps POKEDEX -- the
+  // same one-off PetScreen.swift makes (no StrId exists for it upstream).
+  const lang = fns.language();
+  ctx.fillText(lang === 6 || lang === 7 ? "도감" : "POKEDEX", TP.cx, 30);
   ctx.font = "12px monospace";
-  ctx.fillText(`RAISED ${fns.registeredCount()} · CAUGHT ${fns.caughtCount()} / ${fns.dexCount()}`, TP.cx, 54);
+  ctx.fillText(`${fns.raisedCaughtLine()}  /${fns.dexCount()}`, TP.cx, 54);
 
   for (let i = 0; i < 3; i++) {
     const p = DEX_FILTER_PILLS[i];
