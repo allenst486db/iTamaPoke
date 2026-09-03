@@ -121,7 +121,7 @@ function drawCardBox() {
 
 function drawBoxPager(pages) {
   const prevOn = boxPage > 0, nextOn = boxPage + 1 < pages;
-  const off = rgb565(lerp565(0xDE97, 0xF77C, 5, 8));
+  const off = rgb565(0xE71C);   // PetScreen's disabled pager fill
   ctx.fillStyle = prevOn ? UI.track : off;
   roundRect(58, 296, 90, 32, 11); ctx.fill();
   ctx.fillStyle = nextOn ? UI.track : off;
@@ -212,7 +212,7 @@ function drawExpeditionItem(x, y, index) {
   const col = rgb565(fns.expeditionItemColor(index));
   // An empty slot is a faded card, not a black hole -- same light panel
   // the iOS build uses, with the outline and text greyed instead.
-  ctx.fillStyle = count > 0 ? UI.white : rgb565(lerp565(0xDE97, 0xF77C, 5, 8));
+  ctx.fillStyle = count > 0 ? UI.white : rgb565(0xE4E7);   // PetScreen's empty-slot fill
   roundRect(x, y, 172, 54, 9); ctx.fill();
   ctx.strokeStyle = count > 0 ? col : UI.track; ctx.lineWidth = 1;
   roundRect(x, y, 172, 54, 9); ctx.stroke();

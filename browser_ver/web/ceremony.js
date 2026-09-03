@@ -68,17 +68,20 @@ function drawChoiceDialog() {
   ctx.font = "bold 15px monospace";
   ctx.fillText(isEvolve ? fns.evolveQuestion() : fns.farewellQuestion(), TP.cx, 182);
 
+  // TP.choiceAction / TP.choiceKeep: 93,206 and 93,268, 280x52.
   const actFill = isEvolve ? UI.barBad : UI.barWarn;
-  const keepFill = isEvolve ? "#dedede" : UI.barOK;
+  const keepFill = isEvolve ? UI.track : UI.barOK;
   ctx.fillStyle = actFill;
-  roundRect(93, 226, 280, 44, 12); ctx.fill();
+  roundRect(93, 206, 280, 52, 12); ctx.fill();
   ctx.fillStyle = keepFill;
-  roundRect(93, 278, 280, 44, 12); ctx.fill();
+  roundRect(93, 268, 280, 52, 12); ctx.fill();
+  ctx.textBaseline = "middle";
   ctx.fillStyle = isEvolve ? UI.white : UI.ink;
   ctx.font = "bold 15px monospace";
-  ctx.fillText(isEvolve ? fns.evolveButtonText() : fns.farewellGoText(), TP.cx, 254);
+  ctx.fillText(isEvolve ? fns.evolveButtonText() : fns.farewellGoText(), TP.cx, 206 + 26);
   ctx.fillStyle = isEvolve ? UI.ink : UI.white;
-  ctx.fillText(isEvolve ? fns.evolveKeepText() : fns.farewellStayText(), TP.cx, 306);
+  ctx.fillText(isEvolve ? fns.evolveKeepText() : fns.farewellStayText(), TP.cx, 268 + 26);
+  ctx.textBaseline = "alphabetic";
 
   // The evolve CTA can appear as soon as the level requirement is met
   // (see tp_wants_evolve), before all 4 care stats are actually at 40+ --
@@ -95,7 +98,7 @@ function drawChoiceDialog() {
 }
 
 function choiceDialogTap(x, y) {
-  if (x >= 93 && x <= 373 && y >= 226 && y <= 270) {
+  if (x >= 93 && x <= 373 && y >= 206 && y <= 258) {
     if (choice === "evolve") {
       // tp_evolve() itself already no-ops when a stat has dropped back
       // under 40 (or the pet fell asleep) since the button first appeared
@@ -109,7 +112,7 @@ function choiceDialogTap(x, y) {
     choice = "none";
     return;
   }
-  if (x >= 93 && x <= 373 && y >= 278 && y <= 322) {
+  if (x >= 93 && x <= 373 && y >= 268 && y <= 320) {
     if (choice === "evolve") Module._tp_decline_evolve();
     else Module._tp_decline_farewell();
     choice = "none";
@@ -143,8 +146,12 @@ function drawSilhouette(x, groundY, scale) {
 // doesn't keep the pre-evolution species' sprite around separately), which
 // is the one real simplification versus PetScreen.swift's version.
 function drawEvolveFx(now) {
-  ctx.fillStyle = UI.bgNight;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  // Scene behind the flash, as on iOS. The creature itself is a silhouette
+  // here on purpose -- PetScreen.swift's drawEvolveFX draws both the old
+  // and the new form with silhouette: true and reveals the result with
+  // the white-out.
+  const hour = sceneHour();
+  drawScene(fns.dexBiome(fns.speciesId()), now, sceneIsNight(hour, false), hour);
   const t = fns.evolveProgress();
   const cx = TP.cx, cy = 304 - 96, n = now;
 
@@ -187,16 +194,40 @@ function drawEvolveFx(now) {
   statusEl.textContent = `Evolving · ${Math.round(t * 100)}%`;
 }
 
+// The creature itself during a ceremony: the real animated sprite in the
+// given action (pose / walk / hurt), or a flat silhouette for the runaway's
+// blink-out frames -- drawSpriteIdle(act:silhouette:) on iOS.
+function drawCeremonySprite(x, groundY, act, silhouette, now) {
+  if (!currentSprite) return;
+  if (silhouette) { drawSilhouette(x, groundY, 3); return; }
+  if (!spriteHas(currentSprite, act)) act = TPAct.idle;
+  const a = currentSprite.actions[act];
+  if (!a) return;
+  const frame = frameIndexAt(a, now, true);
+  const img = frameImageData(currentSprite, act, frame);
+  if (!img) return;
+  const s = spriteScale(currentSprite, a);
+  const w = a.w * s, h = a.h * s;
+  frameCanvas.width = a.w; frameCanvas.height = a.h;
+  frameCtx.putImageData(img, 0, 0);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(frameCanvas, x - w / 2, groundY - (a.base > 0 ? a.base : a.h) * s, w, h);
+}
+
 // Port of drawCeremony(): a golden halo + rising hearts and a walk-off
 // right for a farewell; rain + a flinch + fading walk-off left for a
 // runaway.
 function drawCeremonyFx(now) {
   const panic = fns.ceremony() === 2; // CER_RUNAWAY
-  ctx.fillStyle = panic ? UI.bgNight : UI.bgDay;
-  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  // The creature's own habitat behind the ending, as PetScreen.swift's
+  // render() draws the scene before drawCeremony; a runaway happens under
+  // a night sky.
+  const hour = sceneHour();
+  drawScene(fns.dexBiome(fns.speciesId()), now, panic || sceneIsNight(hour, false), hour);
   const t = fns.ceremonyProgress();
   const n = now;
   let x = TP.cx;
+  let act = TPAct.idle;
   let hidden = false;
 
   if (panic) {
@@ -208,8 +239,10 @@ function drawCeremonyFx(now) {
       ctx.beginPath(); ctx.moveTo(rx, ry); ctx.lineTo(rx - 3, ry + 12); ctx.stroke();
     }
     if (t < 0.30) {
+      act = TPAct.hurt;
       x = TP.cx + 4 * Math.sin(n * 0.04);
     } else {
+      act = TPAct.walkL;
       x = TP.cx - ((t - 0.30) / 0.70) * (TP.cx + 120);
       hidden = t > 0.6 && (now / 160) % 2 < 1;
     }
@@ -232,14 +265,20 @@ function drawCeremonyFx(now) {
         ctx.fillRect(px, py, 4, 4);
       }
     }
-    if (t >= 0.45) x = TP.cx + ((t - 0.45) / 0.55) * (TP.cx + 140);
+    if (t < 0.45) {
+      act = TPAct.pose;
+    } else {
+      act = TPAct.walkR;
+      x = TP.cx + ((t - 0.45) / 0.55) * (TP.cx + 140);
+    }
   }
 
-  // Blinks off near the end of a panicked walk-off, same as
-  // PetScreen.swift's own `fade` -- everything on this screen already
-  // draws as a silhouette (see drawSilhouette's own comment), so this is
-  // just "draw it this frame or don't."
-  if (!hidden) drawSilhouette(x, 304, 3);
+  // The real animated sprite -- bowing, then walking off (farewell), or
+  // flinching, then a fading walk-off (runaway). Only the runaway's blink
+  // frames are a silhouette, exactly as drawSpriteIdle(silhouette:) on iOS;
+  // this used to draw a silhouette for the whole ceremony.
+  drawCeremonySprite(x, 304, act, panic && hidden, now);
+  if (!panic && fns.showHeart() !== 0) drawIcon(TPIcon.heart, x + 50, 304 - 190, 2);
 
   if (panic && t < 0.55) {
     ctx.fillStyle = "#9ac4e8";

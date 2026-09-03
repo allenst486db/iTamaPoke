@@ -181,39 +181,42 @@ function drawCardStats() {
   drawStatBar(196, fns.statLabel(2), fns.speStat(), 260, UI.barWarn);
   drawStatBar(238, fns.statLabel(3), fns.weight(), 100, "#B3C8D9");
 
+  // Record line and the two full-width buttons, at PetScreen.swift's
+  // renderCardStats positions (TP.wildBattleBtn / TP.trainBtn: 96,290 and
+  // 96,332, 274x36) -- they used to sit side by side at other coordinates.
   ctx.textAlign = "left";
   ctx.fillStyle = UI.ink;
   ctx.font = "11px monospace";
-  ctx.fillText(fns.battleRecordLine(), 40, 276);
-  ctx.fillText(fns.battleStreakLine(), 176, 276);
-  ctx.fillText(fns.battleBestLine(), 300, 276);
+  ctx.fillText(fns.battleRecordLine(), 74, 280);
+  ctx.fillText(fns.battleStreakLine(), 210, 280);
+  ctx.fillText(fns.battleBestLine(), 334, 280);
 
-  ctx.fillStyle = "#4C98D9";
-  roundRect(40, 296, 160, 40, 11); ctx.fill();
-  ctx.fillStyle = UI.bgDay;
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
-  ctx.font = "bold 13px monospace";
-  ctx.fillText(fns.wildBattleText(), 120, 316);
+  ctx.font = "bold 14px monospace";
+  ctx.fillStyle = "#4C98D9";
+  roundRect(96, 290, 274, 36, 11); ctx.fill();
+  ctx.fillStyle = UI.bgDay;
+  ctx.fillText(fns.wildBattleText(), 96 + 137, 290 + 18);
 
   ctx.fillStyle = UI.barBad;
-  roundRect(216, 296, 160, 40, 11); ctx.fill();
+  roundRect(96, 332, 274, 36, 11); ctx.fill();
   ctx.fillStyle = UI.bgDay;
-  ctx.fillText(fns.trainButtonText(), 296, 316);
+  ctx.fillText(fns.trainButtonText(), 96 + 137, 332 + 18);
   ctx.textBaseline = "alphabetic";
 
   statusEl.textContent = `Card · Battle stats`;
 }
 
 function cardStatsTap(x, y) {
-  if (x >= 40 && x <= 200 && y >= 296 && y <= 336) {
+  if (x >= 96 && x <= 370 && y >= 290 && y <= 326) {
     if (fns.battleCanStart() !== 0) {
       Module._tp_battle_start();
       screen = "battle";
     }
     return;
   }
-  if (x >= 216 && x <= 376 && y >= 296 && y <= 336) {
+  if (x >= 96 && x <= 370 && y >= 332 && y <= 368) {
     gameMode = 5;
     SackGame.start(performance.now());
     screen = "game";
