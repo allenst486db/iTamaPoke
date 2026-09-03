@@ -76,7 +76,7 @@ Every path uses the same one folder, named exactly `mons`.
 mons/
 ├── p001.bin … p386.bin        creature sprites (normal)          ← required
 ├── ps001.bin … ps386.bin      creature sprites (shiny)           optional
-├── thumbs.bin                 Pokédex thumbnail atlas            iOS app only, required there
+├── thumbs.bin                 Pokédex thumbnail atlas (silhouettes of unseen species)   required on iOS, recommended on web
 ├── dex_entries_en.txt         Pokédex text, one file per language   optional
 ├── dex_entries_ko.txt
 ├── psnd001.m4a … psnd386.m4a  cries                              optional

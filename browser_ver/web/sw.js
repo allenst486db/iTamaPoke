@@ -23,6 +23,7 @@ const FILES = [
   "./tp_core.js",
   "./tp_core.wasm",
   "./sprites.js",
+  "./thumbs.js",
   "./icons.js",
   "./scene.js",
   "./behaviour.js",

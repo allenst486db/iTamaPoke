@@ -145,10 +145,15 @@ function drawDexGrid() {
       // dex number otherwise. Ports TPThumbs' silhouette-vs-real-art split
       // loosely: known-but-not-picked still falls back to the number rather
       // than a silhouette, since this port has no separate thumbnail atlas.
-      const thumb = dexThumbFor(dex);
-      if (known && thumb) {
-        drawDexThumb(thumb, x + 6, y + 6, 52);
-      } else {
+      // thumbs.bin first (real art if known, ink silhouette if not --
+      // upstream's rule); without the atlas, the full sprite for a known
+      // species; otherwise the number / "?".
+      let drawn = thumbsLoaded() && drawThumb(dex, x + 6, y + 6, 52, !known);
+      if (!drawn && known) {
+        const thumb = dexThumbFor(dex);
+        if (thumb) { drawDexThumb(thumb, x + 6, y + 6, 52); drawn = true; }
+      }
+      if (!drawn) {
         ctx.fillStyle = known ? UI.ink : "#9099a8";
         ctx.font = "bold 16px monospace";
         ctx.fillText(known ? `#${dex}` : "?", x + 32, y + 36);
@@ -237,6 +242,8 @@ function drawDexDetail() {
     const portrait = known ? dexThumbFor(dex) : null;
     if (portrait) {
       drawDexPortrait(portrait, TP.cx - 60, 200, 120, performance.now());
+    } else if (thumbsLoaded() && drawThumb(dex, TP.cx - 60, 200, 120, !known)) {
+      // atlas still (silhouette for an unseen species), as on iOS
     } else {
       ctx.font = "bold 56px monospace";
       ctx.fillStyle = known ? UI.ink : "#c8ccd4";

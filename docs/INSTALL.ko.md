@@ -189,7 +189,7 @@ LICENSE는 본인 fork의 사이트를 본인 플레이용으로만 허용하고
 mons/
 ├── p001.bin … p386.bin        캐릭터 스프라이트 (일반)            ← 필수
 ├── ps001.bin … ps386.bin      캐릭터 스프라이트 (이로치)          선택
-├── thumbs.bin                 도감 썸네일 모음                    iOS 앱만 필수
+├── thumbs.bin                 도감 썸네일 모음 (미등록 종의 실루엣)   iOS 앱 필수, 웹앱 권장
 ├── dex_entries_ko.txt         도감 설명문 (언어별 한 파일)        선택
 ├── dex_entries_en.txt
 ├── psnd001.m4a … psnd386.m4a  울음소리                            선택

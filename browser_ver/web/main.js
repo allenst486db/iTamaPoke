@@ -1368,7 +1368,8 @@ spriteInput.addEventListener("change", async () => {
                      // leave that species stuck on its fallback until a reload
   currentDex = 0;    // force ensureSprite() to re-fetch for the active species
   loadingDex = -1;   // ...including one it already (unsuccessfully) tried
-  spriteLoadBtn.textContent = n > 0 ? `Loaded ${n} sprite(s)` : "No p<dex>.bin files found";
+  await refreshThumbs();   // thumbs.bin may have been among the picked files
+  spriteLoadBtn.textContent = n > 0 ? `Loaded ${n} file(s)` : "No p<dex>.bin / thumbs.bin found";
   setTimeout(() => { spriteLoadBtn.textContent = "Load sprites…"; }, 2500);
 });
 
@@ -1475,6 +1476,8 @@ loadSoundMode();
 // Which species have a cry installed, so the dex detail's play control knows
 // synchronously whether to draw itself at all.
 refreshCryIndex();
+// The Pokédex thumbnail atlas, if thumbs.bin has been loaded.
+refreshThumbs();
 
 createTPCore({
   onSfx(id) { playSfx(id); },

@@ -154,8 +154,11 @@ async function importSpriteFiles(files) {
   // transaction loop below would silently close it after the first file.
   const entries = [];
   for (const f of files) {
+    // p<dex>.bin / ps<dex>.bin sprites, plus the gallery's thumbs.bin atlas
+    // (thumbs.js) -- everything upstream's mons/ folder holds for art.
+    const isThumbs = /^thumbs\.bin$/i.test(f.name);
     const m = /^(ps?)(\d{1,3})\.bin$/i.exec(f.name);
-    if (!m) continue;
+    if (!m && !isThumbs) continue;
     entries.push([f.name.toLowerCase(), await f.arrayBuffer()]);
   }
   if (entries.length === 0) return 0;
