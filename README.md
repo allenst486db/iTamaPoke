@@ -12,16 +12,17 @@ iPhone and Apple Watch. The game itself is unchanged: the same C++ that runs
 on the original hardware runs here too, just drawn on a different screen.
 
 > **Personal use only. Do not re-publish or hand out builds — including
-> reskinned versions (different creatures, same engine).** The one place
-> to get it is the link below. See [License](#license).
+> reskinned versions (different creatures, same engine).** Everyone makes
+> their own copy from their own fork; nobody hosts it for others. See
+> [License](#license).
 
-**Just want to play?** Open **https://allenst486db.github.io/iTamaPoke/**
-on your phone — iPhone: Safari → Share → *Add to Home Screen*; Android:
-download [`iTamaPoke.apk`](https://allenst486db.github.io/iTamaPoke/iTamaPoke.apk)
-from that same site. No Mac, no developer account, no expiry; it runs on
-the phone offline after that. Then add the creature art yourself (D3 in the
-[install guide](docs/INSTALL.md#path-d--web-app-installed-from-a-link-no-mac-no-developer-account-no-computer))
-— the site ships none of it, on purpose.
+**Just want to play?** Fork this repository, turn on GitHub Pages, run the
+**Build (browser)** workflow once — about ten minutes, no software to
+install — and you get your own link (`https://<you>.github.io/iTamaPoke/`)
+with the web app (iPhone: Safari → Share → *Add to Home Screen*) and an
+Android `iTamaPoke.apk`. No Mac, no developer account, no expiry; it runs
+on the phone offline after that. Then add the creature art yourself — the
+build ships none of it, on purpose. Step by step: [install guide, Path D](docs/INSTALL.md#path-d--web-app--android-app-from-your-own-fork-no-mac-no-developer-account).
 
 New here? Start with one of these:
 
@@ -169,8 +170,8 @@ The short version — easiest first:
 
 | | Needs | Works on | Apple Watch | Notes |
 |---|---|---|---|---|
-| **Web app from the link** (`browser_ver/`) | a phone | iPhone / iPad / Android / any desktop browser | no | Same game, same C++ core compiled to WebAssembly; installs from Safari/Chrome, runs offline, never expires, no account of any kind. Save and sprites live on the device |
-| **Android `.apk`** from that same site | an Android phone | Android 8+ | no | The web build wrapped as a real app (WebView shell), debug-signed by CI; install over it to update |
+| **Web app from your own fork** (`browser_ver/`) | a free GitHub account, a phone | iPhone / iPad / Android / any desktop browser | no | Same game, same C++ core compiled to WebAssembly; GitHub builds it under your account, then it installs from Safari/Chrome, runs offline, never expires. Save and sprites live on the device |
+| **Android `.apk`** from that same site | same | Android 8+ | no | The web build wrapped as a real app (WebView shell), debug-signed by CI; install over it to update |
 | **Unsigned `.ipa` (no-watch) + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | not included in this build — see note below | Native iOS app; iPhone only; re-sign every 7 days |
 | **Signed `.ipa` from GitHub Actions** | paid Apple Developer account ($99/yr) | Mac or Windows | installs correctly | No sideloading tool needed at all |
 | **Build with Xcode yourself** | a Mac | Mac only | most reliable path | For anyone comfortable with Xcode already |
@@ -320,11 +321,11 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
 - **This port's own code** (the Swift/watchOS layer, the browser build,
   scripts, docs): **[LICENSE](LICENSE)** — a short custom license, not a
   standard open-source one. Personal use and modification are free, and so
-  is playing the hosted web app / APK at the address above or publishing
-  your own fork's copy for yourself; re-publishing or handing out any build
+  is publishing your own fork's web/Android build under your own account
+  for yourself; handing out any build or pointing others at a build
   (including a reskinned one) needs the copyright holder's permission
   first. Read it — it's a few screens, not forty.
-- **What the hosted site actually serves** is the same thing this
+- **What a fork's site actually serves** is the same thing this
   repository contains: MIT-licensed engine code compiled to WebAssembly,
   this port's UI, and a generic egg icon drawn for the project. The
   workflow that publishes it refuses to run if a sprite, cry or dex-text
@@ -338,7 +339,7 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
   under its own MIT terms.
 - **Pokémon designs, artwork, dex text, and cries**: © Nintendo / Game
   Freak / The Pokémon Company. **Not distributed anywhere in this
-  repository, its builds, or the hosted site** — see [Sprites](#sprites),
+  repository, its builds, or any fork's site** — see [Sprites](#sprites),
   [Pokédex entries](#pokédex-entries), and [Cries](#cries) for how you
   fetch your own copy after installing. The species *table* (numbers,
   names in seven languages, types, PokéAPI base stats, evolution links) is

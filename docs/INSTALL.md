@@ -17,9 +17,9 @@ If a term isn't explained inline, it's explained the first time it comes up.
 Do you have a paid Apple Developer account ($99/year)?
 │
 ├─ No (most people) ─┬─ Don't want to re-sign every 7 days,
-│                    │  or just want the easiest route ───► Path D: Web app
-│                    │                                       (phone only, ~3 min,
-│                    │                                       never expires, no computer)
+│                    │  or just want the easiest route ───► Path D: Web app / Android
+│                    │                                       (fork once ~10 min, then
+│                    │                                       phone only; never expires)
 │                    │
 │                    └─ Want it as a real iOS app ─────────► Path A: Free install
 │                                                            (Mac or Windows, ~15 min,
@@ -32,10 +32,10 @@ Do you have a paid Apple Developer account ($99/year)?
 There's also **Path C**, building it yourself with Xcode — only relevant if
 you already have a Mac with Xcode and want to bake sprites directly into the
 app instead of adding them afterward. **Path D** is the same game, same
-screens, built as a web app (`browser_ver/`) that installs from a link and
-then runs on the phone by itself, offline. It needs no Mac, no developer
-account, no sideloading tool and no computer at all, so **if this is your
-first time, start with Path D.**
+screens, built as a web app (`browser_ver/`) that GitHub builds under your
+own account once; after that it installs from your own link and runs on
+the phone by itself, offline. No Mac, no developer account, no sideloading
+tool, so **if this is your first time, start with Path D.**
 
 ---
 
@@ -247,40 +247,63 @@ xcodegen generate
 
 ---
 
-## Path D — Web app, installed from a link (no Mac, no developer account, no computer)
+## Path D — Web app / Android app from your own fork (no Mac, no developer account)
 
 The same game — same engine, same screens, same sprites, same sounds — built
-as a web app. You open one link on your phone, add it to the home screen,
-and from then on it runs **on the phone by itself, offline**, like any other
-app: no App Store, no sideloading, no 7-day expiry, no computer, nothing to
-keep running anywhere. It keeps its own save; it doesn't share one with the
-iOS app.
+as a web app, and as an Android package. GitHub builds it once under your
+account (D0); then you open your link on the phone, add it to the home
+screen (or install the APK), and from then on it runs **on the phone by
+itself, offline**, like any other app: no App Store, no sideloading, no
+7-day expiry, nothing to keep running anywhere. It keeps its own save; it
+doesn't share one with the iOS app.
 
 What's at that link is code only. The Pokémon art, cries and Pokédex text
 are **not** part of it — you put those on your phone yourself in D3, and the
 app reads them from your phone's own storage. That's what keeps this
-hostable: nothing of Nintendo's or of the sprite artists' is ever served.
+publishable: nothing of Nintendo's or of the sprite artists' is ever served.
 
-**The link:** https://allenst486db.github.io/iTamaPoke/
+**There is no shared link.** This repository doesn't host the game for
+everyone — GitHub builds a copy *under your own account* instead, once, in
+D0. That gives you a link of your own (`https://<your-name>.github.io/iTamaPoke/`)
+that keeps working no matter what happens to this repository, and it's
+what the LICENSE permits (a personal build for yourself; not a link to hand
+around). Your game is never shared with anyone either way: the creature,
+level, Pokédex, catches and sprites live inside your phone's app storage,
+with no account and no server-side save. The flip side: nothing can restore
+a save from outside the phone, so read D2.
 
-**Is my game shared with other people at that link?** No. The link only
-hands your phone the program. Your creature, level, Pokédex, catches and
-sprites are stored inside your phone (the app's own browser storage) and
-never leave it — there is no account, no server-side save, nothing anyone
-else can see or affect. Two people opening the same link get two
-completely separate games, exactly as if they'd each installed an app from
-a store. The flip side: nothing can restore a save from outside the phone
-either, so see D2.
+### D0. Make your own link (10 minutes, once)
+
+Needs a free GitHub account. Works from the phone's browser, but a
+computer is more comfortable.
+
+1. Sign in to GitHub and open this repository.
+2. Click **Fork** (top right) → **Create fork**. You now have your own copy
+   at `github.com/<your-name>/iTamaPoke`. Leave it public — GitHub Pages
+   on a free account only works for public repositories.
+3. In *your* copy: **Settings** → **Pages** (left column) → under **Build
+   and deployment**, set **Source** to **GitHub Actions**.
+4. **Actions** tab → click **I understand my workflows, go ahead and
+   enable them** → click **Build (browser)** in the left column → **Run
+   workflow** → **Run workflow**.
+5. Wait for the green check ✅ (about five minutes; it builds the web app
+   and the Android package). Your link is
+   **`https://<your-name>.github.io/iTamaPoke/`** — it's also shown on the
+   run's page under *publish*.
+
+Later, to pick up changes from this repository: on your copy click
+**Sync fork** → **Update branch**. Your site rebuilds by itself, and
+installed copies update on their next launch.
 
 ### D1. Install it (1 minute)
 
-- **iPhone / iPad**: open the link in **Safari** (it has to be Safari, not
+- **iPhone / iPad**: open your link in **Safari** (it has to be Safari, not
   Chrome or an in-app browser). Tap the **Share** button (the square with an
   arrow) → scroll down → **Add to Home Screen** → **Add**. An **iTamaPoke**
   icon appears on your home screen; close Safari and open the game from
   that icon from now on.
 - **Android**: install the real app instead. In Chrome, open
-  **https://allenst486db.github.io/iTamaPoke/iTamaPoke.apk** — the file
+  **`https://<your-name>.github.io/iTamaPoke/iTamaPoke.apk`** — the file
   downloads (a few MB). Pull down the notification shade and tap the
   download, or open it from **Files → Downloads**. Android will say the app
   is from an unknown source: tap **Settings** → allow **Chrome** (or your
@@ -388,36 +411,17 @@ deleted and re-added (on iPhone that wipes its data). The save is never on
 any server, so nothing can restore it from outside the phone — treat the
 icon as the thing that holds it.
 
-### Optional: your own copy of the link (fork it)
+### Keep your link to yourself
 
-Not needed to play — the link above is enough. But if you want a copy that
-keeps working no matter what happens to this repository, or you want to
-tweak the game, GitHub can build and host one for you under your own
-account. No software to install; about ten minutes, once.
-
-1. Sign in to GitHub (a free account is fine) and open this repository.
-2. Click **Fork** (top right) → **Create fork**. You now have your own copy
-   at `github.com/<your-name>/iTamaPoke`.
-3. In *your* copy: **Settings** → **Pages** (left column) → under **Build
-   and deployment**, set **Source** to **GitHub Actions**.
-4. **Actions** tab → if it asks, click **I understand my workflows, go
-   ahead and enable them** → click **Build (browser)** in the left column →
-   **Run workflow** → **Run workflow**.
-5. Wait for the green check ✅ (about three minutes). Your link is
-   **`https://<your-name>.github.io/iTamaPoke/`**. Open it on your phone
-   and follow D1 – D3 exactly as above.
-
-To pick up later changes from this repository, click **Sync fork** →
-**Update branch** on your copy; the site rebuilds by itself.
-
-Keep the link to yourself. LICENSE allows a personal fork's site for your
-own play but not as a place for other people to get the game — the address
-above is the one meant for sharing.
+LICENSE allows your fork's site for your own play, not as a place for
+other people to get the game. If a friend wants it, send them here so they
+make their own in D0 — it's ten minutes and costs nothing.
 
 For developers: the site is produced by
 [`.github/workflows/build-browser.yml`](../.github/workflows/build-browser.yml)
 (Emscripten compiles `upstream-expanded/` + `browser_ver/core/` to WASM,
-the folder deploys to GitHub Pages). Local builds: `browser_ver/README.md`.
+Gradle builds the Android shell, the folder deploys to GitHub Pages).
+Local builds: `browser_ver/README.md`.
 
 ---
 

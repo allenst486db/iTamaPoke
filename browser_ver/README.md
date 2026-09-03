@@ -74,9 +74,12 @@ user-picked assets living in the phone's own storage. The **Build
 core on every push, stamps the service worker with the commit id (so
 installed copies pick up the new version on their next launch), copies
 `Resources/DefaultAppIcon.png` in as `icon.png`, refuses to publish if any
-creature asset is found in the folder, and deploys to GitHub Pages. One-time
-repository setup: **Settings → Pages → Source: GitHub Actions**. The
-install guide's Path D is just "open the link, Add to Home Screen".
+creature asset is found in the folder, builds the Android APK, and deploys
+both to GitHub Pages. It runs in each player's own fork (one-time setup
+there: **Settings → Pages → Source: GitHub Actions**, then run it once) --
+this repository does not host a shared copy; see LICENSE §2/§3. The
+install guide's Path D is "fork, run the workflow, open your link, Add to
+Home Screen".
 
 emsdk requires Python 3.10+; if your system Python is older, a portable
 build from [astral-sh/python-build-standalone](https://github.com/astral-sh/python-build-standalone)

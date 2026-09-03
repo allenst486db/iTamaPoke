@@ -37,18 +37,18 @@ You may, free of charge:
   - build it and install the result on devices you personally own or
     administer (your own iPhone, your own Apple Watch, a simulator);
   - fork this repository on GitHub for the same personal purposes above;
-  - play the browser build at the web address the copyright holder
-    publishes for it (the "Hosted Build"), and keep it on your own devices
-    as an installed web app. The Hosted Build contains code only; the
-    creature sprites, cries and Pokédex text it can display are never part
-    of it -- you supply those from your own device, and Section 7 governs
-    them, not this license;
-  - publish the browser build from your own personal fork (for example on
-    GitHub Pages) for your own play. The address may be technically
-    reachable by others; that is tolerated as long as you do not promote,
-    share, or present it as a place for other people to get the game, and
-    it carries the same code-only rule as the Hosted Build (no creature
-    sprites, cries or Pokédex text in what is published).
+  - build the browser version from your own personal fork and publish it
+    at an address under your own account (for example GitHub Pages, as
+    the repository's workflow does), then install it on your own devices
+    as a web app or as the Android package that build produces (a "Personal
+    Build"). This is the intended way to get the game: the copyright holder
+    does not operate a shared address for everyone. A Personal Build is
+    for you; its address may be technically reachable by others, which is
+    tolerated as long as you do not promote, share, or present it as a
+    place for other people to get the game. A Personal Build contains code
+    only -- the creature sprites, cries and Pokédex text it can display are
+    never part of what is published; you supply those from your own
+    device, and Section 7 governs them, not this license.
 
 None of this requires payment or permission, commercial or not.
 
@@ -64,9 +64,10 @@ Regardless of whether money changes hands, you may NOT, without asking first:
      the Software or of any modified or derivative version of it — through
      the App Store, TestFlight, any alternative marketplace, a sideloading
      service, a public download link, a GitHub Release, or any other channel.
-     The one exception is the Hosted Build the copyright holder publishes
-     (Section 2): playing it, linking to it, and installing it from that
-     address is permitted; re-hosting a copy of it elsewhere is not;
+     The one exception is your own Personal Build (Section 2): publishing
+     it under your own account for your own play is permitted; pointing
+     other people at it, or at anyone else's, is not -- each person makes
+     their own from their own fork;
 
   b. do the same with a version where the characters, names, art style, or
      species have been substantially replaced (for example: a version of
