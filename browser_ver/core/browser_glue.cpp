@@ -137,6 +137,19 @@ EMSCRIPTEN_KEEPALIVE void tp_clean() { gPet.clean(); }
 EMSCRIPTEN_KEEPALIVE void tp_caress() { gPet.caress(); }
 EMSCRIPTEN_KEEPALIVE void tp_egg_tap() { gPet.eggTap(); }
 
+// --- Starter picker, mirroring TPPet.mm's kStarterDex/TPStarterCount/
+// TPStarterDex. Upstream offers gen 1's three; this build offers each
+// generation's trio in dex order, one trio per picker page.
+static const int16_t kStarterDex[] = { 1, 4, 7, 152, 155, 158, 252, 255, 258 };
+static const int kStarterCount = sizeof(kStarterDex) / sizeof(kStarterDex[0]);
+EMSCRIPTEN_KEEPALIVE int tp_awaiting_starter() { return gPet.awaitingStarter() ? 1 : 0; }
+EMSCRIPTEN_KEEPALIVE int tp_starter_count() { return kStarterCount; }
+EMSCRIPTEN_KEEPALIVE int tp_starter_dex(int slot) {
+  return (slot >= 0 && slot < kStarterCount) ? kStarterDex[slot] : kStarterDex[0];
+}
+EMSCRIPTEN_KEEPALIVE void tp_choose_starter(int dex) { gPet.chooseStarter((int16_t)dex); }
+EMSCRIPTEN_KEEPALIVE const char *tp_choose_starter_title() { return T(S_CHOOSE_STARTER); }
+
 // --- Idle-screen presentation, ported from TPPet.mm --------------------
 //
 // Everything PetScreen.swift's idle branch reads beyond the raw stats above:

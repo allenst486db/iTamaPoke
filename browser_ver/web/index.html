@@ -42,6 +42,19 @@
 <input id="dexEntryInput" type="file" accept=".txt" multiple>
 <button id="cryLoad" type="button">Load cries…</button>
 <input id="cryInput" type="file" accept=".m4a,.mp3,.wav,.ogg" multiple>
+<script>
+// Surface any startup failure in the status line instead of a silent
+// "loading…" -- on a phone there is no console to look at.
+window.addEventListener("error", (e) => {
+  const s = document.getElementById("status");
+  if (s) s.textContent = "error: " + (e.message || e.error || "unknown") + (e.filename ? " @ " + e.filename.split("/").pop() + ":" + e.lineno : "");
+});
+window.addEventListener("unhandledrejection", (e) => {
+  const s = document.getElementById("status");
+  const r = e.reason;
+  if (s) s.textContent = "error: " + (r && (r.message || r.toString())) ;
+});
+</script>
 <script src="tp_core.js"></script>
 <script src="sprites.js"></script>
 <script src="icons.js"></script>

@@ -310,26 +310,27 @@ The game starts with a "?" where each creature should be. This is on
 purpose — see [README "Sprites"](../README.md#sprites). You add the art
 yourself, on the phone, with no computer:
 
-1. On the phone, open
+1. Get a `mons` folder onto the phone. Any way works, as long as it ends
+   up under **Files → On My iPhone** (Android: **My Files → Internal
+   storage**). Easiest:
    [github.com/socquique/TamaPoke](https://github.com/socquique/TamaPoke) →
-   green **Code** button → **Download ZIP**.
-   - iPhone: Safari saves it to **Files → Downloads**. Open the Files app,
-     tap the zip once — it unpacks into a `TamaPoke-main` folder.
-   - Android: it lands in **Downloads**; tap it in your Files app to
-     extract.
-2. Inside, find the folder `tools` → `sdcard` → `mons`. It holds one `.bin`
-   file per species: `p001.bin`, `p002.bin`, … (normal) and `ps001.bin`, …
-   (shiny). You don't need to move them anywhere.
-3. Open iTamaPoke from its icon and tap **"Load sprites…"** (top right).
-4. A file picker opens. Navigate to that `mons` folder, then **select all
-   the `.bin` files at once**:
-   - iPhone: tap **Select** at the top right → **Select All** → **Open**.
-   - Android: long-press one file, then **Select all** → **Open** (or
-     **Select**).
-5. Wait for the count at the bottom of the screen to finish. The
+   green **Code** button → **Download ZIP** → tap the zip once in the Files
+   app; it unpacks into `TamaPoke-main`, and `tools` → `sdcard` → `mons`
+   inside it is the folder. If you already keep a `mons` folder with
+   sprites, cries and dex text for the iOS app, use that one as is.
+2. Open iTamaPoke from its icon and tap **"Load sprites…"** (top right).
+3. In the file picker, go into `mons`, **tap one file, then "Select All"**,
+   then **Open**. It doesn't matter that other kinds of files are mixed in:
+   each button keeps only its own extension (`.bin` / `.txt` / `.m4a`) and
+   ignores the rest, so selecting everything is fine.
+   - iPhone: tap a file → **Select** (top right) → **Select All** → **Open**.
+   - Android: long-press a file → **Select all** → **Select**.
+4. Wait for the count at the bottom of the screen to finish. The
    characters appear immediately and stay — this is stored inside the app,
    so you do it once. (`thumbs.bin` isn't needed here; the web app draws
    its own thumbnails.)
+5. If cries and dex text are in that same `mons` folder, do the same
+   "Select All" once each for **"Load cries…"** and **"Load dex text…"**.
 
 Two more buttons work the same way and are optional:
 

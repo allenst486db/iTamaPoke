@@ -718,8 +718,112 @@ function drawSackGame(now) {
   statusEl.textContent = `Sack · ${fns.sackHits()} hits`;
 }
 
+// --- Starter picker --------------------------------------------------------
+//
+// PetScreen.swift's renderStarterSelect: the one screen a fresh save shows
+// before anything else. Nine starters, one generation's trio per page,
+// swiped like the stat card; a language pill top-right because Settings
+// isn't reachable yet and chooseStarter() only ever runs once.
+const STARTER_ROWS = 3, STARTER_ROW_H = 72, STARTER_ROW_GAP = 14;
+const STARTER_LANG_PILL = { x: 300, y: 78, w: 96, h: 26 };
+let starterPage = 0;
+function starterRowY(row) { return 120 + row * (STARTER_ROW_H + STARTER_ROW_GAP); }
+function starterPageCount() {
+  return Math.max(1, Math.ceil(fns.starterCount() / STARTER_ROWS));
+}
+
+function drawStarterSelect() {
+  ctx.fillStyle = UI.bgDay;
+  ctx.fillRect(0, 0, TP.screen, TP.screen);
+  ctx.fillStyle = UI.ink;
+  ctx.textAlign = "center";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.chooseStarterTitle(), TP.cx, 62);
+
+  const l = STARTER_LANG_PILL;
+  ctx.fillStyle = UI.white;
+  roundRect(l.x, l.y, l.w, l.h, 8); ctx.fill();
+  ctx.strokeStyle = UI.ink; ctx.lineWidth = 2;
+  roundRect(l.x, l.y, l.w, l.h, 8); ctx.stroke();
+  ctx.fillStyle = UI.ink;
+  ctx.font = "bold 13px monospace";
+  ctx.fillText(`${LANG_CODES[fns.language()]} >`, l.x + l.w / 2, l.y + l.h / 2 + 5);
+
+  const lang = fns.language();
+  const genLabel = (lang === 6 || lang === 7) ? `${starterPage + 1}세대` : `GEN ${starterPage + 1}`;
+  ctx.fillStyle = UI.track;
+  ctx.font = "bold 18px monospace";
+  ctx.fillText(genLabel, TP.cx, 98);
+
+  const first = starterPage * STARTER_ROWS;
+  const last = Math.min(first + STARTER_ROWS, fns.starterCount());
+  for (let slot = first; slot < last; slot++) {
+    const dex = fns.starterDex(slot);
+    const accent = fns.dexAccent(dex);
+    const ry = starterRowY(slot - first);
+    ctx.fillStyle = rgb565(lerp565(accent, 0xFFFF, 6, 8));
+    roundRect(70, ry, 326, STARTER_ROW_H, 12); ctx.fill();
+    ctx.strokeStyle = rgb565(accent); ctx.lineWidth = 2;
+    roundRect(70, ry, 326, STARTER_ROW_H, 12); ctx.stroke();
+  }
+  for (let slot = first; slot < last; slot++) {
+    const dex = fns.starterDex(slot);
+    const ry = starterRowY(slot - first);
+    // Thumbnail beside the name, as upstream draws it -- from the user's
+    // own sprite file if one is loaded, otherwise just a labelled row.
+    const sprite = spriteFor(dex, false);
+    if (sprite) drawDexThumb(sprite, 78, ry + 4, 64);
+    const name = fns.dexName(dex);
+    ctx.fillStyle = UI.ink;
+    ctx.textAlign = "left";
+    ctx.font = "bold 24px monospace";
+    if (ctx.measureText(name).width > 240) ctx.font = "bold 17px monospace";
+    ctx.textBaseline = "middle";
+    ctx.fillText(name, 150, ry + STARTER_ROW_H / 2);
+    ctx.textBaseline = "alphabetic";
+  }
+
+  const pages = starterPageCount();
+  if (pages > 1) {
+    const dotsX = TP.cx - (pages - 1) * 13;
+    for (let i = 0; i < pages; i++) {
+      const cx = dotsX + i * 26;
+      ctx.beginPath(); ctx.arc(cx, 400, i === starterPage ? 5 : 4, 0, Math.PI * 2);
+      if (i === starterPage) { ctx.fillStyle = UI.ink; ctx.fill(); }
+      else { ctx.strokeStyle = UI.ink; ctx.lineWidth = 1; ctx.stroke(); }
+    }
+  }
+  ctx.textAlign = "center";
+  statusEl.textContent = "Choose your starter";
+}
+
+function starterTap(x, y) {
+  if (inRect(x, y, STARTER_LANG_PILL)) {
+    Module.ccall("tp_set_language", null, ["number"], [(fns.language() + 1) % LANG_CODES.length]);
+    playSfx(0);
+    return;
+  }
+  const first = starterPage * STARTER_ROWS;
+  const last = Math.min(first + STARTER_ROWS, fns.starterCount());
+  for (let slot = first; slot < last; slot++) {
+    const ry = starterRowY(slot - first);
+    if (x >= 70 && x <= 396 && y >= ry && y <= ry + STARTER_ROW_H) {
+      Module._tp_choose_starter(fns.starterDex(slot));
+      playSfx(0);
+      return;
+    }
+  }
+}
+
 function draw() {
   if (!Module) return;
+
+  // A fresh save picks its starter before any other screen exists --
+  // same precedence as PetScreen.swift's render().
+  if (fns.awaitingStarter() !== 0) {
+    drawStarterSelect();
+    return;
+  }
 
   if (screen === "settings") {
     drawSettings();
@@ -882,6 +986,10 @@ function draw() {
 }
 
 function handleTap(x, y) {
+  if (fns.awaitingStarter() !== 0) {
+    starterTap(x, y);
+    return;
+  }
   if (screen === "settings") {
     settingsTap(x, y);
     return;
@@ -1022,6 +1130,10 @@ function swipeAllowed() {
 // swipe opens the dex; on the dex/card, it turns pages; dir 1 = swiped
 // right, -1 = swiped left (left advances, matching upstream).
 function onSwipe(dir) {
+  if (fns.awaitingStarter() !== 0) {
+    starterPage = Math.min(Math.max(starterPage + (dir > 0 ? -1 : 1), 0), starterPageCount() - 1);
+    return;
+  }
   if (screen === "card") {
     cardPage = ((dir > 0 ? cardPage - 1 : cardPage + 1) + CARD_PAGE_COUNT) % CARD_PAGE_COUNT;
     return;
@@ -1050,6 +1162,7 @@ function onSwipe(dir) {
 // closes it if already open).
 function onSwipeV(dir) {
   if (!swipeAllowed()) return;
+  if (fns.awaitingStarter() !== 0) return;   // the picker only pages sideways
   if (screen === "dex") {
     dexScreen = "grid";
     screen = "idle";
@@ -1291,6 +1404,10 @@ createTPCore({
     // Idle-screen presentation (TPPet.mm's headerName/statusMessage/egg*/
     // showHeart/mood + the celebration banner + release dialog + per-species
     // scene biome and header accent) -- see browser_glue.cpp's matching block.
+    awaitingStarter: mod.cwrap("tp_awaiting_starter", "number", []),
+    starterCount: mod.cwrap("tp_starter_count", "number", []),
+    starterDex: mod.cwrap("tp_starter_dex", "number", ["number"]),
+    chooseStarterTitle: mod.cwrap("tp_choose_starter_title", "string", []),
     headerName: mod.cwrap("tp_header_name", "string", []),
     statusMessage: mod.cwrap("tp_status_message", "string", []),
     eggCracks: mod.cwrap("tp_egg_cracks", "number", []),
@@ -1538,7 +1655,15 @@ createTPCore({
       advanceBehaviour(t, currentSprite, fns.mood());
       stepBath(t, currentSprite);
     }
-    draw();
+    // A draw that throws must not kill the loop: on a phone there is no
+    // console, so the only symptom would be a frozen "loading…" line. Show
+    // the error there and keep ticking so the save still happens.
+    try {
+      draw();
+    } catch (e) {
+      statusEl.textContent = "error: " + (e && e.message ? e.message : e);
+      console.error(e);
+    }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
