@@ -1089,6 +1089,15 @@ function handleTap(x, y) {
   }
   if (fns.ceremony() !== 0) return;  // no buttons during a ceremony
 
+  // The expedition chip (top right, "tour 12m" / "arrived!" / "bag x2")
+  // opens the card's Expedition page, as on iOS.
+  if (fns.isEgg() === 0 && expeditionHudTap(x, y)) {
+    screen = "card";
+    cardPage = 7;
+    playSfx(0);
+    return;
+  }
+
   // Feed menu: pick by column, any other tap just closes it.
   if (now < feedMenuUntil) {
     if (y >= 288 && y <= 352 && x >= 101 && x <= 365) {

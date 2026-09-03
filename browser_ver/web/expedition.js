@@ -303,23 +303,34 @@ function cardExpeditionTap(x, y) {
 
 // --- Idle-screen expedition HUD chip ----------------------------------
 
+// TP.expeditionHud on iOS: x 310, y 106, 112x34 -- tapping it opens the
+// card's Expedition page (see main.js's idle tap handler).
+const EXP_HUD = { x: 310, y: 106, w: 112, h: 34 };
+
 function drawExpeditionHud() {
   const state = fns.expeditionHudState();
   if (state === 0) return;
+  const r = EXP_HUD;
   const color = state === 2 ? UI.barOK : state === 3 ? UI.barWarn : "#4C98D9";
   ctx.fillStyle = UI.white;
-  roundRect(330, 16, 120, 34, 8); ctx.fill();
+  roundRect(r.x, r.y, r.w, r.h, 8); ctx.fill();
   ctx.strokeStyle = color; ctx.lineWidth = 2;
-  roundRect(330, 16, 120, 34, 8); ctx.stroke();
+  roundRect(r.x, r.y, r.w, r.h, 8); ctx.stroke();
   ctx.beginPath();
-  ctx.arc(347, 33, 9, 0, Math.PI * 2);
+  ctx.arc(r.x + 17, r.y + 17, 9, 0, Math.PI * 2);
   ctx.fillStyle = color; ctx.fill();
+  ctx.textBaseline = "middle";
   ctx.fillStyle = UI.white;
   ctx.font = "bold 11px monospace";
   ctx.textAlign = "center";
-  ctx.fillText(state === 2 ? "!" : state === 3 ? "+" : ">", 347, 37);
+  ctx.fillText(state === 2 ? "!" : state === 3 ? "+" : ">", r.x + 17, r.y + 17);
   ctx.fillStyle = UI.ink;
   ctx.textAlign = "left";
   ctx.font = "10px monospace";
-  ctx.fillText(fns.expeditionHudLabel(), 362, 37);
+  ctx.fillText(fns.expeditionHudLabel(), r.x + 31, r.y + 17);
+  ctx.textBaseline = "alphabetic";
+}
+
+function expeditionHudTap(x, y) {
+  return fns.expeditionHudState() !== 0 && inRect(x, y, EXP_HUD);
 }
