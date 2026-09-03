@@ -20,6 +20,12 @@
     gap: 8px; padding: env(safe-area-inset-top) 0 env(safe-area-inset-bottom);
     box-sizing: border-box;
   }
+  /* No text selection / long-press callout anywhere: the release dialog is
+     opened by holding the creature for 3 s, and iOS otherwise treats that
+     hold as "select" and pops its magnifier/menu over the game. */
+  body, canvas, #toolbar, #status {
+    -webkit-user-select: none; user-select: none; -webkit-touch-callout: none;
+  }
   canvas {
     touch-action: none; image-rendering: pixelated;
     width: min(100vw, calc(100vh - 110px), 466px); height: auto; aspect-ratio: 1;
@@ -96,6 +102,11 @@ window.addEventListener("unhandledrejection", (e) => {
 if ("serviceWorker" in navigator) {
   navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[sw] register failed:", e));
 }
+// Belt and braces for the long-press: the CSS above stops selection, this
+// stops the context menu / callout the browser may still try to show.
+const tpCanvas = document.getElementById("tp");
+tpCanvas.addEventListener("contextmenu", (e) => e.preventDefault());
+tpCanvas.addEventListener("touchstart", (e) => { if (e.touches.length > 1) e.preventDefault(); }, { passive: false });
 </script>
 </body>
 </html>
