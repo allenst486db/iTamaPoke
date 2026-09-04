@@ -280,7 +280,10 @@ function drawCardProgress() {
 
 function cardTap(x, y) {
   if (cardPage === 0 && y >= 320 && y <= 344) {
-    nameDraft = "";
+    // Start from the current nickname rather than blank, so a small fix
+    // doesn't mean retyping the whole name.
+    Module.ccall("tp_kb_set", null, ["string"], [fns.hasNick() !== 0 ? fns.name() : ""]);
+    kbSync();
     screen = "keyboard";
     return;
   }
@@ -303,8 +306,29 @@ function cardTap(x, y) {
 
 // --- Rename keyboard -------------------------------------------------
 
+// Two layouts over the same 6x5 grid. English is upstream's own A-Z set;
+// Korean is every jamo as its own key, composed into syllables by
+// Sources/Core/hangul.cpp (shared with the iOS keyboard). `null` is a gap,
+// and the last two slots are always backspace and OK.
+//
+// Jamo ids match hangul.h's enum: consonants 0-18, vowels 19-39.
 const KB_KEYS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ.-".split("");
+// ㄱㄴㄷㄹㅁㅂ / ㅅㅇㅈㅊㅋㅌ / ㅍㅎㄲㄸㅃㅆ / ㅉㅏㅐㅑㅓㅔ / ㅕㅗㅛㅜㅠㅡ ... ㅣ
+const KB_JAMO = [
+  0, 2, 3, 5, 6, 7,          // ㄱ ㄴ ㄷ ㄹ ㅁ ㅂ
+  9, 11, 12, 14, 15, 16,     // ㅅ ㅇ ㅈ ㅊ ㅋ ㅌ
+  17, 18, 1, 4, 8, 10,       // ㅍ ㅎ ㄲ ㄸ ㅃ ㅆ
+  13, 19, 20, 21, 23, 24,    // ㅉ ㅏ ㅐ ㅑ ㅓ ㅔ
+  25, 27, 31, 32, 36, 37,    // ㅕ ㅗ ㅛ ㅜ ㅠ ㅡ
+  39,                        // ㅣ  (row 6, first slot)
+];
 const KB_COLS = 6, KB_X = 40, KB_Y = 150, KB_W = 64, KB_H = 52;
+const KB_LANG_PILL = { x: 300, y: 84, w: 82, h: 40 };
+let kbKorean = false;
+
+function kbRows() { return kbKorean ? 7 : 5; }
+function kbSlots() { return kbKorean ? 41 : 30; }   // 39 jamo slots + <- + OK
+function kbCount() { return kbKorean ? KB_JAMO.length : KB_KEYS.length; }
 
 function drawKeyboard() {
   ctx.fillStyle = UI.bgDay;
@@ -315,42 +339,87 @@ function drawKeyboard() {
   ctx.fillText(fns.nameLabel(), TP.cx, 56);
 
   ctx.fillStyle = UI.white;
-  roundRect(83, 84, 300, 40, 8); ctx.fill();
+  roundRect(83, 84, 208, 40, 8); ctx.fill();
   ctx.strokeStyle = UI.ink; ctx.lineWidth = 2;
-  roundRect(83, 84, 300, 40, 8); ctx.stroke();
+  roundRect(83, 84, 208, 40, 8); ctx.stroke();
   ctx.fillStyle = UI.ink;
   ctx.textAlign = "left";
   ctx.font = "bold 20px monospace";
   ctx.fillText(nameDraft || "_", 95, 112);
 
-  for (let i = 0; i < 30; i++) {
-    const x = KB_X + (i % KB_COLS) * KB_W, y = KB_Y + Math.floor(i / KB_COLS) * KB_H;
-    const special = i >= 28;
+  // 한/영 toggle, in the same spot the starter picker puts its language pill.
+  const p = KB_LANG_PILL;
+  ctx.fillStyle = kbKorean ? UI.ink : UI.white;
+  roundRect(p.x, p.y, p.w, p.h, 8); ctx.fill();
+  ctx.strokeStyle = UI.ink; ctx.lineWidth = 2;
+  roundRect(p.x, p.y, p.w, p.h, 8); ctx.stroke();
+  ctx.fillStyle = kbKorean ? UI.bgDay : UI.ink;
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 15px monospace";
+  ctx.fillText(kbKorean ? "한" : "ABC", p.x + p.w / 2, p.y + p.h / 2);
+  ctx.textBaseline = "alphabetic";
+
+  const rows = kbRows(), count = kbCount(), slots = kbSlots();
+  const kh = kbKorean ? 42 : KB_H;
+  for (let i = 0; i < slots; i++) {
+    if (i >= count && i < slots - 2) continue;   // gap before <- / OK
+    const x = KB_X + (i % KB_COLS) * KB_W, y = KB_Y + Math.floor(i / KB_COLS) * kh;
+    const special = i >= slots - 2;
     ctx.fillStyle = special ? UI.barWarn : UI.white;
-    roundRect(x, y, KB_W - 6, KB_H - 6, 6); ctx.fill();
+    roundRect(x, y, KB_W - 6, kh - 6, 6); ctx.fill();
     ctx.strokeStyle = UI.ink; ctx.lineWidth = 1;
-    roundRect(x, y, KB_W - 6, KB_H - 6, 6); ctx.stroke();
+    roundRect(x, y, KB_W - 6, kh - 6, 6); ctx.stroke();
     ctx.fillStyle = UI.ink;
     ctx.textAlign = "center";
     ctx.textBaseline = "middle";
     ctx.font = "bold 16px monospace";
-    ctx.fillText(i < 28 ? KB_KEYS[i] : (i === 28 ? "<-" : "OK"), x + (KB_W - 6) / 2, y + (KB_H - 6) / 2);
+    const label = special
+      ? (i === slots - 2 ? "<-" : "OK")
+      : (kbKorean ? fns.kbJamoText(KB_JAMO[i]) : KB_KEYS[i]);
+    ctx.fillText(label, x + (KB_W - 6) / 2, y + (kh - 6) / 2);
     ctx.textBaseline = "alphabetic";
   }
   statusEl.textContent = `Rename · "${nameDraft}"`;
 }
 
+// The draft lives in the C++ automaton, not in JS, so an in-progress
+// syllable survives a redraw and backspace can walk back jamo by jamo.
+function kbSync() { nameDraft = fns.kbText(); }
+
 function keyboardTap(x, y) {
-  const col = Math.floor((x - KB_X) / KB_W), row = Math.floor((y - KB_Y) / KB_H);
-  if (col < 0 || col >= KB_COLS || row < 0 || row >= 5) return;
-  const i = row * KB_COLS + col;
-  if (i >= 30) return;
-  if (i === 28) {
-    if (nameDraft.length > 0) nameDraft = nameDraft.slice(0, -1);
-  } else if (i === 29) {
-    Module.ccall("tp_rename", null, ["string"], [nameDraft]);
-    screen = "card";
-  } else if (nameDraft.length < 11) {
-    nameDraft += KB_KEYS[i];
+  if (inRect(x, y, KB_LANG_PILL)) {
+    kbKorean = !kbKorean;
+    Module.ccall("tp_kb_set", null, ["string"], [nameDraft]);  // stop composing
+    playSfx(0);
+    return;
   }
+  const kh = kbKorean ? 42 : KB_H;
+  const col = Math.floor((x - KB_X) / KB_W), row = Math.floor((y - KB_Y) / kh);
+  if (col < 0 || col >= KB_COLS || row < 0 || row >= kbRows()) return;
+  const i = row * KB_COLS + col;
+  const slots = kbSlots();
+  if (i >= slots) return;
+  if (i === slots - 2) {
+    Module._tp_kb_backspace();
+    kbSync();
+    return;
+  }
+  if (i === slots - 1) {
+    Module.ccall("tp_rename", null, ["string"], [fns.kbText()]);
+    screen = "card";
+    return;
+  }
+  if (i >= kbCount()) return;
+  // Stop one character short of what Pet::nick can hold, so nothing the
+  // keyboard shows is silently truncated by rename().
+  const cap = fns.nickCapacity();
+  if (kbKorean) {
+    if (fns.kbByteLen() + 3 > cap) { playSfx(7); return; }
+    Module._tp_kb_jamo(KB_JAMO[i]);
+  } else {
+    if (fns.kbByteLen() + 1 > cap || fns.kbCharLen() >= 11) { playSfx(7); return; }
+    Module.ccall("tp_kb_ascii", null, ["number"], [KB_KEYS[i].charCodeAt(0)]);
+  }
+  kbSync();
 }

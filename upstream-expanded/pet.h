@@ -125,7 +125,12 @@ public:
   uint32_t lastCareDay = 0;
   // vinculo (del bicho: sube lento con cuidado, se resetea al nacer otro)
   uint8_t bond = 0;
-  char nick[12] = "";    // apodo (vacio = nombre de especie)
+  // Local modification (the second one -- see upstream-expanded/README.md):
+  // widened from 12 so a Hangul nickname fits. 11 usable bytes held only
+  // three Korean syllables, since each is 3 bytes of UTF-8; 23 holds seven.
+  // ASCII names are unaffected, and an old save loads straight into the
+  // front of the wider buffer (getString copies up to sizeof).
+  char nick[24] = "";    // apodo (vacio = nombre de especie)
   // medallas: del individuo + contador acumulado entre todas las crianzas
   uint16_t medals = 0, totalMedals = 0;
   uint16_t newMedal = 0;   // recien conseguida(s), para celebrar

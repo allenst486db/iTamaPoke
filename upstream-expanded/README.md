@@ -10,9 +10,24 @@ fork:
 see `LICENSE` in this folder. Credited in socquique's own README under
 "Community forks" as **TamaPoke — Expanded**.
 
+## Local modification: `nick` holds 23 bytes, not 11
+
+`pet.h`'s `char nick[12]` became `char nick[24]`. The rename keyboard in
+this port can type Hangul (`Sources/Core/hangul.cpp`), and a Korean
+syllable is 3 bytes of UTF-8 — 11 usable bytes fit only three of them,
+which is too short for most nicknames. 23 bytes fit seven.
+
+Nothing else changes: ASCII names behave exactly as before, `Pet::rename`
+still truncates on `sizeof(nick) - 1`, and an existing save loads into the
+front of the wider buffer because `prefs.getString` copies up to the size
+it is given. A save written here and then opened by an unmodified build
+would truncate a long name, which only matters if you move a save between
+this port and the firmware.
+
 ## Local modification: the dex runs to 386, not 151
 
-These files are otherwise vendored verbatim, with one deliberate exception.
+These files are otherwise vendored verbatim, with two deliberate exceptions
+(this one and the `nick` widening above).
 `dex.h` has been extended from the fork's 151 species to **386** (gen 1-3),
 with the extra rows transcribed from a third fork,
 [DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke) (`dex.h`, commit

@@ -77,6 +77,8 @@ struct PetScreen: View {
 
     /// Rename keyboard buffer.
     @State private var nameDraft = ""
+    /// Which half of the rename keyboard is showing: A-Z, or the jamo grid.
+    @State private var kbKorean = false
 
     /// "Let it go?" confirmation deadline, upstream's `confirmUntil`.
     @State private var confirmUntil: UInt64 = 0
@@ -913,51 +915,113 @@ struct PetScreen: View {
 
     /// 26 letters plus "." and "-", then backspace and OK.
     private static let kbKeys = Array("ABCDEFGHIJKLMNOPQRSTUVWXYZ.-")
+    /// Every jamo as its own key, composed into syllables by
+    /// `Sources/Core/hangul.cpp` — the same automaton the browser keyboard
+    /// calls, so the two behave identically. Ids are hangul.h's enum:
+    /// ㄱㄴㄷㄹㅁㅂ / ㅅㅇㅈㅊㅋㅌ / ㅍㅎㄲㄸㅃㅆ / ㅉㅏㅐㅑㅓㅔ / ㅕㅗㅛㅜㅠㅡ / ㅣ
+    private static let kbJamo: [Int32] = [
+        0, 2, 3, 5, 6, 7,
+        9, 11, 12, 14, 15, 16,
+        17, 18, 1, 4, 8, 10,
+        13, 19, 20, 21, 23, 24,
+        25, 27, 31, 32, 36, 37,
+        39,
+    ]
     private static let kbCols = 6
     private static let kbX: CGFloat = 40
     private static let kbY: CGFloat = 150
     private static let kbW: CGFloat = 64
     private static let kbH: CGFloat = 52
+    private static let kbHangulH: CGFloat = 42
+    private static let kbLangPill = CGRect(x: 300, y: 84, width: 82, height: 40)
+
+    private var kbRowCount: Int { kbKorean ? 7 : 5 }
+    private var kbSlotCount: Int { kbKorean ? 41 : 30 }   // keys + backspace + OK
+    private var kbKeyCount: Int { kbKorean ? Self.kbJamo.count : Self.kbKeys.count }
+    private var kbKeyH: CGFloat { kbKorean ? Self.kbHangulH : Self.kbH }
 
     private func renderKeyboard(_ ctx: GraphicsContext) {
         ctx.fillRect(0, 0, TP.screen, TP.screen, UI.bgDay)
         ctx.fillCircle(TP.cx, TP.cy, 231, UI.bgDay)
         ctx.gfxTextCentered(model.pet.nameLabel, 56, 2, UI.ink)
 
-        ctx.fillRoundRect(83, 84, 300, 40, 8, UI.white)
-        ctx.drawRoundRect(83, 84, 300, 40, 8, UI.ink)
+        ctx.fillRoundRect(83, 84, 208, 40, 8, UI.white)
+        ctx.drawRoundRect(83, 84, 208, 40, 8, UI.ink)
         ctx.gfxText(nameDraft.isEmpty ? "_" : nameDraft, 95, 94, 3, UI.ink)
 
-        for i in 0..<30 {
+        // 한/영 toggle, in the same spot the starter picker puts its language pill.
+        let lp = Self.kbLangPill
+        ctx.fillRoundRect(lp.minX, lp.minY, lp.width, lp.height, 8,
+                          kbKorean ? UI.ink : UI.white)
+        ctx.drawRoundRect(lp.minX, lp.minY, lp.width, lp.height, 8, UI.ink)
+        let lpText = kbKorean ? "한" : "ABC"
+        ctx.gfxText(lpText, lp.midX - ctx.gfxTextWidth(lpText, 2) / 2,
+                    TP.textTop(centeredOn: lp.midY, size: 2), 2,
+                    kbKorean ? UI.bgDay : UI.ink)
+
+        let slots = kbSlotCount, keys = kbKeyCount, kh = kbKeyH
+        for i in 0..<slots {
+            if i >= keys && i < slots - 2 { continue }   // gap before <- / OK
             let x = Self.kbX + CGFloat(i % Self.kbCols) * Self.kbW
-            let y = Self.kbY + CGFloat(i / Self.kbCols) * Self.kbH
-            let special = i >= 28
-            ctx.fillRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6,
+            let y = Self.kbY + CGFloat(i / Self.kbCols) * kh
+            let special = i >= slots - 2
+            ctx.fillRoundRect(x, y, Self.kbW - 6, kh - 6, 6,
                               special ? UI.barWarn : UI.white)
-            ctx.drawRoundRect(x, y, Self.kbW - 6, Self.kbH - 6, 6, UI.ink)
-            let keyTextY = TP.textTop(centeredOn: y + (Self.kbH - 6) / 2, size: 2)
-            if i < 28 {
-                ctx.gfxText(String(Self.kbKeys[i]), x + Self.kbW / 2 - 9, keyTextY, 2, UI.ink)
+            ctx.drawRoundRect(x, y, Self.kbW - 6, kh - 6, 6, UI.ink)
+            let keyTextY = TP.textTop(centeredOn: y + (kh - 6) / 2, size: 2)
+            let label: String
+            if special {
+                label = i == slots - 2 ? "<-" : "OK"
+            } else if kbKorean {
+                label = String(cString: tph_jamo_utf8(Self.kbJamo[i]))
             } else {
-                ctx.gfxText(i == 28 ? "<-" : "OK", x + Self.kbW / 2 - 15, keyTextY, 2, UI.ink)
+                label = String(Self.kbKeys[i])
             }
+            ctx.gfxText(label, x + Self.kbW / 2 - 3 - ctx.gfxTextWidth(label, 2) / 2,
+                        keyTextY, 2, UI.ink)
         }
     }
 
-    private func keyboardTap(_ p: CGPoint) {
-        let col = Int((p.x - Self.kbX) / Self.kbW)
-        let row = Int((p.y - Self.kbY) / Self.kbH)
-        guard col >= 0, col < Self.kbCols, row >= 0, row < 5 else { return }
-        let i = row * Self.kbCols + col
-        guard i < 30 else { return }
+    /// The draft lives in the C++ automaton rather than in this view, so a
+    /// half-typed syllable survives a redraw and backspace can walk back
+    /// one jamo at a time.
+    private func kbSync() { nameDraft = String(cString: tph_text()) }
 
-        if i == 28 {
-            if !nameDraft.isEmpty { nameDraft.removeLast() }
-        } else if i == 29 {
+    private func keyboardTap(_ p: CGPoint) {
+        if Self.kbLangPill.contains(p) {
+            kbKorean.toggle()
+            tph_set(nameDraft)          // stop composing across the switch
+            model.playSfx(.tap)
+            return
+        }
+        let kh = kbKeyH
+        let col = Int((p.x - Self.kbX) / Self.kbW)
+        let row = Int((p.y - Self.kbY) / kh)
+        guard col >= 0, col < Self.kbCols, row >= 0, row < kbRowCount else { return }
+        let i = row * Self.kbCols + col
+        let slots = kbSlotCount
+        guard i < slots else { return }
+
+        if i == slots - 2 {
+            tph_backspace()
+            kbSync()
+        } else if i == slots - 1 {
             model.pet.renamePet(nameDraft)
             screen = .card
-        } else if nameDraft.count < 11 {     // upstream's nameBuf is 12 bytes
-            nameDraft.append(Self.kbKeys[i])
+        } else if i < kbKeyCount {
+            // Stop one character short of Pet::nick's capacity, so nothing
+            // the keyboard shows is silently truncated by rename().
+            let cap = Int(model.pet.nickCapacity)
+            if kbKorean {
+                guard Int(tph_byte_len()) + 3 <= cap else { model.playSfx(.deny); return }
+                tph_press_jamo(Self.kbJamo[i])
+            } else {
+                guard Int(tph_byte_len()) + 1 <= cap, Int(tph_char_len()) < 11 else {
+                    model.playSfx(.deny); return
+                }
+                tph_press_ascii(CChar(Self.kbKeys[i].asciiValue ?? 63))
+            }
+            kbSync()
         }
     }
 
@@ -2592,7 +2656,8 @@ struct PetScreen: View {
     private func cardTap(_ p: CGPoint) {
         if cardPage == 0, p.y < 84 {
             screen = .keyboard
-            nameDraft = model.pet.nick
+            tph_set(model.pet.nick)     // the automaton owns the draft now
+            kbSync()
             return
         }
         if cardPage == 3 {

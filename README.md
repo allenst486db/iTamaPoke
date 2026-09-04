@@ -106,7 +106,9 @@ assuming a fixed `size*6`px/character (see
 [`kor_patch/`](kor_patch) generally for the localization notes). Species
 names and UI strings are translated and built in; Pokédex entry text follows
 the existing per-user fetch (`Scripts/fetch_dex_entries.sh --lang ko`), same
-copyright handling as the sprites. **Not yet verified on a real phone or
+copyright handling as the sprites. Nicknames can be typed in Hangul too —
+the rename keyboard has an ABC/한 toggle and composes jamo into syllables
+(`Sources/Core/hangul.cpp`, shared by both builds). **Not yet verified on a real phone or
 watch** — only structural checks (string-table sizes, printf format-specifier
 safety, compiler syntax checks) — so treat it as freshly landed until someone
 actually plays through it in Korean.

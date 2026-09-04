@@ -176,8 +176,12 @@ the rename keyboard.*
 8. **Expedition** *(Expanded fork)* — start a tour, claim a reward, and
    manage the item inventory described above.
 
-Tap the creature's name on page 1 to open the rename keyboard. Tap anywhere
-else, or swipe down past the last page, to close the card.
+Tap the creature's name on page 1 to open the rename keyboard. It has an
+**ABC / 한** toggle beside the name field: the Korean layout puts every
+jamo on its own key and composes them into syllables as you type (ㅎ ㅏ ㄴ →
+한), with backspace stepping back one jamo at a time. A name holds 11
+Latin characters or 7 Hangul syllables. Tap anywhere else, or swipe down
+past the last page, to close the card.
 
 ## Evolution
 

@@ -357,6 +357,9 @@ typedef NS_ENUM(NSInteger, TPCeremony) {
 - (void)startRunaway;          ///< the neglect ending; no dialog, it just leaves
 - (void)releasePet;            ///< long-press "let it go" (ARC reserves `release`)
 - (void)renamePet:(NSString *)name;
+/// Bytes `Pet::nick` can hold, so the rename keyboard can stop before
+/// `rename` truncates -- a Hangul syllable costs three of them.
+@property(nonatomic, readonly) NSInteger nickCapacity;
 - (void)factoryReset;
 
 - (BOOL)isRegistered:(int16_t)dex;

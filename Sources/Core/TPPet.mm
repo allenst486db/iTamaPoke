@@ -177,6 +177,8 @@ static const DexEntry *TPDexEntry(int16_t dex);
   gPet.rename(name.length ? name.UTF8String : "");
 }
 
+- (NSInteger)nickCapacity { return (NSInteger)sizeof(gPet.nick) - 1; }
+
 - (BOOL)isRegistered:(int16_t)dex      { return gPet.isRegistered(dex); }
 - (BOOL)isShinyRegistered:(int16_t)dex { return gPet.isShinyRegistered(dex); }
 

@@ -8,30 +8,42 @@
 
 let choice = "none"; // none | evolve | farewell
 
+// TP.evoBtn / TP.farBtn on iOS: both sit in the middle of the screen, not
+// at the bottom. The browser build used to draw them at y 372, straight
+// over the four action buttons -- so the evolve CTA covered FEED and there
+// was no way to raise a stat back to 40 once it appeared.
+const EVO_BTN = { x: TP.cx - 128, y: 172, w: 256, h: 64 };
+const FAR_BTN = { x: TP.cx - 204, y: 176, w: 408, h: 58 };
+
 function drawEvolveButton(now) {
   const p = Math.round(5 * Math.sin(now * 0.006));
-  const x = 233 - 130 - p, y = 372 - p, w = 260 + p * 2, h = 44 + p * 2;
+  const x = EVO_BTN.x - p, y = EVO_BTN.y - p, w = EVO_BTN.w + p * 2, h = EVO_BTN.h + p * 2;
   ctx.fillStyle = UI.barBad;
   roundRect(x, y, w, h, 18); ctx.fill();
   ctx.strokeStyle = UI.white; ctx.lineWidth = 2;
   roundRect(x, y, w, h, 18); ctx.stroke();
+  roundRect(x + 2, y + 2, w - 4, h - 4, 16); ctx.stroke();
   ctx.fillStyle = UI.white;
   ctx.textAlign = "center";
-  ctx.font = "bold 18px monospace";
-  ctx.fillText(fns.evolveButtonText(), TP.cx, y + h / 2 + 6);
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 20px monospace";
+  ctx.fillText(fns.evolveButtonText(), TP.cx, y + h / 2);
+  ctx.textBaseline = "alphabetic";
 }
 
 function drawEndingButton(now, text, fill, textColor, amplitude, rate) {
   const p = Math.round(amplitude * Math.sin(now * rate));
-  const x = 233 - 130 - p, y = 372 - p, w = 260 + p * 2, h = 40 + p * 2;
+  const x = FAR_BTN.x - p, y = FAR_BTN.y - p, w = FAR_BTN.w + p * 2, h = FAR_BTN.h + p * 2;
   ctx.fillStyle = fill;
   roundRect(x, y, w, h, 16); ctx.fill();
   ctx.strokeStyle = UI.ink; ctx.lineWidth = 1;
   roundRect(x, y, w, h, 16); ctx.stroke();
   ctx.fillStyle = textColor;
   ctx.textAlign = "center";
-  ctx.font = "bold 14px monospace";
-  ctx.fillText(text, TP.cx, y + h / 2 + 5);
+  ctx.textBaseline = "middle";
+  ctx.font = "bold 15px monospace";
+  ctx.fillText(text, TP.cx, y + h / 2);
+  ctx.textBaseline = "alphabetic";
 }
 
 // Called from the idle screen's own draw, after the buttons row -- mirrors
@@ -48,10 +60,13 @@ function drawEvolveEndingOverlay(now) {
 }
 
 function evolveEndingTap(x, y) {
-  // Same 260x44-ish hit rect as the drawn button, generous enough not to
-  // need the exact pulse offset.
-  if (x < 103 || x > 363 || y < 358 || y > 428) return false;
-  if (fns.wantsEvolve() !== 0) { choice = "evolve"; return true; }
+  // Each CTA is checked against its own rect (they differ in width), in the
+  // same precedence render() uses.
+  if (fns.wantsEvolve() !== 0) {
+    if (inRect(x, y, EVO_BTN)) { choice = "evolve"; return true; }
+    return false;
+  }
+  if (!inRect(x, y, FAR_BTN)) return false;
   if (fns.canRunaway() !== 0) { Module._tp_start_runaway(); return true; }
   if (fns.wantsFarewell() !== 0) { choice = "farewell"; return true; }
   return false;

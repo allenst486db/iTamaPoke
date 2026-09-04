@@ -15,6 +15,7 @@
 
 #include <emscripten.h>
 
+#include "hangul.h"
 #include "pet.h"
 #include "i18n.h"
 #include "audio.h"
@@ -656,6 +657,21 @@ EMSCRIPTEN_KEEPALIVE int tp_has_nick() { return gPet.nick[0] ? 1 : 0; }
 // renamePet: (nameBuf is 12 bytes including the terminator).
 EMSCRIPTEN_KEEPALIVE
 void tp_rename(const char *name) { gPet.rename(name); }
+
+// Rename keyboard's Hangul input. The composition automaton itself is
+// Sources/Core/hangul.cpp, shared with the iOS build so the two keyboards
+// behave identically; these are just the thin exports web/card.js calls.
+EMSCRIPTEN_KEEPALIVE void tp_kb_reset() { tph_reset(); }
+EMSCRIPTEN_KEEPALIVE void tp_kb_set(const char *s) { tph_set(s); }
+EMSCRIPTEN_KEEPALIVE void tp_kb_jamo(int jamo) { tph_press_jamo(jamo); }
+EMSCRIPTEN_KEEPALIVE void tp_kb_ascii(int c) { tph_press_ascii((char)c); }
+EMSCRIPTEN_KEEPALIVE void tp_kb_backspace() { tph_backspace(); }
+EMSCRIPTEN_KEEPALIVE const char *tp_kb_text() { return tph_text(); }
+EMSCRIPTEN_KEEPALIVE int tp_kb_byte_len() { return tph_byte_len(); }
+EMSCRIPTEN_KEEPALIVE int tp_kb_char_len() { return tph_char_len(); }
+EMSCRIPTEN_KEEPALIVE const char *tp_kb_jamo_text(int jamo) { return tph_jamo_utf8(jamo); }
+// Pet::nick's capacity, so the keyboard can stop before rename() truncates.
+EMSCRIPTEN_KEEPALIVE int tp_nick_capacity() { return (int)sizeof(gPet.nick) - 1; }
 
 // --- Evolution / farewell / runaway ceremonies --------------------------
 //
