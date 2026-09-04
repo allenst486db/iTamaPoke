@@ -448,10 +448,22 @@ flowchart TD
 - After the first launch it needs **no internet**. New versions are picked
   up on the next launch with internet.
 
-<img src="img/web-app-first-run.png" alt="First run: six file buttons across the top, the starter picker below" width="230">
+Adding it to the home screen on iPhone looks like this:
 
-*First run: the starter picker, with the six load / save / reset buttons
-above the game.*
+| ① Open the link in Safari | ② Share → Add to Home Screen | ③ The icon appears |
+|---|---|---|
+| <img src="img/web-tab-not-here.png" width="200"> | <img src="img/web-add-to-home.png" width="200"> | <img src="img/web-home-icon.png" width="200"> |
+| Note the Safari address bar at the bottom | ••• → **Share** → scroll down → **Add to Home Screen** | Open the game from here from now on |
+
+> ⚠️ **Load your sprites in the app opened from that icon (③), not in a
+> browser tab (①).** The two have **completely separate storage**: files
+> picked in a tab are invisible to the home-screen app and vice versa.
+> "I loaded them and nothing showed up" is almost always this.
+
+<img src="img/web-app-standalone.png" alt="Opened from the home-screen icon: no Safari address bar at the bottom" width="230">
+
+*Opened from the icon. **No address bar at the bottom** means you're in the
+right place. The six buttons on top are load / save / reset.*
 
 ### D3. Add the characters (5 minutes, once per device)
 
@@ -467,9 +479,10 @@ yourself, on the phone, with no computer:
    app; it unpacks into `TamaPoke-main`, and `tools` → `sdcard` → `mons`
    inside it is the folder. If you already keep a `mons` folder with
    sprites, cries and dex text for the iOS app, use that one as is.
-2. Open the app and tap **"Load sprites…"** in the toolbar. The file
-   picker opens on **"No Recents"** — tap **Browse** at the bottom, then
-   **On My iPhone** → **mons**.
+2. Open the app **from its home-screen icon** (not a browser tab — see D2)
+   and tap **"Load sprites…"** in the toolbar. The file picker opens on
+   **"No Recents"** — tap **Browse** at the bottom, then **On My iPhone** →
+   **mons**.
 
    <img src="img/web-picker-browse.png" alt="The picker's On My iPhone view, showing the mons folder" width="230">
 
@@ -483,6 +496,10 @@ yourself, on the phone, with no computer:
    it, then **Open** at the top right.
 
    <img src="img/web-picker-select-all.png" alt="After tapping one file, a Select All button appears" width="230">
+   <img src="img/web-picker-selected.png" alt="Select All ticked every .bin file; Open is at the top right" width="230">
+
+   *Left: tapping one file reveals **Select All**. Right: it ticks every
+   `.bin` (the greyed-out files stay out of it); then **Open**, top right.*
 
    - Android: long-press a file → **Select all** → **Select**.
 5. Wait for the button to read "Loaded N file(s)". The characters appear
@@ -537,10 +554,10 @@ with your Android version so it can be fixed.
 Chrome, the GitHub app, Kakao/Line's built-in browser, etc. can't install
 web apps on iOS. Copy the link and open it in Safari.
 
-**No character art, just a "?".** The sprites haven't been loaded on *this*
-phone yet, or they were loaded into a browser tab rather than the
-home-screen app (they're separate). Open the game from the icon and do D3
-there.
+**No character art, just a "?".** Nearly always because the files were
+picked in a browser tab and the game is being opened from the home-screen
+icon — the two have separate storage (D2). Open the game from the icon and
+do D3 there.
 
 **The file picker shows the `.bin` files greyed out.** The picker filters
 by type; tap **Browse** / switch to the folder view, or pick them from the
