@@ -1,0 +1,41 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="340" viewBox="0 0 880 340" role="img">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L9 5 L0 9 z" fill="#8a93a6"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="880" height="340" rx="18" fill="#faf5ea" stroke="#e6dcc8" stroke-width="2"/>
+  <text x="24" y="30" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="13" font-weight="bold" fill="#8a93a6" text-anchor="start">무엇이 어디에 저장되나</text>
+  <rect x="24" y="46" width="402" height="268" rx="16" fill="#fffdf7" stroke="#e6dcc8" stroke-width="2" stroke-dasharray="6 5"/>
+  <text x="225" y="70" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="bold" fill="#8a93a6" text-anchor="middle">폰 안</text>
+  <rect x="44" y="86" width="362" height="76" rx="12" fill="#ffffff" stroke="#4fb06a" stroke-width="2"/>
+  <path d="M45 99 L45 149" stroke="#4fb06a" stroke-width="5" stroke-linecap="round"/>
+  <text x="229.0" y="109.66666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">홈 화면 아이콘</text>
+  <text x="229.0" y="128.66666666666669" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">앱 본체: 세이브 + 스프라이트 + 울음소리</text>
+  <text x="229.0" y="147.66666666666669" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">파일은 여기서 넣습니다</text>
+  <circle cx="391" cy="101" r="11" fill="#4fb06a"/>
+  <text x="391" y="106" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">★</text>
+  <rect x="44" y="196" width="362" height="76" rx="12" fill="#ffffff" stroke="#e05c5c" stroke-width="2" stroke-dasharray="6 4"/>
+  <path d="M45 209 L45 259" stroke="#e05c5c" stroke-width="5" stroke-linecap="round"/>
+  <text x="229.0" y="219.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">같은 링크를 브라우저 탭으로 연 것</text>
+  <text x="229.0" y="238.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">저장 공간 기준으로는 별개의 앱</text>
+  <text x="229.0" y="257.66666666666663" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">세이브도 스프라이트도 따로</text>
+  <path d="M225 168 L225 190" stroke="#e05c5c" stroke-width="2" stroke-dasharray="4 5"/>
+  <rect x="185.52" y="171" width="78.96" height="20" rx="5" fill="#faf5ea"/>
+  <text x="225" y="186" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#e05c5c" text-anchor="middle">서로 공유 안 됨</text>
+  <rect x="536" y="100" width="320" height="140" rx="12" fill="#fdf6e6" stroke="#e2a33d" stroke-width="2"/>
+  <path d="M537 113 L537 227" stroke="#e2a33d" stroke-width="5" stroke-linecap="round"/>
+  <text x="700.0" y="136.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">파일 › 나의 iPhone › mons</text>
+  <text x="700.0" y="155.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">p001.bin … 스프라이트</text>
+  <text x="700.0" y="174.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">psnd001.m4a … 울음소리</text>
+  <text x="700.0" y="193.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">dex_entries_ko.txt … 도감 설명문</text>
+  <text x="700.0" y="212.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">iTamaPoke-save.tpsave … 백업</text>
+  <path d="M532 126 L414 112" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <rect x="427.67" y="88" width="100.66" height="19" rx="5" fill="#faf5ea"/>
+  <text x="478" y="102" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="11" font-weight="normal" fill="#8a93a6" text-anchor="middle">Load sprites…</text>
+  <path d="M414 146 L532 196" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <rect x="437.9" y="176" width="80.2" height="19" rx="5" fill="#faf5ea"/>
+  <text x="478" y="190" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="11" font-weight="normal" fill="#8a93a6" text-anchor="middle">Save file…</text>
+  <text x="440" y="330" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">넣은 파일은 폴더가 아니라 앱 안에 저장됩니다. 폴더는 고르는 출처일 뿐입니다.</text>
+</svg>

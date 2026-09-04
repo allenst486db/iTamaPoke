@@ -11,16 +11,7 @@
 
 ## 한눈에 보기
 
-```mermaid
-flowchart TD
-    Q{유료 Apple Developer<br/>계정이 있나요?}
-    Q -- 없음 (대부분) --> Q2{무엇을 원하나요?}
-    Q -- 있음 --> B[경로 B<br/>서명된 .ipa<br/>재서명 불필요]
-    Q2 -- 가장 쉬운 길<br/>컴퓨터 없이 --> D[경로 D ★<br/>웹앱 / 안드로이드 앱<br/>내 fork에서 빌드]
-    Q2 -- 꼭 네이티브 iOS 앱으로 --> A[경로 A<br/>무료 사이드로딩<br/>7일마다 갱신]
-    Q2 -- Mac + Xcode가 있고<br/>애플워치까지 --> C[경로 C<br/>Xcode 직접 빌드]
-    style D fill:#5dcd5d,stroke:#2946,color:#000
-```
+![어느 경로로 가야 하나: 유료 개발자 계정이 있으면 경로 B, 없으면 웹앱·안드로이드는 경로 D, 무료 사이드로딩은 경로 A, Xcode 빌드는 경로 C](img/diagram-paths.ko.svg)
 
 | 경로 | 추천 | 필요한 것 | 시간 | 만료 | 애플워치 |
 |---|---|---|---|---|---|
@@ -35,15 +26,7 @@ flowchart TD
 
 ### 애플워치와 개발자 계정
 
-```mermaid
-flowchart TD
-    W{애플워치에도<br/>넣고 싶다}
-    W --> P{유료 개발자<br/>계정?}
-    P -- 있음 --> R[개발자 포털에 아이폰·워치<br/>UDID 등록 - 또는 Xcode에 한 번 연결]
-    R --> B2[경로 B 또는 C<br/>1년간 재서명 없음]
-    P -- 없음 --> C2[경로 C만 가능<br/>Xcode가 개인 팀에 자동 등록<br/>7일마다 ⌘R]
-    P -- 없음 --> X[경로 A ✗<br/>사이드로딩은 워치 앱을<br/>서명하지 못함]
-```
+![애플워치: 유료 계정은 아이폰·워치 UDID를 등록하면 경로 B 또는 C, 무료 Apple ID는 경로 C만 가능하며 7일마다 갱신, 경로 A는 워치에 못 넣음](img/diagram-watch.ko.svg)
 
 - **기기 등록이 핵심입니다.** 서명된 빌드는 프로파일에 UDID가 들어 있는
   기기에만 설치됩니다. 유료 계정은 포털(Certificates, Identifiers &
@@ -63,14 +46,7 @@ flowchart TD
 같은 게임(같은 엔진, 같은 화면)을 웹앱과 안드로이드 패키지로 만든
 것입니다. 흐름은 이렇습니다.
 
-```mermaid
-flowchart LR
-    F[① Fork<br/>GitHub에서 내 사본] --> W[② 워크플로 실행<br/>GitHub가 대신 빌드]
-    W --> L[③ 내 링크<br/>username.github.io/iTamaPoke]
-    L --> I[④ 폰에 설치<br/>iPhone: 홈 화면에 추가<br/>Android: APK]
-    I --> M[⑤ mons 폴더 넣기<br/>그림·소리·설명문]
-    M --> P[🎮 오프라인으로 플레이]
-```
+![경로 D 전체 흐름: fork, Pages 켜기, 워크플로 실행, 내 링크 생성, 폰에 설치, mons 폴더 넣기, 오프라인 플레이](img/diagram-pathd.ko.svg)
 
 **공용 링크는 없습니다.** 이 저장소는 게임을 남에게 호스팅하지 않습니다.
 GitHub가 *본인 계정 아래에* 사본을 빌드해 주고(D0), 그 링크는 이 저장소에
@@ -140,18 +116,7 @@ GitHub가 *본인 계정 아래에* 사본을 빌드해 주고(D0), 그 링크�
 
 ### D2. 아이콘·세이브 규칙 (한 번만 읽어두세요)
 
-```mermaid
-flowchart TD
-    subgraph 폰
-        ICON[홈 화면 아이콘<br/>= 앱 + 세이브 + 스프라이트]
-        TAB[브라우저 탭<br/>같은 주소, 다른 저장소]
-        FILES[파일 앱 › 나의 iPhone › mons<br/>그림·소리·설명문·세이브 파일]
-    end
-    FILES -- "Load sprites… 등" --> ICON
-    ICON -- "Save file…" --> FILES
-    FILES -- "Load save…" --> ICON
-    TAB -. 서로 공유 안 됨 .- ICON
-```
+![무엇이 어디에 저장되나: 홈 화면 아이콘이 앱·세이브·스프라이트를 갖고, 같은 링크를 연 브라우저 탭은 별개의 저장 공간이며, 파일 앱의 mons 폴더는 파일을 고르는 출처](img/diagram-storage.ko.svg)
 
 - **세이브는 아이콘 안에** 있습니다. 15초마다, 그리고 화면을 벗어날 때
   자동 저장됩니다.
@@ -282,14 +247,7 @@ mons/
 한 번), 무료 Apple ID(앱스토어 쓰실 때 쓰는 것과 같은 종류 — 유료 계정
 아님).
 
-```mermaid
-flowchart LR
-    A1[① Actions에서<br/>.ipa 다운로드] --> A2[② Sideloadly / AltStore<br/>설치]
-    A2 --> A3[③ 서명 + 설치<br/>본인 Apple ID]
-    A3 --> A4[④ 설정에서<br/>개발자 신뢰]
-    A4 --> A5[⑤ 파일 앱에<br/>mons 폴더]
-    A5 --> A6[⑥ 7일마다<br/>갱신]
-```
+![경로 A 전체 흐름: .ipa 다운로드, 도구 설치, 서명하고 설치, 개발자 신뢰, mons 폴더 넣기, 7일마다 갱신](img/diagram-patha.ko.svg)
 
 ### 1. 앱 파일 다운로드
 

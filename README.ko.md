@@ -31,19 +31,7 @@ D](docs/INSTALL.ko.md#경로-d--내-fork에서-만드는-웹앱--안드로이드
 > 웹앱(아이폰·아이패드·데스크톱 브라우저)은 검증했습니다. APK를 시도해
 > 보시면 됐는지 안 됐는지 이슈로 알려주시면 큰 도움이 됩니다.
 
-```mermaid
-flowchart LR
-    subgraph you["내 fork (한 번)"]
-        F[Fork] --> W[Build 워크플로]
-    end
-    W --> WEB[웹앱<br/>아이폰 · 아이패드 · 데스크톱]
-    W --> APK[안드로이드 .apk]
-    W -.-> IPA[iOS .ipa<br/>경로 A/B/C]
-    MONS[(mons 폴더<br/>스프라이트 · 울음소리 · 도감문<br/>본인이 넣음, 호스팅 안 함)] --> WEB
-    MONS --> APK
-    MONS --> IPA
-    style MONS fill:#f5dca0,stroke:#2946,color:#000
-```
+![사본이 만들어지는 과정: fork 후 빌드 워크플로를 돌리면 웹앱·안드로이드 APK·iOS .ipa가 나오고, 스프라이트·울음소리·도감문이 든 mons 폴더는 본인이 준비하며 호스팅되지 않음](docs/img/diagram-overview.ko.svg)
 
 처음이신가요? 아래부터 시작하세요:
 

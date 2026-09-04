@@ -13,16 +13,7 @@ If a term isn't explained inline, it's explained the first time it comes up.
 
 ## Which path should I take?
 
-```mermaid
-flowchart TD
-    Q{Paid Apple Developer<br/>account?}
-    Q -- No (most people) --> Q2{What do you want?}
-    Q -- Yes --> B[Path B<br/>signed .ipa<br/>no re-signing]
-    Q2 -- easiest, no computer --> D[Path D ★<br/>web app / Android app<br/>built from your fork]
-    Q2 -- a native iOS app --> A[Path A<br/>free sideloading<br/>renew every 7 days]
-    Q2 -- Mac + Xcode,<br/>Apple Watch too --> C[Path C<br/>build in Xcode]
-    style D fill:#5dcd5d,stroke:#2946,color:#000
-```
+![Which path to take: with a paid developer account, path B; otherwise path D for the web app and Android, path A for free sideloading, path C to build in Xcode](img/diagram-paths.svg)
 
 | Path | Recommendation | Needs | Time | Expiry | Apple Watch |
 |---|---|---|---|---|---|
@@ -36,15 +27,7 @@ sprites, cries and dex text yourself → [Building the mons folder](#building-th
 
 ### Apple Watch and developer accounts
 
-```mermaid
-flowchart TD
-    W{Want it on the<br/>Apple Watch too?}
-    W --> P{Paid developer<br/>account?}
-    P -- yes --> R[Register the iPhone and Watch UDIDs<br/>in the developer portal - or plug each<br/>into Xcode once]
-    R --> B2[Path B or C<br/>no re-signing for a year]
-    P -- no --> C2[Path C only<br/>Xcode auto-registers the devices<br/>to your personal team, ⌘R every 7 days]
-    P -- no --> X[Path A ✗<br/>sideloading cannot sign<br/>the embedded watch app]
-```
+![Apple Watch: a paid account means registering the iPhone and Watch UDIDs, then path B or C; a free Apple ID means path C only, renewed every 7 days; path A cannot reach the Watch](img/diagram-watch.svg)
 
 - **Device registration is the whole story.** A signed build installs only
   on devices whose UDID is in its provisioning profile. With a paid
@@ -125,6 +108,8 @@ mons/
 Works on **both Mac and Windows**. You'll need: your iPhone, its USB cable
 (for the first step), and a free Apple ID (the same kind you already use for
 the App Store — no paid account needed).
+
+![Path A at a glance: download the .ipa, install the signing tool, sign and install, trust the developer, add your mons folder, re-sign every 7 days](img/diagram-patha.svg)
 
 ### 1. Download the app file
 
@@ -338,14 +323,7 @@ xcodegen generate
 The same game — same engine, same screens, same sprites, same sounds — built
 as a web app, and as an Android package.
 
-```mermaid
-flowchart LR
-    F[① Fork<br/>your own copy on GitHub] --> W[② Run the workflow<br/>GitHub builds it]
-    W --> L[③ Your link<br/>username.github.io/iTamaPoke]
-    L --> I[④ Install on the phone<br/>iPhone: Add to Home Screen<br/>Android: APK]
-    I --> M[⑤ Load the mons folder<br/>art, cries, dex text]
-    M --> P[🎮 play offline]
-```
+![Path D end to end: fork, enable Pages, run the workflow, get your own link, install on the phone, load the mons folder, play offline](img/diagram-pathd.svg)
 
 GitHub builds it once under your account (D0); then you open your link on
 the phone, add it to the home screen (or install the APK), and from then on
@@ -418,18 +396,7 @@ installed copies update on their next launch.
 
 ### D2. The icon and the save (read this once)
 
-```mermaid
-flowchart TD
-    subgraph phone
-        ICON[Home-screen icon<br/>= app + save + sprites]
-        TAB[Browser tab<br/>same address, separate storage]
-        FILES[Files › On My iPhone › mons<br/>art, cries, dex text, save file]
-    end
-    FILES -- "Load sprites… etc." --> ICON
-    ICON -- "Save file…" --> FILES
-    FILES -- "Load save…" --> ICON
-    TAB -. not shared .- ICON
-```
+![Where things are kept: the home-screen icon holds the app, save and sprites; the same link in a browser tab is separate storage; the mons folder in Files is where you pick files from](img/diagram-storage.svg)
 
 - **The save lives inside the icon.** It autosaves every 15 seconds and
   whenever you leave the screen. A browser tab at the same address is a

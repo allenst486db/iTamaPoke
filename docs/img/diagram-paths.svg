@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="452" viewBox="0 0 880 452" role="img">
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7"
+            markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 1 L9 5 L0 9 z" fill="#8a93a6"/>
+    </marker>
+  </defs>
+  <rect x="0" y="0" width="880" height="452" rx="18" fill="#faf5ea" stroke="#e6dcc8" stroke-width="2"/>
+  <text x="24" y="30" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="13" font-weight="bold" fill="#8a93a6" text-anchor="start">WHICH PATH SHOULD I TAKE?</text>
+  <path d="M180 54.0 L305.0 100 L180 146.0 L55.0 100 Z" fill="#ffffff" stroke="#2b3550" stroke-width="2" stroke-linejoin="round"/>
+  <text x="180" y="96.5" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#2b3550" text-anchor="middle">Paid Apple Developer</text>
+  <text x="180" y="113.5" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#2b3550" text-anchor="middle">account?</text>
+  <rect x="620" y="64" width="230" height="72" rx="12" fill="#ffffff" stroke="#4a90d9" stroke-width="2"/>
+  <path d="M621 77 L621 123" stroke="#4a90d9" stroke-width="5" stroke-linecap="round"/>
+  <text x="739.0" y="85.66666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">Path B</text>
+  <text x="739.0" y="104.66666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">signed .ipa</text>
+  <text x="739.0" y="123.66666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">no re-signing for a year</text>
+  <path d="M305 92 L616 96" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <rect x="442.84" y="73" width="34.32" height="20" rx="5" fill="#faf5ea"/>
+  <text x="460" y="88" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">yes</text>
+  <path d="M180 228.0 L305.0 274 L180 320.0 L55.0 274 Z" fill="#ffffff" stroke="#2b3550" stroke-width="2" stroke-linejoin="round"/>
+  <text x="180" y="270.5" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#2b3550" text-anchor="middle">What do you</text>
+  <text x="180" y="287.5" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#2b3550" text-anchor="middle">want?</text>
+  <path d="M180 146 L180 226" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <rect x="110.76" y="177" width="138.48" height="20" rx="5" fill="#faf5ea"/>
+  <text x="180" y="192" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">no  (most people)</text>
+  <rect x="408" y="168" width="210" height="78" rx="12" fill="#ffffff" stroke="#4fb06a" stroke-width="2"/>
+  <path d="M409 181 L409 233" stroke="#4fb06a" stroke-width="5" stroke-linecap="round"/>
+  <text x="517.0" y="192.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">Path D</text>
+  <text x="517.0" y="211.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">web app / Android</text>
+  <text x="517.0" y="230.66666666666666" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">no Mac, never expires</text>
+  <circle cx="603" cy="183" r="11" fill="#4fb06a"/>
+  <text x="603" y="188" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="13" font-weight="bold" fill="#ffffff" text-anchor="middle">★</text>
+  <rect x="408" y="264" width="210" height="62" rx="12" fill="#ffffff" stroke="#e2a33d" stroke-width="2"/>
+  <path d="M409 277 L409 313" stroke="#e2a33d" stroke-width="5" stroke-linecap="round"/>
+  <text x="517.0" y="290.1666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">Path A</text>
+  <text x="517.0" y="309.1666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">free sideloading, 7 days</text>
+  <rect x="408" y="344" width="210" height="62" rx="12" fill="#ffffff" stroke="#8b7bd8" stroke-width="2"/>
+  <path d="M409 357 L409 393" stroke="#8b7bd8" stroke-width="5" stroke-linecap="round"/>
+  <text x="517.0" y="370.1666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="14" font-weight="bold" fill="#2b3550" text-anchor="middle">Path C</text>
+  <text x="517.0" y="389.1666666666667" font-family="ui-monospace,'SF Mono',SFMono-Regular,Menlo,Consolas,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',monospace" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="middle">build in Xcode, Watch too</text>
+  <path d="M306 262 L404 207" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <path d="M306 274 L404 295" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <path d="M306 288 L404 375" fill="none" stroke="#8a93a6" stroke-width="2" stroke-linecap="round" marker-end="url(#ah)"/>
+  <text x="636" y="213" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="13" font-weight="bold" fill="#4fb06a" text-anchor="start">start here</text>
+  <text x="40" y="384" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="start">Every path installs without creature art —</text>
+  <text x="40" y="406" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'Apple SD Gothic Neo','Malgun Gothic','Noto Sans KR',sans-serif" font-size="12" font-weight="normal" fill="#8a93a6" text-anchor="start">you add it yourself afterwards.</text>
+</svg>

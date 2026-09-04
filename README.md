@@ -30,19 +30,7 @@ build ships none of it, on purpose. Step by step: [install guide, Path D](docs/I
 > The web app (iPhone, iPad, desktop browsers) *is* tested. If you try the
 > APK, an issue saying whether it worked would be genuinely useful.
 
-```mermaid
-flowchart LR
-    subgraph you["your fork (once)"]
-        F[Fork] --> W[Build workflow]
-    end
-    W --> WEB[Web app<br/>iPhone · iPad · desktop]
-    W --> APK[Android .apk]
-    W -.-> IPA[iOS .ipa<br/>Paths A/B/C]
-    MONS[(mons folder<br/>sprites · cries · dex text<br/>you supply, never hosted)] --> WEB
-    MONS --> APK
-    MONS --> IPA
-    style MONS fill:#f5dca0,stroke:#2946,color:#000
-```
+![How a copy gets built: fork, run the build workflow, get a web app, an Android APK and an iOS .ipa; the mons folder of sprites, cries and dex text is supplied by you and never hosted](docs/img/diagram-overview.svg)
 
 New here? Start with one of these:
 
