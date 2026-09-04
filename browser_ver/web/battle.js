@@ -4,6 +4,11 @@
 // lives in browser_battle.cpp/battle.cpp; this file only draws it and
 // forwards taps, same split as the rest of this port.
 
+// Where closing the battle returns to: the Battle stats page when it was
+// started from there, the idle screen for a wild encounter -- the iOS app's
+// own "stay on the stat page after a battle" rule.
+let battleReturn = "idle";
+
 function drawBattleHpBar(x, y, cur, max, color) {
   const w = 150, m = max === 0 ? 1 : max;
   const fw = Math.min(w * cur / m, w);
@@ -211,7 +216,7 @@ function battleTap(x, y) {
     }
     if (x >= 118 && x <= 348 && y >= 392 && y <= 454) {
       Module._tp_battle_close();
-      screen = "idle";
+      screen = battleReturn;
     }
     return;
   }
@@ -223,7 +228,7 @@ function battleTap(x, y) {
   }
   if (x >= 184 && x <= 282 && y >= 100 && y <= 136) {
     Module._tp_battle_close();
-    screen = "idle";
+    screen = battleReturn;
     return;
   }
   if (x >= 46 && x <= 174 && y >= 344 && y <= 428) {
@@ -266,6 +271,7 @@ function drawWildPrompt() {
 function wildPromptTap(x, y) {
   if (x >= 93 && x <= 373 && y >= 226 && y <= 270) {
     Module._tp_wild_accept();
+    battleReturn = "idle";
     screen = "battle"; // its own screen id, distinct from the minigames' "game"
     return;
   }

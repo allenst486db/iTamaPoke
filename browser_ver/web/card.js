@@ -212,6 +212,7 @@ function cardStatsTap(x, y) {
   if (x >= 96 && x <= 370 && y >= 290 && y <= 326) {
     if (fns.battleCanStart() !== 0) {
       Module._tp_battle_start();
+      battleReturn = "card";   // come back to this page when the battle closes
       screen = "battle";
     }
     return;

@@ -1037,7 +1037,7 @@ function handleTap(x, y) {
     const now = performance.now();
     switch (gameMode) {
       case 0:
-        BallGame.tap(x, y, now);
+        if (BallGame.tap(x, y, now)) playSfx(2); // play -- same cue as iOS's tapBall
         break;
       case 1: {
         const r = CatchGame.tap(x, y, now);
