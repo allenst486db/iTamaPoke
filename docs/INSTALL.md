@@ -441,6 +441,11 @@ flowchart TD
 - After the first launch it needs **no internet**. New versions are picked
   up on the next launch with internet.
 
+<img src="img/web-app-first-run.png" alt="First run: six file buttons across the top, the starter picker below" width="230">
+
+*First run: the starter picker, with the six load / save / reset buttons
+above the game.*
+
 ### D3. Add the characters (5 minutes, once per device)
 
 The game starts with a "?" where each creature should be. This is on
@@ -455,18 +460,27 @@ yourself, on the phone, with no computer:
    app; it unpacks into `TamaPoke-main`, and `tools` → `sdcard` → `mons`
    inside it is the folder. If you already keep a `mons` folder with
    sprites, cries and dex text for the iOS app, use that one as is.
-2. Open iTamaPoke from its icon and tap **"Load sprites…"** (top right).
-3. In the file picker, go into `mons`, **tap one file, then "Select All"**,
-   then **Open**. It doesn't matter that other kinds of files are mixed in:
-   each button keeps only its own extension (`.bin` / `.txt` / `.m4a`) and
-   ignores the rest, so selecting everything is fine.
-   - iPhone: tap a file → **Select** (top right) → **Select All** → **Open**.
+2. Open the app and tap **"Load sprites…"** in the toolbar. The file
+   picker opens on **"No Recents"** — tap **Browse** at the bottom, then
+   **On My iPhone** → **mons**.
+
+   <img src="img/web-picker-browse.png" alt="The picker's On My iPhone view, showing the mons folder" width="230">
+
+3. Inside `mons`, the `.bin` files are solid and the `.txt` / `.tpsave`
+   ones are greyed out. That's correct: each button only accepts its own
+   file type, so it doesn't matter what else is in the folder.
+
+   <img src="img/web-picker-mons.png" alt="Inside mons: p001.bin and friends selectable, dex text and save file greyed out" width="230">
+
+4. **Tap one file** and a **Select All** button appears at the bottom. Tap
+   it, then **Open** at the top right.
+
+   <img src="img/web-picker-select-all.png" alt="After tapping one file, a Select All button appears" width="230">
+
    - Android: long-press a file → **Select all** → **Select**.
-4. Wait for the count at the bottom of the screen to finish. The
-   characters appear immediately and stay — this is stored inside the app,
-   so you do it once. (`thumbs.bin` isn't needed here; the web app draws
-   its own thumbnails.)
-5. If cries and dex text are in that same `mons` folder, do the same
+5. Wait for the button to read "Loaded N file(s)". The characters appear
+   immediately and stay — this is stored inside the app, so you do it once.
+6. If cries and dex text are in that same `mons` folder, do the same
    "Select All" once each for **"Load cries…"** and **"Load dex text…"**.
 
 Two more buttons work the same way and are optional:
