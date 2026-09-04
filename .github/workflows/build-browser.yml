@@ -62,6 +62,9 @@ jobs:
           # Stamp the service worker so every deploy gets its own cache and
           # installed copies pick up the new version on their next launch.
           sed -i "s/__BUILD__/${GITHUB_SHA::12}/" browser_ver/web/sw.js
+          # Same id in the page, shown under the game -- so "which build is
+          # this phone actually running?" is answerable at a glance.
+          sed -i "s/__BUILD__/${GITHUB_SHA::12}/" browser_ver/web/index.html
           test -s browser_ver/web/tp_core.js
           test -s browser_ver/web/tp_core.wasm
           # Refuse to publish if any creature asset ever lands in the folder.

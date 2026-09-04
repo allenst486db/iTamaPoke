@@ -44,8 +44,17 @@ self.addEventListener("install", (event) => {
     // One file at a time rather than addAll: a local dev checkout has no
     // icon.png (the deploy workflow copies it in), and a single 404 must
     // not veto the whole install.
+    //
+    // `cache: "reload"` on each fetch skips the browser's *HTTP* cache.
+    // Without it a new worker can precache files the HTTP layer still has
+    // from the previous deploy -- a new cache name full of old files, which
+    // looks exactly like the update never happened.
     caches.open(CACHE)
-      .then((cache) => Promise.all(FILES.map((f) => cache.add(f).catch(() => {}))))
+      .then((cache) => Promise.all(FILES.map((f) =>
+        fetch(new Request(f, { cache: "reload" }))
+          .then((res) => (res.ok ? cache.put(f, res) : null))
+          .catch(() => {})
+      )))
       .then(() => self.skipWaiting())
   );
 });

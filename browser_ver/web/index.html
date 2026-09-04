@@ -11,6 +11,11 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="iTamaPoke">
+<!-- Stamped with the commit id by the deploy workflow, and shown under the
+     game. An installed web app can sit on a cached copy for a while, so
+     having the build visible is the difference between "the fix didn't
+     work" and "this phone is still on the old build". -->
+<meta name="tp-build" content="__BUILD__">
 <style>
   html, body { margin: 0; height: 100%; background: #10131a; overscroll-behavior: none; }
   /* Toolbar above the game, game centred in what's left, status under it --
@@ -33,6 +38,10 @@
   #status {
     font: 11px/1.4 -apple-system, system-ui, sans-serif; color: #8a93a6;
     text-align: center; padding: 0 12px; pointer-events: none; min-height: 1.4em;
+  }
+  #build {
+    font: 10px -apple-system, system-ui, sans-serif; color: #4a5163;
+    text-align: center; pointer-events: none;
   }
   #toolbar {
     display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
@@ -63,6 +72,7 @@
 <input id="saveInput" type="file" accept=".tpsave,.bin,application/octet-stream">
 <canvas id="tp" width="466" height="466"></canvas>
 <div id="status">loading…</div>
+<div id="build"></div>
 <script>
 // Surface any startup failure in the status line instead of a silent
 // "loading…" -- on a phone there is no console to look at.
@@ -100,8 +110,41 @@ window.addEventListener("unhandledrejection", (e) => {
 // very first launch the worker installs a few seconds in, and reloading
 // then threw away whatever the player had just done (the starter pick
 // was the visible casualty -- it hadn't reached IndexedDB yet).
+{
+  // The placeholder is only ever replaced by the deploy workflow, so an
+  // id still wrapped in underscores means this is an unstamped local copy.
+  // Tested for by shape rather than by literal: writing the placeholder
+  // out here would make sed replace this comparison too, and every deploy
+  // would then report itself as local.
+  const b = document.querySelector('meta[name="tp-build"]');
+  const id = b ? b.content : "";
+  const stamped = id && !/^__.*__$/.test(id);
+  document.getElementById("build").textContent = stamped ? `build ${id}` : "build: local";
+}
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("sw.js").catch((e) => console.warn("[sw] register failed:", e));
+  // Was this launch already controlled by a worker? If not, this is a first
+  // install and the reload below must not fire -- it used to, and threw
+  // away whatever had been done in the seconds before the worker finished
+  // installing (the starter pick, most visibly).
+  const hadController = !!navigator.serviceWorker.controller;
+  let reloading = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!hadController || reloading) return;
+    reloading = true;
+    window.location.reload();   // a new version took over: run it, don't
+                                // keep executing the copy already in memory
+  });
+  navigator.serviceWorker.register("sw.js").then((reg) => {
+    // An installed PWA can stay resident for days, and iOS only checks for
+    // a new worker on its own schedule -- so ask, on launch and whenever
+    // the app comes back to the foreground. Without this a fix can sit
+    // deployed and unseen indefinitely.
+    const check = () => { reg.update().catch(() => {}); };
+    check();
+    document.addEventListener("visibilitychange", () => {
+      if (document.visibilityState === "visible") check();
+    });
+  }).catch((e) => console.warn("[sw] register failed:", e));
 }
 // Belt and braces for the long-press: the CSS above stops selection, this
 // stops the context menu / callout the browser may still try to show.

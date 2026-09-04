@@ -447,6 +447,9 @@ flowchart TD
   Use it when a wrong state keeps showing.
 - After the first launch it needs **no internet**. New versions are picked
   up on the next launch with internet.
+- There's a **`build ...`** line under the game. It says which version this
+  phone is actually running — the thing to check when a fix doesn't seem to
+  have arrived.
 
 Adding it to the home screen on iPhone looks like this:
 
@@ -537,6 +540,11 @@ start from the egg; if the art is gone too, **Load sprites…** again.
 copy from a previous version. Close the app fully (swipe it away), make
 sure you have internet, and open it again. Once it has loaded, it works
 offline again.
+
+**A fix that was supposed to land isn't there.** Check the `build` line
+under the game: if it hasn't changed, this phone is still on the old copy.
+**Fully quit the app from the App Switcher** — going to the Home screen
+only backgrounds it, which isn't enough — then reopen it with internet.
 
 **Android: "App not installed" / "Blocked by Play Protect".** Play
 Protect flags any app that isn't from the Play Store, which this one
