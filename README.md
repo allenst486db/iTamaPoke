@@ -351,6 +351,14 @@ replaces it — see [docs/INSTALL.md](docs/INSTALL.md) ("App icon") for details.
 - **The `upstream/` submodule itself**: not ours to relicense — get it
   directly from [its own repository](https://github.com/socquique/TamaPoke)
   under its own MIT terms.
+- **`upstream-expanded/`**: game-logic files vendored verbatim from
+  [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)
+  ("TamaPoke — Expanded"), with the dex table's gen 2–3 rows transcribed
+  from [DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke). Both
+  MIT, both © their own authors, both still available from their own
+  repositories under their own terms — see
+  [`upstream-expanded/README.md`](upstream-expanded/README.md) for exactly
+  which files came from where and why.
 - **Pokémon designs, artwork, dex text, and cries**: © Nintendo / Game
   Freak / The Pokémon Company. **Not distributed anywhere in this
   repository, its builds, or any fork's site** — see [Sprites](#sprites),
@@ -374,10 +382,18 @@ Nintendo. Full accounting of what is and isn't covered: [NOTICE](NOTICE).
 ## Credits
 
 Game design, engine, and original hardware: **Quique Tortosa**
-([socquique/TamaPoke](https://github.com/socquique/TamaPoke)). Sprites:
-[PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab). Battle stats:
-[PokéAPI](https://pokeapi.co). Pokémon is a trademark of Nintendo / Game
-Freak / The Pokémon Company.
+([socquique/TamaPoke](https://github.com/socquique/TamaPoke)).
+
+Personality, daily goals, the Box, the Pokédex filter, wild battles, the
+Catch/Memo/Clean/Type minigames, expeditions, and the sound-effect
+synthesizer come from **[ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)**
+("TamaPoke — Expanded"), a community fork of the above. The dex table's
+gen 2–3 rows come from **[DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke)**,
+another fork. Both MIT — see [`upstream-expanded/README.md`](upstream-expanded/README.md).
+
+Sprites: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab).
+Battle stats, dex text and cries: [PokéAPI](https://pokeapi.co). Pokémon is
+a trademark of Nintendo / Game Freak / The Pokémon Company.
 
 ---
 

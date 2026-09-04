@@ -336,6 +336,13 @@ Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트
 - **`upstream/` 서브모듈 자체**: 저희가 재라이선스할 수 있는 대상이
   아닙니다 — [원본 저장소](https://github.com/socquique/TamaPoke)에서 직접
   받으면 그쪽 MIT 조건이 그대로 적용됩니다.
+- **`upstream-expanded/`**: 게임 로직 파일들을
+  [ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)("TamaPoke
+  — Expanded")에서 그대로 가져온 것이고, 도감 표의 2~3세대 행은
+  [DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke)에서 옮겨온
+  것입니다. 둘 다 MIT이고 각자의 저작자에게 저작권이 있으며, 각자의
+  저장소에서 그쪽 조건대로 받을 수 있습니다 — 어느 파일이 어디서 왔고 왜
+  그랬는지는 [`upstream-expanded/README.md`](upstream-expanded/README.md).
 - **포켓몬 디자인, 그림, 도감 설명문, 울음소리**: © Nintendo / Game Freak /
   The Pokémon Company. **이 저장소, 그 빌드, 어느 fork의 사이트에도
   포함되어 있지 않습니다** — 설치 후 직접 받는 방법은
@@ -362,10 +369,20 @@ Scripts/fetch_assets.sh --only sprites,shiny 25 25   # 피카츄 스프라이트
 ## 크레딧
 
 게임 디자인, 엔진, 원본 하드웨어: **Quique Tortosa**
-([socquique/TamaPoke](https://github.com/socquique/TamaPoke)). 스프라이트:
-[PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab). 배틀 스탯:
-[PokéAPI](https://pokeapi.co). 포켓몬은 Nintendo / Game Freak / The Pokémon
-Company의 상표입니다.
+([socquique/TamaPoke](https://github.com/socquique/TamaPoke)).
+
+성격, 일일 목표, 박스, 도감 필터, 야생 배틀, 캐치/패턴 기억/청소/타입
+미니게임, 원정, 효과음 신시사이저는
+**[ShadowEnemyx/TamaPoke](https://github.com/ShadowEnemyx/TamaPoke)**("TamaPoke
+— Expanded", 위 프로젝트의 커뮤니티 포크)에서 왔습니다. 도감 표의 2~3세대
+행은 또 다른 포크인
+**[DylanPDao/TamaPoke](https://github.com/DylanPDao/TamaPoke)**에서
+가져왔습니다. 둘 다 MIT —
+[`upstream-expanded/README.md`](upstream-expanded/README.md) 참고.
+
+스프라이트: [PMD SpriteCollab](https://github.com/PMDCollab/SpriteCollab).
+배틀 스탯·도감 설명문·울음소리: [PokéAPI](https://pokeapi.co). 포켓몬은
+Nintendo / Game Freak / The Pokémon Company의 상표입니다.
 
 ---
 

@@ -21,6 +21,15 @@ this repository ("the Software"), EXCLUDING:
     grants no rights to and imposes no restriction on that project itself;
     anyone can get it directly from its own repository under its own terms.
 
+  - upstream-expanded/ — game-logic files vendored verbatim from
+    github.com/ShadowEnemyx/TamaPoke ("TamaPoke — Expanded", a community
+    fork of the above), with the species table's gen 2-3 rows transcribed
+    from github.com/DylanPDao/TamaPoke (another fork of the same project).
+    Both are MIT licensed; see upstream-expanded/LICENSE and
+    upstream-expanded/README.md. Same as upstream/ above: this license
+    grants no rights to and imposes no restriction on those projects, which
+    remain available from their own repositories under their own terms.
+
   - Any third-party asset (character sprites, the app icon image, etc.) that
     is deliberately NOT included in this repository. See NOTICE.
 
@@ -123,7 +132,11 @@ liability arising from the Software or its use.
 This license does not and cannot grant, restrict, or otherwise affect rights
 to:
 
-  - the upstream/ submodule (MIT, its own project, its own terms);
+  - the upstream/ submodule — socquique/TamaPoke (MIT, its own project,
+    its own terms);
+  - the files vendored in upstream-expanded/ — ShadowEnemyx/TamaPoke and
+    the species-table rows from DylanPDao/TamaPoke (MIT, their own
+    projects, their own terms);
   - Pokémon names, designs, and species data (c) Nintendo / Game Freak /
     The Pokémon Company, not distributed here;
   - sprites derived from PMD SpriteCollab, CC BY-NC 4.0, not distributed
