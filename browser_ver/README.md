@@ -75,7 +75,9 @@ core on every push, stamps the service worker with the commit id (so
 installed copies pick up the new version on their next launch), copies
 `Resources/DefaultAppIcon.png` in as `icon.png`, refuses to publish if any
 creature asset is found in the folder, builds the Android APK, and deploys
-both to GitHub Pages. It runs in each player's own fork (one-time setup
+both to GitHub Pages. **The APK is untested on real hardware** -- it
+compiles and the web build inside it is the one verified on iPhone, but
+nobody has installed and played it on an Android phone yet. It runs in each player's own fork (one-time setup
 there: **Settings → Pages → Source: GitHub Actions**, then run it once) --
 this repository does not host a shared copy; see LICENSE §2/§3. The
 install guide's Path D is "fork, run the workflow, open your link, Add to

@@ -24,6 +24,12 @@ Android `iTamaPoke.apk`. No Mac, no developer account, no expiry; it runs
 on the phone offline after that. Then add the creature art yourself — the
 build ships none of it, on purpose. Step by step: [install guide, Path D](docs/INSTALL.md#path-d--web-app--android-app-from-your-own-fork-no-mac-no-developer-account).
 
+> ⚠️ **The Android APK has never been run on a real device.** It compiles in
+> CI and the web build inside it is the same one tested on iPhone, but
+> nobody has installed the APK and played it yet — treat it as untested.
+> The web app (iPhone, iPad, desktop browsers) *is* tested. If you try the
+> APK, an issue saying whether it worked would be genuinely useful.
+
 ```mermaid
 flowchart LR
     subgraph you["your fork (once)"]
@@ -185,7 +191,7 @@ The short version — easiest first:
 | | Needs | Works on | Apple Watch | Notes |
 |---|---|---|---|---|
 | **Web app from your own fork** (`browser_ver/`) | a free GitHub account, a phone | iPhone / iPad / Android / any desktop browser | no | Same game, same C++ core compiled to WebAssembly; GitHub builds it under your account, then it installs from Safari/Chrome, runs offline, never expires. Save and sprites live on the device |
-| **Android `.apk`** from that same site | same | Android 8+ | no | The web build wrapped as a real app (WebView shell), debug-signed by CI; install over it to update |
+| **Android `.apk`** from that same site ⚠️ *untested on a real device* | same | Android 8+ | no | The web build wrapped as a real app (WebView shell), debug-signed by CI; install over it to update. Builds in CI, but nobody has run it on an actual phone yet |
 | **Unsigned `.ipa` (no-watch) + Sideloadly/AltStore** | free Apple ID, no Mac | Mac or **Windows** | not included in this build — see note below | Native iOS app; iPhone only; re-sign every 7 days |
 | **Signed `.ipa` from GitHub Actions** | paid Apple Developer account ($99/yr) | Mac or Windows | installs correctly | No sideloading tool needed at all |
 | **Build with Xcode yourself** | a Mac | Mac only | most reliable path | For anyone comfortable with Xcode already |

@@ -26,7 +26,7 @@ flowchart TD
 
 | Path | Recommendation | Needs | Time | Expiry | Apple Watch |
 |---|---|---|---|---|---|
-| **D web app / Android** | ★★★ start here | a phone, a free GitHub account | 10 min fork + 1 min install | never | ✗ |
+| **D web app** (Android APK untested) | ★★★ start here | a phone, a free GitHub account | 10 min fork + 1 min install | never | ✗ |
 | C build in Xcode | ★★ least effort, slightly less predictable | Mac + Xcode | 20 min | 7 days (free ID) / 1 year (paid) | ✓ |
 | B signed install | ★★ most reliable, most prerequisites | paid developer account + Mac + a little dev know-how | 10 min | 1 year | ✓ (devices must be registered) |
 | A free sideloading | ★ not recommended | iPhone, Mac or Windows, free Apple ID | 15 min | renew every 7 days | ✗ |
@@ -393,6 +393,13 @@ installed copies update on their next launch.
 
 ### D1. Install it (1 minute)
 
+> ⚠️ **The Android APK is untested on a real device.** It builds in CI and
+> the web build inside it is the same one verified on iPhone, but nobody
+> has installed the APK on an actual phone and played it. If it misbehaves,
+> use the **Install app** route in Chrome instead (bottom of this section) —
+> that's the same code path as the iPhone one. Either way, an issue saying
+> what happened would be genuinely useful.
+
 - **iPhone / iPad**: open your link in **Safari** (it has to be Safari, not
   Chrome or an in-app browser). Tap the **Share** button (the square with an
   arrow) → scroll down → **Add to Home Screen** → **Add**. An **iTamaPoke**
@@ -519,6 +526,12 @@ Protect flags any app that isn't from the Play Store, which this one
 isn't. Tap **More details** → **Install anyway**. It's the debug-signed
 build the workflow produces from this repository's source; nothing is
 downloaded from anywhere else.
+
+**Android: the APK installs but won't open, or shows a blank screen.**
+This APK has never been tested on a real device — that's a known gap, not
+something you did wrong. Open your link in Chrome and use ⋮ → **Install
+app** instead; that's the web build, which is tested. Please open an issue
+with your Android version so it can be fixed.
 
 **"Add to Home Screen" is missing on iPhone.** You're not in Safari —
 Chrome, the GitHub app, Kakao/Line's built-in browser, etc. can't install
