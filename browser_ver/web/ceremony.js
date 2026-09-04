@@ -12,8 +12,15 @@ let choice = "none"; // none | evolve | farewell
 // at the bottom. The browser build used to draw them at y 372, straight
 // over the four action buttons -- so the evolve CTA covered FEED and there
 // was no way to raise a stat back to 40 once it appeared.
-const EVO_BTN = { x: TP.cx - 128, y: 172, w: 256, h: 64 };
-const FAR_BTN = { x: TP.cx - 204, y: 176, w: 408, h: 58 };
+// Written out rather than derived from TP.cx: this file is parsed before
+// main.js, where TP is declared, so a top-level `TP.cx` here throws during
+// script load and takes every function in this file with it -- which then
+// breaks the idle tap handler at its first `choice` reference, i.e. every
+// button on the screen. (Same trap as dex.js's cryBtnRect and icons.js's
+// palette, both of which dodge it by computing on first use.)
+// TP.cx is 233, so these are TP.evoBtn / TP.farBtn exactly.
+const EVO_BTN = { x: 105, y: 172, w: 256, h: 64 };
+const FAR_BTN = { x: 29, y: 176, w: 408, h: 58 };
 
 function drawEvolveButton(now) {
   const p = Math.round(5 * Math.sin(now * 0.006));
