@@ -99,27 +99,27 @@ function drawDexGrid() {
   ctx.fillRect(0, 0, TP.screen, TP.screen);
   ctx.fillStyle = UI.ink;
   ctx.textAlign = "center";
-  ctx.font = "bold 20px monospace";
+  ctx.font = "bold 24px monospace";
   // Korean UIs title the gallery 도감, everything else keeps POKEDEX -- the
   // same one-off PetScreen.swift makes (no StrId exists for it upstream).
   const lang = fns.language();
   ctx.fillText(lang === 6 || lang === 7 ? "도감" : "POKEDEX", TP.cx, 30);
-  ctx.font = "12px monospace";
+  ctx.font = "15px monospace";
   ctx.fillText(`${fns.raisedCaughtLine()}  /${fns.dexCount()}`, TP.cx, 54);
 
   for (let i = 0; i < 3; i++) {
     const p = DEX_FILTER_PILLS[i];
     const selected = i === dexFilter;
     ctx.fillStyle = selected ? UI.ink : UI.white;
-    roundRect(p.x, 70, p.w, 18, 6);
+    roundRect(p.x, 68, p.w, 22, 7);
     ctx.fill();
     ctx.strokeStyle = UI.ink;
     ctx.lineWidth = 1;
-    roundRect(p.x, 70, p.w, 18, 6);
+    roundRect(p.x, 68, p.w, 22, 7);
     ctx.stroke();
     ctx.fillStyle = selected ? UI.bgDay : UI.ink;
-    ctx.font = "bold 10px monospace";
-    ctx.fillText(p.label(), p.x + p.w / 2, 83);
+    ctx.font = "bold 13px monospace";
+    ctx.fillText(p.label(), p.x + p.w / 2, 84);
   }
 
   if (dexPage >= dexPageCount()) dexPage = 0;
@@ -155,17 +155,17 @@ function drawDexGrid() {
       }
       if (!drawn) {
         ctx.fillStyle = known ? UI.ink : "#9099a8";
-        ctx.font = "bold 16px monospace";
-        ctx.fillText(known ? `#${dex}` : "?", x + 32, y + 36);
+        ctx.font = "bold 18px monospace";
+        ctx.fillText(known ? `#${dex}` : "?", x + 32, y + 37);
       }
       if (fns.dexShiny(dex) !== 0) {
         ctx.fillStyle = UI.barWarn;
-        ctx.font = "bold 12px monospace";
-        ctx.fillText("*", x + 56, y + 12);
+        ctx.font = "bold 15px monospace";
+        ctx.fillText("*", x + 56, y + 13);
       } else if (caught && !registered) {
         ctx.fillStyle = UI.barWarn;
-        ctx.font = "bold 10px monospace";
-        ctx.fillText("C", x + 54, y + 12);
+        ctx.font = "bold 12px monospace";
+        ctx.fillText("C", x + 54, y + 13);
       }
     }
   }
@@ -180,7 +180,7 @@ function drawDexGrid() {
     else { ctx.strokeStyle = UI.ink; ctx.lineWidth = 1; ctx.stroke(); }
   }
   ctx.fillStyle = UI.track;
-  ctx.font = "11px monospace";
+  ctx.font = "15px monospace";
   ctx.fillText("< prev · next >  ·  tap a tile", TP.cx, 456);
 
   statusEl.textContent = `Dex · page ${dexPage + 1}/${pages} · filter ${DEX_FILTER_PILLS[dexFilter].label()}`;
@@ -203,12 +203,12 @@ function drawDexDetail() {
   ctx.fillText("POKeDEX", TP.cx, 40);
 
   ctx.fillStyle = UI.track;
-  ctx.font = "13px monospace";
+  ctx.font = "15px monospace";
   ctx.fillText(`#${String(dex).padStart(3, "0")}`, TP.cx, 90);
   const name = (known ? fns.dexName(dex) : "???") + (known && shiny ? " *" : "");
   ctx.fillStyle = UI.ink;
-  ctx.font = "bold 24px monospace";
-  ctx.fillText(name, TP.cx, 122);
+  ctx.font = "bold 28px monospace";
+  ctx.fillText(name, TP.cx, 124);
 
   if (dexDetailPage === 0) {
     if (known) {
@@ -216,7 +216,7 @@ function drawDexDetail() {
       const types = t2 ? [t1, t2] : [t1];
       let totalW = 0;
       const labels = types.map((t) => TYPE_NAMES[t] || "?");
-      ctx.font = "bold 12px monospace";
+      ctx.font = "bold 14px monospace";
       const widths = labels.map((l) => ctx.measureText(l).width + 24);
       totalW = widths.reduce((a, b) => a + b, 0) + (types.length - 1) * 8;
       let cx = TP.cx - totalW / 2;
@@ -250,7 +250,7 @@ function drawDexDetail() {
       ctx.fillText("?", TP.cx, 280);
     }
 
-    ctx.font = "bold 15px monospace";
+    ctx.font = "bold 17px monospace";
     if (registered) {
       ctx.fillStyle = UI.barOK;
       ctx.fillText(fns.raisedMarkText(), TP.cx, caught ? 384 : 396);
@@ -277,7 +277,7 @@ function drawDexDetail() {
   }
 
   ctx.fillStyle = UI.track;
-  ctx.font = "13px monospace";
+  ctx.font = "15px monospace";
   ctx.fillText(fns.detailBackText(), TP.cx, 424);
 
   statusEl.textContent = `Dex detail · #${dex} ${known ? fns.dexName(dex) : "???"}`;
@@ -351,13 +351,13 @@ function drawDexEntryPage(dex, known) {
   if (!text) {
     ctx.fillStyle = UI.track;
     ctx.textAlign = "center";
-    ctx.font = "13px monospace";
+    ctx.font = "15px monospace";
     ctx.fillText(known ? "NO DEX ENTRY" : "???", TP.cx, y + h / 2 + 5);
     return;
   }
 
   const pad = 14, usableW = w - 2 * pad;
-  ctx.font = "13px monospace";
+  ctx.font = "15px monospace";
   ctx.textAlign = "left";
   const words = text.split(" ");
   const lines = [];
@@ -370,8 +370,8 @@ function drawDexEntryPage(dex, known) {
   }
   if (line) lines.push(line);
 
-  const lineH = 18;
-  let ty = y + pad + 12;
+  const lineH = 21;
+  let ty = y + pad + 13;
   for (const l of lines) {
     if (ty > y + h - pad) break; // overflow: same "just stop" as a fixed box
     ctx.fillStyle = UI.ink;
